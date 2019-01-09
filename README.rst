@@ -99,7 +99,7 @@ What happens afterwards
   re-considered, and a pull request moving the rfc from the considered folder
   to the prototyped folder. Any facts/drawbacks/additional work discovered
   during prototyping, as well as an evaluation of the feature will be conducted
-  on the PR. The feature will be made available through the -GNATXP flag so
+  on the PR. The feature will be made available through the -gnatX flag so
   that people from the community can play with it and give feedback too.
 
 - Finally, a member of the AdaCore team will give a final decision about the
