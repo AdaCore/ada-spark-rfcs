@@ -106,3 +106,9 @@ What happens afterwards
 
 - Finally, a member of the AdaCore team will give a final decision about the
   RFC’s inclusion in GNAT, and potential submission to the ARG if necessary.
+
+Credits
+-------
+
+Most of the content of this document was inspired by the `RFC process from the
+Rust community <https://github.com/rust-lang/rfcs>`_.
