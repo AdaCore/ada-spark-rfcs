@@ -12,14 +12,14 @@ Motivation
 When using a vector or an unbounded string, it would be nice
 to be able write
  
-.. code-block::
+.. code-block:: ada
 
      S : constant Unbounded_String := V (2 .. 3)
      S (2 .. 3) := 'AB';
  
 instead of
- 
-.. code-block::
+
+.. code-block:: ada
 
      S : Unbounded_String := Unbounded_Slice (V, 2, 3);
      Replace_Slice (S, 2, 3, 'AB');
@@ -35,7 +35,7 @@ to an user defined operation:
 
 The following declaration
  
-.. code-block::
+.. code-block:: ada
 
      type T is private
         with Constant_Range_Indexing => Slice;
@@ -49,7 +49,7 @@ Like ``Constant_Range_Indexing``, the ``Variable_Range_Indexing`` aspect allows 
 
 For example, the following declaration
 
-.. code-block::
+.. code-block:: ada
  
     type T is private
        with Variable_Range_Indexing => Replace_Slice;
@@ -67,7 +67,7 @@ Constant_Range_Indexing
 
 The code
 
-.. code-block::
+.. code-block:: ada
 
      type T is private
         with Constant_Range_Indexing => Slice;
@@ -87,7 +87,7 @@ in the Ada reference manual, sections 5.5.1 (8/3) or user-defined indexing in
  
 So for instance we could have the following in our spec:
 
-.. code-block::
+.. code-block:: ada
  
     function Slice (Self : T; Low, High : Integer) return String;
     function Slice (Self : T'Class; Low, High : Character) return T;
@@ -96,7 +96,7 @@ and both would be applicable via overriding.
  
 When we then use
 
-.. code-block::
+.. code-block:: ada
  
      V : T;
      S : constant String := V (2 .. 3);
@@ -109,7 +109,7 @@ Variable_Range_Indexing
  
 The following declaration
 
-.. code-block::
+.. code-block:: ada
  
     type T is private
        with Variable_Range_Indexing => Replace_Slice;
@@ -121,8 +121,8 @@ The second and third parameters have the same requirements as above. There is
 an additional fourth parameter whose type is any type.
  
 So we could have the following in our spec:
- 
-.. code-block::
+
+.. code-block:: ada
 
      procedure Replace_Slice
         (Self : in out T; Low, High : Integer; By : String);
@@ -131,7 +131,7 @@ So we could have the following in our spec:
  
 We can then use:
  
-.. code-block::
+.. code-block:: ada
 
      V : T;
  
