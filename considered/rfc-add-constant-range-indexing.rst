@@ -12,11 +12,15 @@ Motivation
 When using a vector or an unbounded string, it would be nice
 to be able write
  
+.. code-block::
+
      S : constant Unbounded_String := V (2 .. 3)
      S (2 .. 3) := 'AB';
  
 instead of
  
+.. code-block::
+
      S : Unbounded_String := Unbounded_Slice (V, 2, 3);
      Replace_Slice (S, 2, 3, 'AB');
  
