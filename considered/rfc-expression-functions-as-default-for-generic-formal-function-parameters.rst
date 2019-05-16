@@ -43,7 +43,6 @@ As an example, we all know the usual example of a generic stack:
 
 generic
    type T is private;
-   with function Copy (Item : T) return T;
 package Stacks is
    type Stack is private;
    procedure Push (S : Stack; X : T);
@@ -51,6 +50,9 @@ package Stacks is
 
 However, if we use this generic to store access based structure, it may not do
 what we expect:
+what we expect. For example, in the code below, the aliasing between X and the
+pointer stored in the stack means that the top of the stack is modified by
+assigning to X.all, and so "21" is printed instead of "12":
 
 with Stacks;
 with Ada.Text_IO;
@@ -115,7 +117,7 @@ package Int_Acc_Stacks is
 Rationale and alternatives
 ==========================
 
-I think this change is a natural extension of the language, now expression
+I think this change is a natural extension of the language, now that expression
 functions have been introduced. It matches what is done for null procedures.
 If we don't introduce this feature, in use cases like the example before, either
 each instances should provide a value for Copy, or a new generic package should
