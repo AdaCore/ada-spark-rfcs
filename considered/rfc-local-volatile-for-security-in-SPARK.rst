@@ -80,17 +80,16 @@ follows.
 The definition of an "effectively volatile object" should be updated as
 follows:
 
-"An effectively volatile object is a volatile object for which at least one of
-the four properties Async_Readers, Async_Writers, Effective_Reads and
-Effective_Writes is True, or an object of an effectively volatile type."
+"An effectively volatile object is a volatile object for which the property
+No_Caching (see below) is False, or an object of an effectively volatile type."
 
 After the presentation of the four properties of external states, there should
 an addition:
 
-"A fifth property No_Caching can be specified on a volatile object that is not
-effectively volatile, to express that such a variable can be analyzed as not
-volatile in SPARK, but that the compiler should not cache its value between
-accesses to the object (e.g. as a defense against fault injection)."
+"A fifth property No_Caching can be specified on a volatile object of a
+non-effectively volatile type, to express that such a variable can be analyzed
+as not volatile in SPARK, but that the compiler should not cache its value
+between accesses to the object (e.g. as a defense against fault injection)."
 
 The Legality Rules should be updated as follows:
 
