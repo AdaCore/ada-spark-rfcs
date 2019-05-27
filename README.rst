@@ -2,7 +2,8 @@ Project
 =======
 
 This platform is a hub through which evolutions of the SPARK & Ada languages
-will be discussed. It is focused around AdaCore’s GNAT toolchain.
+will be discussed, as implemented in AdaCore’s `GNAT toolchain
+<https://www.adacore.com/community>`_.
 
 The aims of this platform are:
 
@@ -21,9 +22,9 @@ implemented will ever make it into the Ada standard, even though AdaCore will
 do its best to collaborate with the Ada Rapporteur Group (ARG).
 
 AdaCore will commit to discuss changes that it plans on this platform, so that
-users can give feedback on RFCs. It will also make it eventually possible for
-people from the community to propose and discuss potential features and
-improvements.
+users can give and get feedback on RFCs. It will also make it eventually
+possible for people from the community to propose and discuss potential
+features and improvements.
 
 The process
 ===========
@@ -35,12 +36,13 @@ Any language change can have potentially large effects on other parts of the
 language. There are several questions that need to be discussed for any new
 feature:
 
-- Whether a change is desirable or not
+- What problem does the proposed change address?
 
-- How it interacts with other features
+- Is it a desirable change or not?
 
-- What purpose does it serve with regards to the general philosophy of the
-  language
+- How does it interact with other features?
+
+- Does it fit the general philosophy of the language?
 
 It follows that a possible first step before creating an RFC is to create an
 issue to informally discuss the feature, and gather different levels of
@@ -50,7 +52,7 @@ desirability and in terms of maturity, the more this step should be favored.
 Creating an RFC
 ---------------
 
-The process to add a feature to the language starts by merging an RFC into the
+The process to add a feature to the language starts by submitting an RFC into the
 RFC repository as a RST file. At that point the RFC is considered alive. It
 does not necessarily mean that it will get implemented, but that it is amongst
 those that are considered for addition.
@@ -82,8 +84,7 @@ postpone.
 
 - An accepted RFC’s pull request will be merged.
 
-- A postponed RFC’s pull request will be altered so that the RFC file is put in
-  the ``postponed/rfc-my-feature.rst``.
+- A postponed RFC’s pull request will be labeled as "postponed".
 
 What happens afterwards
 -----------------------
@@ -92,14 +93,15 @@ What happens afterwards
   considered for prototyping by relevant engineers at AdaCore.
 
   * Note that, if as a member of the community you want to try your hand at
-    implementing a feature in GNAT, you can propose a patch against GNAT’s FSF
-    repository, which will then be considered for merging into AdaCore’s GNAT
-    Pro compiler. For SPARK, AdaCore’s SPARK GitHub repository is the reference
-    implementation.
+    implementing a feature in GNAT, you can propose a patch against `GNAT’s
+    FSF repository <https://www.gnu.org/software/gnat/>`_, which will then be
+    considered for merging into AdaCore’s GNAT Pro compiler. For SPARK,
+    `AdaCore’s SPARK GitHub repository
+    <https://github.com/AdaCore/spark2014>`_ is the reference implementation.
 
-- When a prototype has been implemented by a mean or another, the RFC will be
-  re-considered, and a pull request moving the RFC from the considered folder
-  to the prototyped folder. Any facts/drawbacks/additional work discovered
+- When a prototype has been implemented by one means or another, the RFC will be
+  re-considered, and a pull request moving the RFC from the ``considered`` folder
+  to the ``prototyped`` folder. Any facts/drawbacks/additional work discovered
   during prototyping, as well as an evaluation of the feature will be conducted
   on the PR. The feature will be made available through the ``-gnatX`` flag so
   that people from the community can play with it and give feedback too.
