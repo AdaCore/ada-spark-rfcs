@@ -1,0 +1,162 @@
+- Feature Name: alternative_end_record_syntaxes
+- Start Date: 2019-05-23
+- RFC PR: (leave this empty)
+- RFC Issue: (leave this empty)
+
+Summary
+=======
+
+Originally submitted under AI12-0213, I proposed a "unification" of the end
+record syntax to more closely fit other constructs in the language like
+packages, blocks, and subprograms instead of logical constructs like loops.
+
+Motivation
+==========
+
+I am submitting a change to the approved AI12-0213 with the addition of my
+original unaltered proposal which was easy to implement while adding support
+for the approved version. Additionally, I saw support for this by others
+outside of the ARG within AdaCore. I anticipate this change to not be
+instituted without significant support from non-members as the ARG was
+opposed to this simplification of syntax.
+
+Guide-level explanation
+=======================
+
+Taken from original AI proposal:
+
+Ada's record type definition and record representation_clause are unique to the
+language in that the way they are terminated is inconsistent with other
+declarations which have obvious names like package declarations and
+subprogram declarations. In fact, it is often the case that Ada programmers in
+the course of typing a record type definition accidentally type "end identifier"
+out of force of habit instead of the correct "end record".
+
+Additionally many Ada programmers may find it convinent and sensible to use
+the "end" syntax to allow for less visual distractions when typing many small
+simple record types.
+
+Reference-level explanation
+===========================
+
+Taken from original AI proposal:
+
+I propose introducing an "end identifier" and "end" syntax for record
+definitions and representation clauses so that their syntax more
+closely matches program units such as subprogram_declarations and
+package_declarations. See the code fragments below for an overview of the
+proposed change:
+
+   type Rec_B is record
+      A : Boolean;
+      B : Boolean;
+   end Rec_B;
+
+   for Rec_B use record
+      A at 0 range 0 .. 0;
+      B at 0 range 1 .. 1;
+   end Rec_B;
+
+ and
+
+   type Rec_B is record
+      A : Boolean;
+      B : Boolean;
+   end;
+
+   for Rec_B use record
+      A at 0 range 0 .. 0;
+      B at 0 range 1 .. 1;
+   end;
+
+As alternatives to:
+
+   type Rec_B is record
+      A : Boolean;
+      B : Boolean;
+   end record;
+
+   for Rec_B use record
+      A at 0 range 0 .. 0;
+      B at 0 range 1 .. 1;
+   end record;
+
+ and
+
+   type Rec_B is record
+      A : Boolean;
+      B : Boolean;
+   end record Rec_B;
+
+   for Rec_B use record
+      A at 0 range 0 .. 0;
+      B at 0 range 1 .. 1;
+   end record Rec_B;
+
+!wording
+
+Replace 3.8(3) with:
+
+record_definition ::=
+   record
+      component_list
+   end [record] [/record_/identifier]
+   | null record
+
+Add after 3.8(6/3):
+
+If a /record_/identifier appears at the end of the record_definition, it shall 
+repeat the defining_identifier of the enclosing full_type_declaration.
+
+Replace 13.5.1(2) with:
+
+record_representation_clause ::=
+   for /first_subtype_/local_name use
+      record [mod_clause]
+         {component_clause}
+      end [record] [local_name];
+
+Add after 13.5.1(6):
+
+If a local_name appears at the end of the record_representation_clause, it 
+shall repeat the /first_subtype_/local_name.
+
+Rationale and alternatives
+==========================
+
+- Again, the original proposal was to allow for two additional syntaxes:
+    - type ID is record ... end;
+    - type ID is record ... end ID;
+  The approved AI consisted of the following syntax:
+    - type ID is record ... end record ID;
+  An alternative proposal would be to approve only one of two non-approved
+  varients.
+
+Drawbacks
+=========
+
+- In accordance with the approved proposal it was considered a mistake by some
+  ARG members to even allow the "end;" and "end Identifier;" syntax for
+  packages and subprograms at all and that the preferred syntax would have
+  been "end package Identifier;". In this light, modifying the record syntax
+  to include "end;" and "end Identifier;" are seen as a regressive move over
+  "end record;" and "end record Identifier;".
+- Too many alternatives to achieve the same desired effect could be confusing
+  to new and current Ada programmers. E.g. "Why do I have so many choices and
+  how are they different?"
+
+
+Prior art
+=========
+
+N/A
+
+Unresolved questions
+====================
+
+N/A
+
+Future possibilities
+====================
+
+N/A
