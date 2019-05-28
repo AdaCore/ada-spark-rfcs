@@ -69,7 +69,7 @@ Here is the process to get an RFC into alive state:
   rest of the language, will have less chances of being considered. Don’t
   hesitate to get help from people sharing your mindset about a feature.
 
-- Submit a pull request, with the title: [RFC]: <name of your rfc>.
+- Submit a pull request, with the title: ``[RFC]: <name of your rfc>``.
   As a pull request the RFC will receive design feedback from AdaCore’s
   language design team, and from the larger community, and the author 
   should be prepared to revise it in response.
