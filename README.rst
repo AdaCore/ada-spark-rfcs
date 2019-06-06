@@ -29,7 +29,8 @@ definition of Ada and SPARK languages:
 
 There is no guarantee that changes discussed and eventually prototyped &
 implemented will ever make it into the Ada standard, even though AdaCore will
-do its best to collaborate with the Ada Rapporteur Group (ARG).
+do its best to collaborate with the `Ada Rapporteur Group (ARG)
+<http://www.ada-auth.org/arg.html>`_.
 
 AdaCore will commit to discuss changes that it plans on this platform, so that
 users can give and get feedback on RFCs. It will also make it possible for
@@ -86,6 +87,9 @@ Here is the process to get an RFC into alive state:
 
 At this stage, expect several iterations between discussions, consensus
 building, and clarifications.
+
+A simple way for others to signal support for a proposal is to add a +1
+reaction ("thumb up") to the corresponding Pull Request.
 
 At some point, a member of the AdaCore language design team will make a
 decision about the future of the RFC, which can be either accept, reject, or
