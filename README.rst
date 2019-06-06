@@ -17,14 +17,24 @@ The aims of this platform are:
 This platform is centered around *language* changes rather than toolchain
 improvements.
 
+It is recommended to refer to the following resources for the current
+definition of Ada and SPARK languages:
+
+- `currrent Ada Reference Manual (Ada 2012)
+  <http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-TOC.html>`_
+- `draft Ada Reference Manual for next version (Ada 202X)
+  <http://www.ada-auth.org/standards/2xrm/html/RM-TTL.html>`_
+- `current SPARK Reference Manual
+  <http://docs.adacore.com/spark2014-docs/html/lrm/>`_
+
 There is no guarantee that changes discussed and eventually prototyped &
 implemented will ever make it into the Ada standard, even though AdaCore will
 do its best to collaborate with the Ada Rapporteur Group (ARG).
 
 AdaCore will commit to discuss changes that it plans on this platform, so that
-users can give and get feedback on RFCs. It will also make it eventually
-possible for people from the community to propose and discuss potential
-features and improvements.
+users can give and get feedback on RFCs. It will also make it possible for
+people from the community to propose and discuss potential features and
+improvements.
 
 The process
 ===========
@@ -71,7 +81,7 @@ Here is the process to get an RFC into alive state:
 
 - Submit a pull request, with the title: ``[RFC]: <name of your rfc>``.
   As a pull request the RFC will receive design feedback from AdaCore’s
-  language design team, and from the larger community, and the author 
+  language design team, and from the larger community, and the author
   should be prepared to revise it in response.
 
 At this stage, expect several iterations between discussions, consensus
