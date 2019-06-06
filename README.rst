@@ -88,9 +88,6 @@ Here is the process to get an RFC into alive state:
 At this stage, expect several iterations between discussions, consensus
 building, and clarifications.
 
-A simple way for others to signal support for a proposal is to add a +1
-reaction ("thumb up") to the corresponding Pull Request.
-
 At some point, a member of the AdaCore language design team will make a
 decision about the future of the RFC, which can be either accept, reject, or
 postpone.
@@ -100,6 +97,19 @@ postpone.
 - An accepted RFC’s pull request will be merged.
 
 - A postponed RFC’s pull request will be labeled as "postponed".
+
+Supporting an RFC/providing feedback
+------------------------------------
+
+As a community member, you are encouraged to provide support/feedback on 
+existing RFCs.
+
+If you have remarks/comments on an RFC, you can simply comment on the 
+RFC itself. You can sync with the RFC author to propose amendments to 
+the RFC if you think some are necessary.
+
+If you want simply to signal support for a proposal, you should add a +1
+reaction ("thumb up") to the corresponding Pull Request's original message.
 
 What happens afterwards
 -----------------------
