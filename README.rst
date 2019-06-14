@@ -1,5 +1,5 @@
-Project
-=======
+Ada & SPARK RFCs
+================
 
 This platform is a hub through which evolutions of the SPARK & Ada languages
 will be discussed, as implemented in AdaCore’s `GNAT toolchain
@@ -37,8 +37,8 @@ users can give and get feedback on RFCs. It will also make it possible for
 people from the community to propose and discuss potential features and
 improvements.
 
-The process
-===========
+Process to create an RFC
+========================
 
 Before creating an RFC
 ----------------------
