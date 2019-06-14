@@ -184,7 +184,7 @@ current Ada:
       for I in 1 .. Num_Terms loop
          F (I) := (-1.0) ** (I - 1) * X ** (2 * I - 1) / Float (Fact(2 * I - 1));
       end loop;
-      return Red (F, 0.0);
+      return Red (0.0, F);
    end Sin;
 
 Or, if we imagine we already have map expressions:
@@ -267,7 +267,7 @@ Lastly, using inference of actual generic actuals using call actuals
           (for in in 1 .. Num_Terms =>
             (-1.0) ** (I - 1) * X ** (2 * I - 1) / Float (Fact(2 * I - 1)))));
 
-Here, the only generic actual we have to specify is \``, because:
+Here, the only generic actual we have to specify is \`Fn`, because:
 
 -  All array type parameters are infered from the ``Self`` actual
    parameter. ``Self`` allows us to deduce the type of the
