@@ -23,7 +23,9 @@ by SPARK in general, but to add a new annotation, named Relaxed_Initialization,
 to allow relaxing it on a case by case basis. This annotation would come as a
 new aspect which can be used to exempt objects from the data initialization
 policy of SPARK:
-   
+
+.. code:: ada
+
    V : T with Relaxed_Initialization;
 
    function F (X : in out T; Y : out T; Z : in T) return T
@@ -38,6 +40,8 @@ initialized subcomponent in an object.
 In addition, to be able to speak about initialization of these objects in
 contracts, we would introduce a new 'Initialized attribute which would be True
 if the variable has been initialized:
+
+.. code:: ada
 
    type T is record
      F, G : Integer;
@@ -55,9 +59,11 @@ forbidden by the strict data initialization policy of SPARK. For example, it
 would allow having a Read procedure which would only initialize its Data out
 parameter if no errors occurred during the read, as modeled by an Error flag:
 
-procedure Read_T (Data : out T; Error : out Boolean) with
-     Relaxed_Initialization => Data,
-     Post => (if not Error then Data'Initialized);
+.. code:: ada
+
+   procedure Read_T (Data : out T; Error : out Boolean) with
+        Relaxed_Initialization => Data,
+        Post => (if not Error then Data'Initialized);
 
 Additionally, it would allow verifying initialization of data on algorithms
 which defeat the current initialization verification techniques. Indeed, as
@@ -66,16 +72,18 @@ impossible to verify correct application of the current data initialization
 policy. This happens in particular when control flow enforcing correct
 initialization is value dependent:
 
-Data_Initialized := False;
+.. code:: ada
 
-if Some_Property then
-  Data := ...;
-  Data_Initialized := True;
-end if;
-...
-if not Data_Initialized then
-  Data := ...;
-end if;
+   Data_Initialized := False;
+
+   if Some_Property then
+     Data := ...;
+     Data_Initialized := True;
+   end if;
+   ...
+   if not Data_Initialized then
+     Data := ...;
+   end if;
 
 This kind of pattern could be verified by the tool by using
 Relaxed_Initialization on Data. Indeed, checking of initialization of objects
@@ -92,6 +100,8 @@ using the Relaxed_Initialization aspect. Exempted objects are no longer
 subjected to initialization checks usually enforced at subprogram boundaries.
 The aspect can be supplied on an object declaration:
 
+.. code:: ada
+
    type T is record
      F, G : Integer;
    end record;
@@ -100,7 +110,9 @@ The aspect can be supplied on an object declaration:
 
 No initialization checks occur when such an object occurs in the global contract
 of a subprogram:
-   
+
+.. code:: ada
+
    procedure Init_V_F with
      Global => (In_Out => V);
 
@@ -112,6 +124,8 @@ Relaxed_Initialization aspect can be put on the subprogram, to disable the
 data initialization policy on its parameters or on its result if it is a
 function:
 
+.. code:: ada
+
    procedure P (X : in out T; Y : out T; Z : in T)
      with Relaxed_Initialization => (X, Y, Z);
    function F return T
@@ -120,6 +134,8 @@ function:
 Note that subprograms with parameters with Relaxed_Initialization don't
 necessarily need to be called on objects with Relaxed_Initialization. For
 example:
+
+.. code:: ada
 
   function Get_F (X : T) return Integer with
      with Relaxed_Initialization => X
@@ -132,23 +148,27 @@ However, if the object supplied as a parameter call does not have
 Relaxed_Initialization, then it is subjected to the SPARK initialization
 policy. For example, such an example would be illegal:
 
-  V : T;
-  C : Integer;
-begin
-  V.F := 0;
-  C := Get_F (V); --  Here V needs to be completely initialized
+.. code:: ada
+
+     V : T;
+     C : Integer;
+   begin
+     V.F := 0;
+     C := Get_F (V); --  Here V needs to be completely initialized
 
 Conversely, it is also possible to supply an object with Relaxed_Initialization
 to a subprogram which does not expect such an object. Here again, the object
 will be subjected to the usual data initialization policy of SPARK:
 
+.. code:: ada
+
   function Get_G (X : T) return Integer;
-  V : T with Relaxed_Initialization;
-  W : T := (others => 0) with Relaxed_Initialization;
-  C : Integer := Get_G (W); --  This is OK as W is entirely initialized
-begin
-  V.G := 0;
-  C := Get_G (V); --  Here there is an error, V is not completely initialized
+     V : T with Relaxed_Initialization;
+     W : T := (others => 0) with Relaxed_Initialization;
+     C : Integer := Get_G (W); --  This is OK as W is entirely initialized
+  begin
+     V.G := 0;
+     C := Get_G (V); --  Here there is an error, V is not completely initialized
 
 Abstract states should be annotated with Relaxed_Initialization when they
 contain objects which are subjected to the aspect. Such an abstract state can
@@ -163,6 +183,8 @@ the whole content of a stack at declaration. To allow this, all stack objects
 should be handled using the relaxed initialization policy. We can achieve this
 by annotating the Stack type with the Relaxed_Initialization aspect:
 
+.. code:: ada
+
   type Stack is record
     Top     : Natural;
     Content : Nat_Array;
@@ -173,6 +195,8 @@ Then, if we declare an object of the type Stack, it will be as if the object was
 annotated with the Relaxed_Initialization aspect. Note that annotating types
 allows to use Relaxed_Initialization in a fine grain manner, having only a part
 of an object annotated with this aspect:
+
+.. code:: ada
 
   subtype R_Int is Integer with Relaxed_Initialization;
   type T_2 is record
@@ -205,11 +229,15 @@ any). For example, it can be used in subprogram contracts to describe which
 parts of the subprogram's inputs and outputs should be initialized before and
 after the call:
 
+.. code:: ada
+
   function Get_F (X : T) return Integer with
      with Relaxed_Initialization => X
           Pre => X.F'Initialized;
 
 or inside subtype predicates to describe the type's initialization policy:
+
+.. code:: ada
 
   type Stack is record
     Top     : Natural;
@@ -240,6 +268,8 @@ are value dependent. For example, assume that you are using two loops to
 initialize an array, one to initialize the even elements to 0 and one to
 initialize to odd elements to 1:
 
+.. code:: ada
+
   A : Nat_Array;
 
   for I in 1 .. Max / 2 loop
@@ -252,6 +282,8 @@ initialize to odd elements to 1:
 Verifying this kind of pattern using flow analysis is bound to failure as it
 requires a value dependent analysis. However, this analysis is achievable by
 proof, provided you add the appropriate loop invariants:
+
+.. code:: ada
 
   A : Nat_Array with Relaxed_Initialization;
 
@@ -352,6 +384,8 @@ now possible to use it for partly initialized data, in place of mode In_Out. For
 example, for a procedure initializing only one field of a record, we can use
 either In_Out or Output:
 
+.. code:: ada
+
   procedure Init_F with
     Global => (In_Out => V);
   procedure Init_G with
@@ -361,6 +395,8 @@ However, to remain consistent with dependency contracts, we should not allow
 reading the input value of a parameter of mode Output, both inside the
 subprogram and afterward. For example, Init_F above can be supplied with a
 contract stating that it preserves G, whereas Init_G cannot preserve F:
+
+.. code:: ada
 
   procedure Init_F with
     Global => (In_Out => V),
@@ -379,24 +415,28 @@ is allowed for the sake of highlighting the dependency relations. It does not
 imply however that the object is initialized after the package elaboration. To
 express such a requirement, we should use Initial_Condition instead:
 
-package My_Pack with
-  Initialize => (X => V),
-  Initial_Condition => X.F'Initialized
-is
-  X : T with Relaxed_Initialization;
-  ...
-end My_Pack;
+.. code:: ada
 
-package body My_Pack is
-  ...
-begin
-  X.F := V;
-end My_Pack;
+   package My_Pack with
+     Initialize => (X => V),
+     Initial_Condition => X.F'Initialized
+   is
+     X : T with Relaxed_Initialization;
+     ...
+   end My_Pack;
+
+   package body My_Pack is
+     ...
+   begin
+     X.F := V;
+   end My_Pack;
 
 If a type has Relaxed_Initialization, it can have a Default_Initial_Condition
 which is not False, but, here again, it does not mean that the type is
 completely initialized by default. If we want to know that it is initialized,
 we can state it in the Default_Initial_Condition:
+
+.. code:: ada
 
   type My_Stack is private with
     Default_Initial_Condition => Is_Empty (My_Stack);
@@ -465,6 +505,8 @@ Future possibilities
 - We could have a special handling of "dummy" initialization that is used in
   many cases in industry for defensive coding. Maybe only for scalar variables. 
   So that the initialisation is ignored in:
+
+.. code:: ada
 
    V : T := Dummy with Partial_Initialization;
 
