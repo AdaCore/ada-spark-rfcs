@@ -332,8 +332,12 @@ parallel ARG AI.
             Mid : constant Positive := S'First + S'Length/2 - 1;
           begin
             Parallel_Do ((
-              procedure Res := Search (S (S'First .. Mid), Char) end;
-              procedure Res := Search (S (Mid + 1 .. S'Last), Char) end;
+              procedure is begin
+                 Res := Search (S (S'First .. Mid), Char);
+              end,
+              procedure is begin
+                 Res := Search (S (Mid + 1 .. S'Last), Char);
+              end
             ));
             return Res;
           end;
