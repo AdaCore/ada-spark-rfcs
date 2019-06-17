@@ -358,7 +358,7 @@ Initialized attribute
 The initialized attribute can be used on any expression with relaxed
 initialization. It is true when all scalar components have been initialized and
 all applicable subtype predicates hold.
-The correct application of this aspect could be checked in the frontend.
+The correct application of this aspect could be defined as legality rules.
 
 To avoid incorrect data dependencies, out parameters and global of mode Output
 are considered to be de-initialized at the beginning of a procedure call. In this way,
@@ -373,7 +373,17 @@ so negative occurrences of the Initialized attribute may be interpreted differen
 in proof and for execution. To retain the closest correspondence possible
 between proof and execution, we could avoid assuming that ‘Initialized is
 false in proof when a scalar is not initialized / on out parameters / globals
-of mode Output and rather assume nothing.
+of mode Output and rather assume nothing. Here is an example:
+
+.. code:: ada
+
+  X : Integer;
+  pragma Assert (not X'Initialized);
+
+If X'Initialized is interpreted at runtime as X'Valid_Scalars, then the above
+assertion will fail on most platforms. Indeed, any initial value for X will be
+a valid integer value. Thus, GNATprove should not be able to prove the
+assertion.
 
 Interactions with flow related constructs
 -----------------------------------------
