@@ -3,10 +3,10 @@ Parallelism as a library
 
 * Feature Name: parrallelism_as_library
 * Start Date: 2019-06-14
-* RFC PR: (leave this empty) 
+* RFC PR: (leave this empty)
 * RFC Issue: (leave this empty)
 
-.. IMPORTANT:: 
+.. IMPORTANT::
 
    The following document is a meta RFC, describing a general
    approach using specific features. As such, it will suffer from several
@@ -32,9 +32,9 @@ introduces a series of enhancements to Ada generics which purpose is to
 make the call to those generic functions as expressive as the use of the
 reduce attribute.
 
-The Ada 2020 standard also introduces more general purpose 
+The Ada 2020 standard also introduces more general purpose
 `parallel operations
-<http://www.ada-auth.org/cgi-bin/cvsweb.cgi/ai12s/ai12-0119-1.txt>`_. 
+<http://www.ada-auth.org/cgi-bin/cvsweb.cgi/ai12s/ai12-0119-1.txt>`_.
 
 This RFC also proposes to replace this heavy language level support by
 orthogonal improvements to the language, and eventual library support.
@@ -62,9 +62,9 @@ proposed Ada 2020 semantics)
 
 .. code-block:: ada
 
-   function Sin (X : Float; Num_Terms : Positive := 5) return Float 
-   is 
-     ([for I in 1..Num_Terms => 
+   function Sin (X : Float; Num_Terms : Positive := 5) return Float
+   is
+     ([for I in 1..Num_Terms =>
         (-1.0)**(I-1) * X**(2*I-1)/Float(Fact(2*I-1))]'Reduce("+", 0.0));
 
 This way:
@@ -73,8 +73,8 @@ This way:
 
    type Float_Array is array (Positive range <>) of Float;
 
-   function Sin (X : Float; Num_Terms : Positive := 5) return Float 
-   is 
+   function Sin (X : Float; Num_Terms : Positive := 5) return Float
+   is
      (Reduce (Fn => "+")
        (Float_Array'
          ([for I in 1..Num_Terms => (-1.0)**(I-1) * X**(2*I-1)/Float(Fact(2*I-1))])))
@@ -367,7 +367,7 @@ other very useful container functions, such as ``map``/``filter``/etc..
       type Index_Type is (<>);
       type El_Type is private;
       type Array_Type is array (Index_Type range <>) of El_Type;
-      
+
       type Out_Index_Type is (<>);
       type Out_El_Type is private;
       type Out_Array_Type is array (Out_Index_Type range <>) of Out_El_Type;
@@ -417,7 +417,7 @@ deallocation with fully implicit generic formals in most cases:
    function Sin (X : Float; Num_Terms : Positive := 5) return Float is
        Terms : Float_Array :=
          (for in in 1 .. Num_Terms =>
-          (-1.0) ** (I - 1) * X ** (2 * I - 1) / Float (Fact(2 * I - 1))) 
+          (-1.0) ** (I - 1) * X ** (2 * I - 1) / Float (Fact(2 * I - 1)))
    begin
        Array_Reduce (Fn => "+") (0.0, Terms);
    end Sin;
