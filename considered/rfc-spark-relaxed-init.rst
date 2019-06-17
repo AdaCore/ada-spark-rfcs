@@ -210,14 +210,16 @@ V.G is not.
 
 Objects annotated the Relaxed_Initialization aspect are still subjected to
 checks required by the Ada RM. In particular:
- - Scalar objects and subcomponents should be initialized when read. This
-   includes copy in and copy out of scalar subprogram parameters. As a result,
-   out parameters of a scalar type need to be initialized at the end of the
-   subprogram, even if they are subjected to the Relaxed_Initialization aspect.
- - Subtype predicates should hold when objects are accessed, as well
-   as on default initialization of an object if it has at least one subcomponent
-   with a default value, and on exit of subprograms for out and in out
-   parameters.
+
+- Scalar objects and subcomponents should be initialized when read. This
+  includes copy in and copy out of scalar subprogram parameters. As a result,
+  out parameters of a scalar type need to be initialized at the end of the
+  subprogram, even if they are subjected to the Relaxed_Initialization aspect.
+
+- Subtype predicates should hold when objects are accessed, as well
+  as on default initialization of an object if it has at least one subcomponent
+  with a default value, and on exit of subprograms for out and in out
+  parameters.
 
 As initialization policy is no longer enforced by the language, we need a way
 to enforce it inside subprogram contracts. This can be done using the
@@ -313,39 +315,42 @@ precisely which (parts of) an object should be handled by flow analysis or
 proof.
 
 An object has `relaxed initialization` if either:
- - it is annotated with the Relaxed_Initialization aspect,
- - it is a formal parameter and it occurs in the Relaxed_Initialization aspect
-   of its enclosing subprogram, or
- - its subtype is annotated with Relaxed_Initialization.
+
+- it is annotated with the Relaxed_Initialization aspect,
+- it is a formal parameter and it occurs in the Relaxed_Initialization aspect
+  of its enclosing subprogram, or
+- its subtype is annotated with Relaxed_Initialization.
 
 An expression has `relaxed initialization` if either:
- - its subtype has relaxed initialization,
- - it is an object which has relaxed initialization,
- - it is a component (indexed component, selected component, slice, and
-    possibly dereference) of an expression which has relaxed initialization,
- - it is a conversion/qualification of an expression which has relaxed
-   initialization,
- - it is a concatenation/an aggregate and one
-   of its subexpressions has relaxed initialization,
- - it is an if expression/a case expression and one
-   of its dependant expressions has relaxed initialization, or
- - it is a function call and the function called has a Relaxed_Initialization
-   aspect applying to its result.
+
+- its subtype has relaxed initialization,
+- it is an object which has relaxed initialization,
+- it is a component (indexed component, selected component, slice, and
+  possibly dereference) of an expression which has relaxed initialization,
+- it is a conversion/qualification of an expression which has relaxed
+  initialization,
+- it is a concatenation/an aggregate and one
+  of its subexpressions has relaxed initialization,
+- it is an if expression/a case expression and one
+  of its dependant expressions has relaxed initialization, or
+- it is a function call and the function called has a Relaxed_Initialization
+  aspect applying to its result.
 
 Rules:
- * Wen assigning an expression which has relaxed initialization into an object
-   which does not have it, a check is emitted (by proof) to make sure that this
-   object is fully initialized (this also includes parameters before and after
-   call statements).
- * When assigning an expression which does not have relaxed initialization into
-   an object which has relaxed initialization, flow analysis checks proper
-   initialization as it used to do (this also includes in out parameters before
-   call statements).
- * When reading an expression which has relaxed initialization, initialization
-   of scalars and subtype predicates are checked (by proof). Reading includes
-   access of subcomponents, parameter passing… Most operators (except
-   concatenation) on composite types are considered to read the components
-   too.
+
+* Wen assigning an expression which has relaxed initialization into an object
+  which does not have it, a check is emitted (by proof) to make sure that this
+  object is fully initialized (this also includes parameters before and after
+  call statements).
+* When assigning an expression which does not have relaxed initialization into
+  an object which has relaxed initialization, flow analysis checks proper
+  initialization as it used to do (this also includes in out parameters before
+  call statements).
+* When reading an expression which has relaxed initialization, initialization
+  of scalars and subtype predicates are checked (by proof). Reading includes
+  access of subcomponents, parameter passing… Most operators (except
+  concatenation) on composite types are considered to read the components
+  too.
 
 Initialized attribute
 ---------------------
