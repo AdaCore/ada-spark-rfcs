@@ -21,7 +21,7 @@ Would be written:
 
  X : My_Container := (1, 2, 3);
   
-It addresse and generalizes issues mentioned in the AI:
+It addresses and generalizes issues mentioned in the AI:
 
 - It introduces a way to differentiate between record and container aggregates in case of ambiguity:
 
@@ -35,7 +35,7 @@ It addresse and generalizes issues mentioned in the AI:
  V1 : R := R’Container(1, 2, 3); -- is this a container aggregate
  V2 : R := R’Record(1, 2, 3); -- is this a record aggregate
  
-- It introduces a notation for record, arrays and containers null aggregates:
+- It introduces a notation for record, arrays and containers empty aggregates:
 
 .. code:: ada
 
@@ -120,7 +120,7 @@ Or when calling subprogram, again similar to (null record) notation:
 
  P ((null R));
  
-Although the double parentheses may look weird at first sight, this is consistent with the null record notation.
+Although the double parentheses may look weird at first sight, this is consistent with the empty record notation.
 
 Note that this also have advantages for record, as (null <type>) is a typed expression, as opposed to (null record) which is not, and 
 may help when resolving overloading. 
