@@ -50,7 +50,7 @@ It addresses and generalizes issues mentioned in the AI:
 Motivation
 ==========
 
-The initial proposal solves a number of issues, but at the cost of a number of a number of consistency drawbacks:
+The initial proposal solves a number of issues, but at the cost of a number of consistency drawbacks:
 
 - Arguably, introducing a new syntactic element, [], is a significant change in the language. It could be disputed that this 
   relatively significant change is for a very useful but very specific capability.
@@ -68,10 +68,10 @@ Guide-level explanation
 Ada 202X introduces a new aggregate notation. From a user perspective, everything you already know for arrays is valid for containers.
 There are a couple of relatively rare cases that you need to be aware of:
 
-- Empty aggregate are now market (null <name of the type>). This notation works will all kinds of aggregates 
+- Empty aggregate are now market (null <name of the type>). This notation works with all kinds of aggregates 
   (record, arrays, containers) and should be preferred.
 - Positional singletons used to be illegal. They are now allowed if qualified after the type of the object. This notation works 
-  will all kinds of aggregates  (record, arrays, containers).
+  with all kinds of aggregates  (record, arrays, containers).
 - In case of visibility to the full view of a record which is also a container, the compiler will resolve ambiguities by the types,
   number and names of the components in the aggregate as it would do with usual subprogram overloading rules. If it’s not possible to 
   resolve the ambiguity, the user will need to qualify the aggregate to be either a record aggregate (<type>’Record) or a container 
@@ -96,8 +96,8 @@ view of a record which is also a container, e.g.:
  
  V : R := (1, 2, 3); -- is this a record aggregate or a container aggregate?
 
-The proposal is to consider the container aggregate as to be some kind of an overloaded notation of the record aggregate, and have 
-verloaded resolution. In most cases, the types and number of arguments of the aggregate will allow to discriminate. For the rare cases 
+The proposal is to consider the container aggregate as some kind of an overloaded notation of the record aggregate, and have 
+overloaded resolution. In most cases, the types and number of arguments of the aggregate will allow to discriminate. For the rare cases 
 where such discrimination is impossible, as for other kind of overloading, a qualification will be necessary. This proposal introduces
 <Type>‘Container and <Type>’Record notations to allow to qualify:
 
