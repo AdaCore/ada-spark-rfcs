@@ -32,8 +32,8 @@ It addresses and generalizes issues mentioned in the AI:
  end record
  with <insert aggregate-related-aspects>;
 
- V1 : R := R’Container(1, 2, 3); -- is this a container aggregate
- V2 : R := R’Record(1, 2, 3); -- is this a record aggregate
+ V1 : R := R’Container'(1, 2, 3); -- is this a container aggregate
+ V2 : R := R’Record'(1, 2, 3); -- is this a record aggregate
  
 - It introduces a notation for record, arrays and containers empty aggregates:
 
@@ -103,8 +103,8 @@ where such discrimination is impossible, as for other kind of overloading, a qua
 
 .. code:: ada
 
- V1 : R := R’Container(1, 2, 3); -- is this a container aggregate
- V2 : R := R’Record(1, 2, 3); -- is this a record aggregate
+ V1 : R := R’Container'(1, 2, 3); -- is this a container aggregate
+ V2 : R := R’Record'(1, 2, 3); -- is this a record aggregate
  
 Note that Record becomes both a reserved word and an attribute, which is already the case for some other reserved words in Ada.
 The second problem is the empty container. This is also a problem that arrays have today. The proposal is to extend on the
@@ -169,7 +169,7 @@ notation instead of overloading it, and to offer some capability to go back to t
  with <insert aggregate-related-aspects>;
  
  V1 : R := (1, 2, 3); -- is this a container aggregate
- V2 : R := R’Base(1, 2, 3); -- is this a record aggregate
+ V2 : R := R’Base'(1, 2, 3); -- is this a record aggregate
  
 The reason why this is not in the main proposal is that a consequence may be for a developer to mistakenly use a container aggregate
 instead of a record one, and it was preferred and safer to always report the ambiguity and ask for a solution. This is closer to other
