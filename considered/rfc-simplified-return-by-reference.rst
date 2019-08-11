@@ -28,6 +28,7 @@ desirable.
 
 The idea behind this RFC PR is to suggest a simpler, more readable and
 understandable syntax that leverages existing Ada idioms as implementation.
+It will shield the user by making the internal access type not accessible.
 
 [1]: http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-4-1-5.html#I2450
 
