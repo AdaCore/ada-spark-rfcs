@@ -6,7 +6,7 @@
 Summary
 =======
 
-Provide a simplified more new user syntax for creating return types that
+Provide a more simplified new user syntax for creating return types that
 return by reference.
 
 Motivation
