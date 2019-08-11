@@ -6,7 +6,7 @@
 Summary
 =======
 
-Provide a more simplified new user syntax for creating return types that
+Provide a more simplified user friendly syntax for creating return types that
 return by reference.
 
 Motivation
@@ -18,7 +18,7 @@ an internal component of an object (such as a container), used for iterators,
 etc.  However, the syntax for such a type is not very user friendly and takes
 a lot of scaffolding that doesn't actually add to reabability.  In fact, it 
 can hamper readability.  New users may find it challenging to create one from
-scratch withough finding and example to mimic, and even then they may not
+scratch withough finding an example to mimic, and even then they may not
 fully understand all the implications of the implementation that they end up
 mimicing.
 
