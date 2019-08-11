@@ -36,7 +36,7 @@ Guide-level explanation
 
 In order to return a component by reference, one should use the syntax:
 
-function Reference(Source : in out Thing) return aliased Some_Type;
+    function Reference(Source : in out Thing) return aliased Some_Type;
 
 This will return a view of an object of Some_Type by reference, presumably from
 Source (though it could come from a package level variable as well if aliased).
