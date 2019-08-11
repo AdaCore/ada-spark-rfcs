@@ -154,12 +154,19 @@ other languages, they still can be abused.
 Drawbacks
 =========
 
-* It's an alternative syntax, which adds complexity to compilers.
+* It's an alternative syntax, which adds complexity to the language.
 * It makes use of an existing keyword in a way that wasn't originally intended
 * It might be complex for compilers to implement?
 * Existing Ada standard packages like containers already have a defined API,
   so they wouldn't be able to leverage this.
 
+Intended Benefits
+=================
+
+* Enchanced readability - Compare to an implicit dereference declaration
+* More safety from access types - User has even less access to them
+* Utilizing existing Ada mechanics - Implicit dereference types or access 
+  types, up to implementor
 
 Prior art
 =========
