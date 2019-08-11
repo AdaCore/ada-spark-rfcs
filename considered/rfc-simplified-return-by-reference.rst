@@ -36,9 +36,8 @@ Guide-level explanation
 
 In order to return a component by reference, one should use the syntax:
 
-```Ada
     function Reference(Source : in out Thing) return aliased Some_Type;
-```
+
 
 This will return a view of an object of Some_Type by reference, presumably from
 Source (though it could come from a package level variable as well if aliased).
@@ -47,36 +46,36 @@ return object is referenced.
 
 If a readonly view is desired, then the syntax can be changed to:
 
-function Reference(Source : Thing) return aliased constant Some_Type;
+    function Reference(Source : Thing) return aliased constant Some_Type;
 
 To actually implement this function, simply return an access type and the
 compiler will convert it based on the return type specified in the 
 declaration.
 
-function Reference(Source : in out Thing) return aliased Some_Type is
-begin
-
-   -- Here, both Source and Something must be aliased (Source is not
-   -- explicitly aliased in this example, but it may have to be if not
-   -- tagged or limited).
-   return Source.Something'Access;
-end Reference;
+    function Reference(Source : in out Thing) return aliased Some_Type is
+    begin
+    
+       -- Here, both Source and Something must be aliased (Source is not
+       -- explicitly aliased in this example, but it may have to be if not
+       -- tagged or limited).
+       return Source.Something'Access;
+    end Reference;
 
 Reference-level explanation
 ===========================
 
 In current Ada, to return by reference, the RM suggests something similar to
 
-type Reference_Type(Element : not null access Some_Type) is limited null record
-   with Implicit_Dereference => Element;
+    type Reference_Type(Element : not null access Some_Type) is limited null record
+       with Implicit_Dereference => Element;
 
-function Reference(Source : in out Thing) return Reference_Type;
+    function Reference(Source : in out Thing) return Reference_Type;
 
 This RFC does not propose a change or deprication to this but to have the
 compiler automatically generate the reference type under the hood for the
 programmer if they use the following syntax for that call:
 
-function Reference(Source : in out Thing) return aliased Some_Type;
+    function Reference(Source : in out Thing) return aliased Some_Type;
 
 All of the same rules that apply to the type with Implicit_Dereference would
 apply to the type returned by the function, but it would hide the actually
@@ -86,11 +85,11 @@ when using a type with Implicit_Dereference.
 
 Implementing the function would be just as simple:
 
-function Reference(Source : in out Thing) return aliased Some_Type is
-begin
-   -- Identical to return (Element => Source.Something'Access);
-   return Source.Something'Access;
-end Reference;
+    function Reference(Source : in out Thing) return aliased Some_Type is
+    begin
+       -- Identical to return (Element => Source.Something'Access);
+       return Source.Something'Access;
+    end Reference;
 
 Again, the proposal is that this can purely be implemented the way it is
 in today's Ada, but with a simplified syntax that clearly indicates what
@@ -101,12 +100,12 @@ For situations where a more complex return type is needed (say for handling
 tampering checks in a container), an aspect could be supplied to where the
 exist form could still be used as a specified implementation:
 
--- This hides a record with a tamper check implementation
-type Reference_Type(Element : not null access Some_Type) is limited private
-   with Implicit_Dereference => Element;
+    -- This hides a record with a tamper check implementation
+    type Reference_Type(Element : not null access Some_Type) is limited private
+       with Implicit_Dereference => Element;
 
-function Reference(Source : in out Thing) return aliased Some_Thing
-   with Reference_Return_Type => Reference_Type;
+    function Reference(Source : in out Thing) return aliased Some_Thing
+       with Reference_Return_Type => Reference_Type;
 
 Note that while the reference type is declared in this example, the user
 of the function still does not have access to that view of the returned object.
@@ -117,10 +116,10 @@ user defined one.  It also prevents the user from having the Access type.
 Implementing the above function would look more like the traditional current
 method:
 
-function Reference(Source : in out Thing) return aliased Some_Thing is
-begin
-   return (Element => Source.Something'Access, ...Other stuff);
-end Reference;
+    function Reference(Source : in out Thing) return aliased Some_Thing is
+    begin
+       return (Element => Source.Something'Access, ...Other stuff);
+    end Reference;
 
 Rationale and alternatives
 ==========================
