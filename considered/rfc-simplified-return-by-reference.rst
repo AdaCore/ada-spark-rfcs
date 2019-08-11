@@ -110,7 +110,7 @@ Ada today would still apply.  This is meant to be mostly cosmetic.
 
 For situations where a more complex return type is needed (say for handling
 tampering checks in a container), an aspect could be supplied to where the
-exist form could still be used as a specified implementation:
+existing form could still be used as a specified implementation:
 
 .. code-block:: ada
 
@@ -125,7 +125,7 @@ Note that while the reference type is declared in this example, the user
 of the function still does not have access to that view of the returned object.
 They still get a object that looks like a Some_Thing.  This just allows the
 compiler to avoid implicitly making the reference type and will use the
-user defined one.  It also prevents the user from having the Access type.
+user defined one.  It also prevents the user from having access to the access type.
 
 Implementing the above function would look more like the traditional current
 method:
