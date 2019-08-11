@@ -136,6 +136,12 @@ method:
     begin
        return (Element => Source.Something'Access, ...Other stuff);
     end Reference;
+    
+NOTE:  While this proposal focuses on implementing it using the existing
+Implicit_Derefernce types, if it is easier to simply use access types
+under the hood, that is fine.  The intent of this RFC is to reuse existing
+rules, implementations, etc. with minimal implementaiton fuss.
+
 
 Rationale and alternatives
 ==========================
