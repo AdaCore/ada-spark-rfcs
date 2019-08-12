@@ -67,6 +67,29 @@ declaration.
        -- tagged or limited).
        return Source.Something'Access;
     end Reference;
+    
+To use it, simply use the function returning the reference type as if it were
+a variable:
+
+.. code-block:: ada
+
+    function Reference(Source : in out Thing) return aliased Integer;
+    
+    ...
+    
+    A_Thing : Thing;
+    
+    ...
+    
+    A_Thing.Reference := 23;
+    
+    ...
+    
+    procedure Some_Procedure(Value : Integer);
+    
+    ...
+    
+    Some_Procedure(A_Thing.Reference);
 
 Reference-level explanation
 ===========================
