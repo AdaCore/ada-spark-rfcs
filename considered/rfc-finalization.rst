@@ -117,17 +117,35 @@ equivalent to:
     end if;
   end;
 
+Multiple deferred execution statements can occur
+within a single scope and are to be executed in
+reverse order (i.e. LIFO order).
+
 Reference-level explanation
 ===========================
 
-This is the technical portion of the RFC. Explain the design in sufficient
-detail that:
+Deferred execution can be viewed as a means to
+keep paired statement together while the second
+part of the pair (the deferred statement) needs
+to be executed at a later point. This pattern is
+mostly used when resources are acquired and need
+to be released even in case of exceptions. A common
+pattern is to wrap such resources into a controlled
+type, but this is a relatively heavyweight solution,
+requires additional code for the wrapper. Also, this
+solution can not be used in restricted runtime
+environments where controlled types or dynamic
+dispatching is not allowed.
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+The proposal solves the resource management problem in a way that can be
+achieved at compile time with no additional runtime overhead.
 
-The section should return to the examples given in the previous section, and
+A possible implementation could be that the compiler creates artifical
+scopes for each deferred execution statement and emits the code to be
+executed whenever such a scope is left. A pure source code transformation
+(as a kind of a preprocessing step) is also a conceivable solution.
+
+TODO: The section should return to the examples given in the previous section, and
 explain more fully how the detailed proposal makes those examples work.
 
 Rationale and alternatives
@@ -150,6 +168,10 @@ Drawbacks
   hard-to-understand code (OTOH, heavily nested blocks are not exactly
   readable, either).
 - IDE support for folding blocks of code will be hampered.
+- Nested deferred execution statements may need a considerable amount
+  of exception handling to ensure the intended semantics. Also, it is 
+  unclear what to do in case of multiple exceptions happening during
+  the execution of deferred statements.
 
 Prior art
 =========
