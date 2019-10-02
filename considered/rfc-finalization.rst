@@ -12,8 +12,8 @@ executed.
 Motivation
 ==========
 
-Resource acquisition and proper release of acquired resources these can be a
-hassle in the presence of exceptions or in the case of "fail early" patterns.
+Resource acquisition and proper release of acquired resources can be a hassle
+in the presence of exceptions or in the case of "fail early" patterns.
 Often, controlled types can be used to automate this, but this requires
 explicit wrappers. This proposal tries to simplify and extend the concept of
 locally scoped resource management.
@@ -21,9 +21,9 @@ locally scoped resource management.
 Guide-level explanation
 =======================
 
-Deferred execution: A deferred execution is the execution of a statement or
-block of statement when leaving a local scope, which can either be a block
-or a subprogram. It can be compared to the Finalize call of a controlled_type,
+Deferred execution: A deferred execution is the execution of a sequence of
+statements when leaving a local scope, which can either be a block or a
+subprogram. It can be compared to the Finalize call of a controlled_type,
 but allows more fine-grained control over what will be executed when.
 
 Example:
