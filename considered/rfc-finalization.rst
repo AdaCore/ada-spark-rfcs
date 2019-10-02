@@ -31,85 +31,91 @@ Example:
 Open a file and close it after use regardless of exceptions being raised
 during processing.
 
-::code block: ada
+.. code:: ada
 
-declare
-  Input_File : Ada.Text_IO.File_Type;
-begin
-  do
-    Open (Input_File, "Some_File");
-  and then terminate with
-    Close (Input_File); -- execution of this statement is deferred until the end of the current scope
-  end do;
+  declare
+    Input_File : Ada.Text_IO.File_Type;
+  begin
+    do
+      Open (Input_File, "Some_File");
+    and then terminate with
+      Close (Input_File); -- execution of this statement is deferred until the end of the current scope
+    end do;
     
-  Do_Processing_Of_Input_File_With_Possible_Exceptions_Being_Raised;
-end;
+    Do_Processing_Of_Input_File_With_Possible_Exceptions_Being_Raised;
+  end;
 
 is equivalent to
 
-declare
-  Input_File : Ada.Text_IO.File_Type;
-begin
-  Open (Input_File, "Some_File");
-  
+.. code:: ada
+
+  declare
+    Input_File : Ada.Text_IO.File_Type;
   begin
-    Do_Processing_Of_Input_File_With_Possibile_Exceptions_Being_Raised;
-  exception
-    when others =>
-      Close (Input_File);
-      raise;
+    Open (Input_File, "Some_File");
+  
+    begin
+      Do_Processing_Of_Input_File_With_Possibile_Exceptions_Being_Raised;
+    exception
+      when others =>
+        Close (Input_File);
+        raise;
+    end;
   end;
-end;
 
 Example with evaluation of result:
 
-declare
-  User_Defined_Resource : Some_Type;
-  Result                : Some_Result_Type;
-begin
-  do
-    Result := Create (User_Defined_Resource);
-  and then if Result = No_Error then terminate with
-    Destroy (User_Defined_Resource);
-  end do;
+.. code:: ada
+
+  declare
+    User_Defined_Resource : Some_Type;
+    Result                : Some_Result_Type;
+  begin
+    do
+      Result := Create (User_Defined_Resource);
+    and then if Result = No_Error then terminate with
+      Destroy (User_Defined_Resource);
+    end do;
   
-  case Result is
-    when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
-    when others   => Ada.Text_IO.Put_Line ("Oops.")
-  end case;
+    case Result is
+      when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
+      when others   => Ada.Text_IO.Put_Line ("Oops.")
+    end case;
   
-  -- some more processing
-  if Failure_Detected then
-     return;
-  end if;
+    -- some more processing
+    if Failure_Detected then
+      return;
+    end if;
   
-  -- ... etc. pp.
-end;
+    -- ... etc. pp.
+  end;
 
 equivalent to:
 
-declare
-  User_Defined_Resource : Some_Type;
-  Result                : Some_Result_Type;
-begin
-  Result := Create (User_Defined_Resource);
-  pragma Unmodified (Result); -- To make sure we evaluate the same below.
+.. code:: ada
+
+  declare
+    User_Defined_Resource : Some_Type;
+    Result                : Some_Result_Type;
+  begin
+    Result := Create (User_Defined_Resource);
+    pragma Unmodified (Result); -- To make sure we evaluate the same below.
   
-  case Result is
-    when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
-    when others   => Ada.Text_IO.Put_Line ("Oops.")
-  end case;
+    case Result is
+      when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
+      when others   => Ada.Text_IO.Put_Line ("Oops.")
+    end case;
   
-  -- some more processing
-  if Failure_Detected then
-     Destroy (User_Defined_Resource);
-     return;
-  end if;
+    -- some more processing
+    if Failure_Detected then
+       Destroy (User_Defined_Resource);
+       return;
+    end if;
   
-  if Result = No_Error then
-    Destroy (User_Defined_Resource);
-  end if;
-end;
+    if Result = No_Error then
+      Destroy (User_Defined_Resource);
+    end if;
+  end;
 
 Reference-level explanation
 ===========================
