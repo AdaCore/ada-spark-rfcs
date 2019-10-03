@@ -79,7 +79,7 @@ The above code is equivalent to
     Open (Input_File, "Some_File");
   
     begin
-      Do_Processing_Of_Input_File_With_Possibile_Exceptions_Being_Raised;
+      Do_Processing_Of_Input_File_With_Possible_Exceptions_Being_Raised;
       Close (Input_File);
     exception
       when others =>
@@ -160,7 +160,7 @@ to be executed in reverse order (i.e. LIFO order) upon leaving the scope.
 Reference-level explanation
 ===========================
 
-Deferred execution can be viewed as a means to keep paired statement together
+Deferred execution can be viewed as a means to keep paired statements together
 while the second part of the pair (the deferred statement) needs to be executed
 at a later point. This pattern is mostly used when resources are acquired and
 need to be released even in case of exceptions.  A common pattern is to wrap
@@ -169,9 +169,10 @@ solution, requires additional code to be written for the wrapper, and such a
 solution can not be used in restricted runtime environments where controlled
 types or dynamic dispatching is not allowed.
 
-The proposal solves the resource management problem in a way that can be
-achieved at compile time with no additional, or hidden runtime overhead, and
-hence could be used in safety critical and hard real-time environments.
+The proposal solves the resource management problem in a way that can - in
+theory, at least - be achieved at compile time with no additional, or hidden
+runtime overhead, and hence could be used in safety critical and hard real-time
+environments.
 
 A possible implementation could be that the compiler creates artifical scopes
 for each deferred execution statement and emits the code to be executed whenever
@@ -206,7 +207,7 @@ To extent on the previous example:
   end;
 
 Here we have some user defined resource (for example, a database connection)
-that, once it has been successfully acquired, needs to be finalized at the end
+that, once it has been successfully acquired, needs to be released at the end
 of the scope. In this example, we assume that the resource is only acquired if
 the corresponding result is No_Error, so the deferred execution statement is
 guarded by the appropriate condition.
@@ -384,7 +385,7 @@ keywords a thing like
 
 could be a more "natural" syntax that blends in relatively nicely into the
 already existing syntax for select statements or asynchronous transfer of
-control.
+control (i.e. "select ... then abort ...").
 
 I am not certain if the whole "do ... and then" syntax is necessary. The initial
 idea was that when this block is executed, it will drive the decision if the
@@ -411,8 +412,24 @@ block.
 Similarly, I completely discarded the idea of having a "defer" block with no
 syntactic connection to anything, mostly because I think it is way more readable
 if the source emphasizes the connection between the statement(s) which acquire
-the resource and the statement(s) which will release it again later. Note that
-writing
+the resource and the statement(s) which will release it again later. I mean, if
+you'd look at a solution like this:
+
+.. code:: ada
+
+  -- some code
+  defer
+     Cleanup;
+  end defer;
+
+There is no visible connection to any previous statement(s) that would indicate
+why the execution of "Cleanup" even needs to be deferred.  I could imagine a
+beast like this to become a maintenance nightmare (not to mention that it enables
+one to easily write horribly bad code, see the "backwards" code example in the
+Drawbacks section), so I think, a syntactic connection between the statements
+should be enforced by the language.
+
+Note that writing
 
 .. code:: ada
 
@@ -421,7 +438,9 @@ writing
   end do;
 
 would still be a possible way to write deferred statements with no connection to
-any previous code.
+any previous code. Here, the programmer at least makes their intention explicit,
+and like other questionable use of certain language features, constructs like
+these could easily be flagged by a coding standards checking tool.
 
 Also, compiler or external static analysis tools may have it easier to find
 potential flaws if both parts of the code are syntactically connected (e.g. I
