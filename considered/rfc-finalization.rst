@@ -35,7 +35,7 @@ Proposed syntax (see below for possible alternatives):
 
   do
     <sequence_of_statements>
-  and [if <condition] then terminate with
+  and [if <condition>] then terminate with
     <sequence_of_statements>
   end do;
 
@@ -347,7 +347,7 @@ Unresolved questions
 
         do
           <sequence_of_statements>
-        and [if <condition] then terminate with
+        and [if <condition>] then terminate with
           <sequence_of_statements>
         [exception
           <exception_handler>]
