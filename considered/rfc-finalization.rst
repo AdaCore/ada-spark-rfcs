@@ -342,7 +342,9 @@ Unresolved questions
 
 - It is unclear what to do in case of multiple exceptions happening during the
   execution of deferred statements.
+
   - Possible solutions:
+
     - Abort the whole execution and propagate the exception.  That means, not
       all deferred execution statements are being executed which defeats the
       whole safety aspect (where part of the promise was that the compiler takes
