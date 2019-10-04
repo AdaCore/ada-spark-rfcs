@@ -375,6 +375,52 @@ Unresolved questions
   have different internals than when the deferred statement was declared. In
   this particular case, this is of course what we want, but that may not always
   be so clear cut.
+- Presuming that deferred statements are allowed to change variables defined
+  within the enclosing scope (if not, the whole thing will become rather
+  useless), including in [out] parameters, how do we define the precise
+  semantics of such modifications? Consider this (rather artifical and genuinely
+  stupid) example:
+
+  .. code:: ada
+
+    function Locked_Increment (What   : in Integer;
+                               Amount : in Positive) return Integer is
+      Result : Integer;
+    begin
+      do
+        Global_Lock.Acquire;
+      and then at exit
+        Global_Lock.Release;
+        Result := Result + 1; -- Increment result variable (for fun and profit)
+      end exit;
+
+      Result := What + Amount;
+      return Result;
+    end Increment;
+
+  Outside of SPARK (I would expect SPARK's flow analysis to flag the deferred
+  write access to Result as illegal), I see no simple way to disallow constructs
+  like that.
+
+  One solution could be introducing a new aspect (e.g. Deferred_Modification or
+  such) that must be applied to variables being modified in the block of
+  deferred statements. That way, the reader of such a program would at least be
+  hinted at the fact that something fishy may be going on.  If such an aspect is
+  not provided, write accesses to local variables from within deferred blocks
+  shall be forbidden. Hence, the code above would only be allowed if we declare:
+
+  .. code:: ada
+
+    Result : Integer with
+      Deferred_Modification => True; -- Not everything may be as it seems.
+
+  Yet, even in a case like that, the question remains what value will finally be
+  returned by the above function: "What + Amount" (as that's the value of Result
+  at the point of the return statement), or will it be "What + Amount + 1", as
+  the variable being returned will finally be modified again in the deferred
+  block before the function actually returns? With an explicitly given aspect
+  Deferred_Modification => True, I would expect the latter, even though it may
+  be considered unintuitive.
 
 Future possibilities
 ====================
