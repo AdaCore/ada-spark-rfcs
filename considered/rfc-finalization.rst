@@ -35,15 +35,25 @@ Proposed syntax (see below for possible alternatives):
 
   do
     <sequence_of_statements>
-  and [if <condition>] then terminate with
+  and [if <condition>] then at exit
     <sequence_of_statements>
-  end do;
+  end exit;
 
-(Author's note: One reason, I chose for "and then" is to hint at the intended
-semantic that, if an exception is raised, the deferred sequence of statements
-will not be considered. Similarly, "terminate with" was chosen, because it was
-the combination of keywords closest to the meaning of "at the end" that I could
-come up with.)
+(Author's note: One reason, I chose for "and [...] then" is to hint at the
+intended semantic that, if an exception is raised, the deferred sequence of
+statements will not be considered.  Similarly, "at exit" was chosen, because it
+was the combination of keywords closest to the meaning of "at the end" that I
+could come up with.  An earlier version used "terminate with" instead, but after
+some consideration, choosing "exit" instead of the rather morbid "terminate"
+conveys more of the intended meaning (i.e. "do stuff when you exit this block of
+code"). To C-programmers, "at exit" may even sound familiar and has a quite
+similar meaning.  After all, "atexit()" is a function to register some final
+actions to be taken when the process finishes. Now, I also chose for "end exit"
+as block terminator instead of "end do" - which was rather stupid, anyway - so
+instead of "deferred execution" we could call this thing an "extended exit
+statement".
+I also considered "and [if <condition>] then when exit ...", but to me it
+doesn't sound right, the combination of "then when" looks awful.)
 
 Example:
 
@@ -57,10 +67,10 @@ processing.
   begin
     do
       Open (Input_File, "Some_File");
-    and then terminate with
+    and then at exit
       Close (Input_File); -- execution of this statement is deferred until the
                           -- end of the enclosing scope
-    end do;
+    end exit;
     
     Do_Processing_Of_Input_File_With_Possible_Exceptions_Being_Raised;
   end;
@@ -103,9 +113,9 @@ Example with evaluation of result:
   begin
     do
       Result := Create (User_Defined_Resource);
-    and then if Result = No_Error then terminate with
+    and if Result = No_Error then at exit
       Destroy (User_Defined_Resource);
-    end do;
+    end exit;
   
     case Result is
       when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
@@ -189,9 +199,9 @@ To extent on the previous example:
   begin
     do
       Result := Create (User_Defined_Resource);
-    and then if Result = No_Error then terminate with
+    and if Result = No_Error then at exit
       Destroy (User_Defined_Resource);
-    end do;
+    end exit;
   
     case Result is
       when No_Error => Ada.Text_IO.Put_Line ("Everything is fine.");
@@ -266,17 +276,17 @@ Rationale and alternatives
     begin
       do
         Acquire (Resource_1);
-      and then terminate with
+      and then at exit
         Release (Resource_1);
-      end do;
+      end exit;
 
       -- .. do some stuff with Resource_1
 
       do
         Acquire (Resource_2)
-      and then terminate with
+      and then at exit
         Release (Resource_2);
-      end do;
+      end exit;
 
       -- .. do more stuff
     end;
@@ -303,13 +313,13 @@ Drawbacks
   .. code:: ada
 
     begin
-      do null; and then terminate with
+      do null; and then at exit
         Ada.Text_IO.Put_Line ("This will be executed last.");
-      end do;
+      end exit;
 
-      do null; and then terminate with
+      do null; and then at exit
         Ada.Text_IO.Put_Line ("This will be executed first.");
-      end do;
+      end exit;
     end;
 
 - IDE support for folding blocks of code may be hampered.
@@ -347,11 +357,11 @@ Unresolved questions
 
         do
           <sequence_of_statements>
-        and [if <condition>] then terminate with
+        and [if <condition>] then at exit
           <sequence_of_statements>
         [exception
           <exception_handler>]
-        end do;
+        end exit;
 
     - Still execute all statements and at the end reraise the first exception
       that has been encountered while doing so. This seems a rather arbitrary
@@ -377,7 +387,7 @@ keywords a thing like
 
   do
     <sequence_of_statements>
-  and [if <condition> then] defer
+  and [if <condition>] then defer
     <sequence_of_statements>
    [exception
      <exception_handler>] 
@@ -387,9 +397,9 @@ could be a more "natural" syntax that blends in relatively nicely into the
 already existing syntax for select statements or asynchronous transfer of
 control (i.e. "select ... then abort ...").
 
-I am not certain if the whole "do ... and then" syntax is necessary. The initial
-idea was that when this block is executed, it will drive the decision if the
-deferred statements are being executed later:
+I am not certain if the whole "do ... and" syntax is necessary. The initial idea
+was that when this block is executed, it will drive the decision if the deferred
+statements are being executed later:
   - Either evaluate some result that can be used as a guard condition if the
     deferred statements are to be executed later, or
   - just raise an exception indicating that the deferred statements will not be
@@ -433,9 +443,9 @@ Note that writing
 
 .. code:: ada
 
-  do null; and then terminate with
+  do null; and then at exit
     Ada.Text_IO.Put_Line ("Why, oh why didn't I take the blue pill?");
-  end do;
+  end exit;
 
 would still be a possible way to write deferred statements with no connection to
 any previous code. Here, the programmer at least makes their intention explicit,
