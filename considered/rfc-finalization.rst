@@ -168,19 +168,20 @@ equivalent to:
   end;
 
 Multiple deferred execution statements can occur within a single scope and are
-to be executed in reverse order (i.e. LIFO order) upon leaving the scope.
+to be executed in reverse order of declaration (i.e. LIFO order) upon leaving
+the scope.
 
 Reference-level explanation
 ===========================
 
 Deferred execution can be viewed as a means to keep paired statements together
 while the second part of the pair (the deferred statement) needs to be executed
-at a later point. This pattern is mostly used when resources are acquired and
-need to be released even in case of exceptions.  A common pattern is to wrap
-such resources into a controlled type, but this is a relatively heavyweight
-solution, requires additional code to be written for the wrapper, and such a
-solution can not be used in restricted runtime environments where controlled
-types or dynamic dispatching is not allowed.
+at a later point.  This pattern is mostly used when resources are acquired and
+need to be released even in case of exceptions.  A common way is to wrap such
+resources into a controlled type, but this is a relatively heavyweight solution,
+requires additional code to be written for the wrapper, and such a solution can
+not be used in restricted runtime environments where controlled types or dynamic
+dispatching are not allowed.
 
 The proposal solves the resource management problem in a way that can - in
 theory, at least - be achieved at compile time with no additional, or hidden
@@ -189,7 +190,7 @@ environments.
 
 A possible implementation could be that the compiler creates artifical scopes
 for each deferred execution statement and emits the code to be executed whenever
-such a scope is left. A pure source code transformation (as a kind of a
+such a scope is left.  A pure source code transformation (as a kind of a
 preprocessing step) may also be a conceivable solution.
 
 To extent on the previous example:
@@ -220,10 +221,10 @@ To extent on the previous example:
   end;
 
 Here we have some user defined resource (for example, a database connection)
-that, once it has been successfully acquired, needs to be released at the end
-of the scope. In this example, we assume that the resource is only acquired if
-the corresponding result is No_Error, so the deferred execution statement is
-guarded by the appropriate condition.
+that, once it has been successfully acquired, needs to be released at the end of
+the scope. In this example, we assume that the resource is only acquired if the
+corresponding result is No_Error, so the deferred execution statement is guarded
+by the appropriate condition.
 
 Implementation note: The condition needs to be evaluated at the time of the
 initial resource acquisition, so the result may need to be stored in a temporary
@@ -234,6 +235,68 @@ that this feature has a static execution model.
 
 Nested deferred execution shall be possible and execute the deferred statements
 in reverse order of declaration.
+
+Dynamic semantics:
+------------------
+
+- If an (unhandled) exception is raised during the execution of a deferred
+  sequence of statement, all remaining deferred statements are being abandoned
+  and the exception will be propagated as per the usual Ada rules (just like it
+  would be if an exception occured within an exception handler).  We should
+  allow exception handlers within a deferred block, so the user can locally
+  handle them, if they desire to do so:
+
+    .. code:: ada
+
+      do
+        <sequence_of_statements>
+      and [if <condition>] then at exit
+        <sequence_of_statements>
+      [exception
+        <exception_handler>]
+      end exit;
+
+  As stated earlier, deferred execution is agnostic to exceptions being raised
+  in the enclosing scope.  That means a deferred execution block has no
+  knowledge about an exception potentially being raised before it gets executed.
+  (Hence, not handling an exception occuring during execution of the deferred
+  block or reraising it will "hide" the original exception.  This is intentional
+  and in line with the semantics of nested exception handling in Ada.)
+
+- Expressions (like parameters to subprogram calls or similar) within the
+  deferred block are evaluated at the deferred point, not when the deferred
+  block is defined.  This ensures clearly defined semantics.
+  However, the initial condition is evaluated at the point of the definition of
+  the deferred block.
+
+- Deferred statements are allowed to change variables defined within the
+  enclosing scope (including in [out] parameters of the enclosing subprogram).
+  That means, in the presence of a return statement, all effects must be
+  evaluated before an (extended) return statement is being executed. Consider
+  this (rather artifical and genuinely stupid) example:
+
+  .. code:: ada
+
+    function Locked_Increment (What      : in Integer;
+                               By_Amount : in Positive) return Integer is
+      Result : Integer;
+    begin
+      do
+        Global_Lock.Acquire;
+      and then at exit
+        Global_Lock.Release;
+        Result := Result + 1; -- Increment result variable (for fun and profit)
+      end exit;
+
+      Result := What + Amount;
+      return Result;
+    end Increment;
+
+  Outside of SPARK (I would expect SPARK's flow analysis to flag the deferred
+  write access to Result as illegal), the function will return
+  "What + Amount + 1", because after assigning "What + Amount" to "Result",
+  "Result" is incremented in the deferred block, but the return statement must
+  take all changes into account.
 
 Rationale and alternatives
 ==========================
@@ -265,11 +328,11 @@ Rationale and alternatives
       Release (Resource_1);
     end;
 
- First of all, resource acquisition and subsequent release are (visually) far
- apart.
- Secondly, explicit nesting is required to make sure that the resources are only
- released when they actually have been acquired before. The code could be
- simplified like that:
+  First of all, resource acquisition and subsequent release are (visually) far
+  apart.
+  Secondly, explicit nesting is required to make sure that the resources are
+  only released when they actually have been acquired before. The code could be
+  simplified like that:
 
   .. code:: ada
   
@@ -294,7 +357,7 @@ Rationale and alternatives
       -- .. do more stuff
     end;
 
-- It is syntax enhancement and has no impact on existing code, but probably
+- It is a syntax enhancement and has no impact on existing code, but probably
   requires relatively complex compiler support.
 - The feature goes well with the general support of safe programming of the
   language.
@@ -309,6 +372,7 @@ Drawbacks
   non-linear features (select statements with arbitrary order of execution, or
   asynchronous transfer of control), and some kind of deferred execution (abort
   deferred sections) as well.
+
 - As hinted below, it would become technically possible to write "backwards"
   code, i.e. by declaring a set of deferred statements around null statements
   and then let the compiler execute them in reverse order:
@@ -325,15 +389,15 @@ Drawbacks
       end exit;
     end;
 
-- IDE support for folding blocks of code may be hampered.
 - Nested deferred execution statements may need a considerable amount of
-  exception handling to ensure the intended semantics (see below).
+  exception handling to ensure the intended semantics.
 
 Prior art
 =========
 
-- The proposal was mostly inspired by the "defer" statement in Go. See here for
-  an introduction: https://blog.golang.org/defer-panic-and-recover
+- The proposal was mostly inspired by the "defer" statement in Go, but extends
+  the concept in a more flexible way.  See here for an introduction of the defer
+  statement in Go: https://blog.golang.org/defer-panic-and-recover
 - Delphi, C++, Java have "finally" (or similar) statements with all the
   drawbacks that may come with it, but these are mostly centered around
   exception handling, not resource acquisition and release.
@@ -343,89 +407,22 @@ Prior art
 Unresolved questions
 ====================
 
-- It is unclear what to do in case of multiple exceptions happening during the
-  execution of deferred statements.
-
-  - Possible solutions:
-
-    - Abort the whole execution and propagate the exception.  That means, not
-      all deferred execution statements are being executed which defeats the
-      whole safety aspect (where part of the promise was that the compiler takes
-      care of the resource management).
-    - Exceptions occuring during execution of deferred statements are considered
-      erroneous execution.  This eliminates any implementation issues, but seems
-      a rather drastic measure.
-    - Allow exception handlers within deferred execution statements, so the user
-      can locally handle them:
-
-      .. code:: ada
-
-        do
-          <sequence_of_statements>
-        and [if <condition>] then at exit
-          <sequence_of_statements>
-        [exception
-          <exception_handler>]
-        end exit;
-
-    - Still execute all statements and at the end reraise the first exception
-      that has been encountered while doing so. This seems a rather arbitrary
-      choice, though.
-
-- It is unclear, how exactly parameters for deferred statements are supposed to
-  be evaluated. Firstly, of course, they should be evaluated at the time of
-  defining them. My concern here is that evaluation may actually depend on the
-  parameter passing mechanism. For instance, in the example above, the File_Type
-  is passed by reference, so the actual parameter passed to the Close call will
-  have different internals than when the deferred statement was declared. In
-  this particular case, this is of course what we want, but that may not always
-  be so clear cut.
-- Presuming that deferred statements are allowed to change variables defined
-  within the enclosing scope (if not, the whole thing will become rather
-  useless), including in [out] parameters, how do we define the precise
-  semantics of such modifications? Consider this (rather artifical and genuinely
-  stupid) example:
-
-  .. code:: ada
-
-    function Locked_Increment (What   : in Integer;
-                               Amount : in Positive) return Integer is
-      Result : Integer;
-    begin
-      do
-        Global_Lock.Acquire;
-      and then at exit
-        Global_Lock.Release;
-        Result := Result + 1; -- Increment result variable (for fun and profit)
-      end exit;
-
-      Result := What + Amount;
-      return Result;
-    end Increment;
-
-  Outside of SPARK (I would expect SPARK's flow analysis to flag the deferred
-  write access to Result as illegal), I see no simple way to disallow constructs
-  like that.
+- The requirement that a return statement (including an extended return
+  statement) must take all effects of deferred execution into account may be
+  considered counter-intuitive and not 100% in the spirit of Ada.
 
   One solution could be introducing a new aspect (e.g. Deferred_Modification or
   such) that must be applied to variables being modified in the block of
-  deferred statements. That way, the reader of such a program would at least be
+  deferred statements.  This way, the reader of such a program would at least be
   hinted at the fact that something fishy may be going on.  If such an aspect is
   not provided, write accesses to local variables from within deferred blocks
-  shall be forbidden. Hence, the code above would only be allowed if we declare:
+  shall be forbidden.  Hence, the code mentioned above (see section "Dynamic
+  semantics" in "Guide-level explanation") would only be allowed if we declare:
 
   .. code:: ada
 
     Result : Integer with
       Deferred_Modification => True; -- Not everything may be as it seems.
-
-  Yet, even in a case like that, the question remains what value will finally be
-  returned by the above function: "What + Amount" (as that's the value of Result
-  at the point of the return statement), or will it be "What + Amount + 1", as
-  the variable being returned will finally be modified again in the deferred
-  block before the function actually returns? With an explicitly given aspect
-  Deferred_Modification => True, I would expect the latter, even though it may
-  be considered unintuitive.
 
 Future possibilities
 ====================
@@ -485,10 +482,10 @@ you'd look at a solution like this:
 
 There is no visible connection to any previous statement(s) that would indicate
 why the execution of "Cleanup" even needs to be deferred.  I could imagine a
-beast like this to become a maintenance nightmare (not to mention that it enables
-one to easily write horribly bad code, see the "backwards" code example in the
-Drawbacks section), so I think, a syntactic connection between the statements
-should be enforced by the language.
+beast like this to become a maintenance nightmare (not to mention that it
+enables one to easily write horribly bad code, see the "backwards" code example
+in the Drawbacks section), so I think, a syntactic connection between the
+statements should be enforced by the language.
 
 Note that writing
 
