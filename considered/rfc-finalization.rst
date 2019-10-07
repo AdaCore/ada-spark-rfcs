@@ -148,7 +148,10 @@ equivalent to:
   
     -- some more processing
     if Failure_Detected then
-      Destroy (User_Defined_Resource);
+      if Result = No_Error then
+        Destroy (User_Defined_Resource);
+      end if;
+
       return;
     end if;
   
