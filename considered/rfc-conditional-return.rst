@@ -1,4 +1,4 @@
-- Feature Name: Return When
+- Feature Name: Conditional return
 - Start Date: 2019-10-10
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
