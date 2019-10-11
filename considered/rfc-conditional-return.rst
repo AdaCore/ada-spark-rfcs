@@ -115,9 +115,24 @@ To do a conditional return in a procedure the following syntax should be used:
 
 .. code-block:: ada
 
-   return when Condition;
+   procedure P (Condition : Boolean)
+   is
+   begin
+      return when Condition;
+   end P;
 
 This will return from the procedure if `Condition` is true.
+
+When being used in a function the conditional part comes after the return value:
+
+.. code-block:: ada
+
+   function Is_Null (I : Integer) return Boolean
+   is
+   begin
+      return True when I = 0;
+      return False;
+   end Is_Null;
 
 Reference-level explanation
 ===========================
@@ -136,6 +151,20 @@ An implementation of the same functionality could be
 
    if Condition then
       return;
+   end if;
+
+The implementation for functions is quite similar so that
+
+.. code-block:: ada
+
+   return Value when Condition;
+
+could be implemented as
+
+.. code-block:: ada
+
+   if Condition then
+      return Value;
    end if;
 
 Rationale and alternatives
