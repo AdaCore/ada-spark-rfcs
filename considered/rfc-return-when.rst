@@ -111,75 +111,52 @@ can be expressed without much overhead while still being clearly understandable.
 Guide-level explanation
 =======================
 
-Explain the proposal as if it was already included in the language and you were
-teaching it to another Ada/SPARK programmer. That generally means:
+To do a conditional return in a procedure the following syntax should be used:
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
+.. code-block:: ada
 
-- Explaining how Ada/SPARK programmers should *think* about the feature, and
-  how it should impact the way they use it. It should explain the impact as
-  concretely as possible.
+   return when Condition;
 
-- If applicable, provide sample error messages, deprecation warnings, or
-  migration guidance.
-
-For implementation-oriented RFCs (e.g. for RFCS that have no or little
-user-facing impact), this section should focus on how compiler contributors
-should think about the change, and give examples of its concrete impact.
-
-For "bug-fixes" RFCs, this section should explain briefly the bug and why it
-matters.
+This will return from the procedure if `Condition` is true.
 
 Reference-level explanation
 ===========================
 
-This is the technical portion of the RFC. Explain the design in sufficient
-detail that:
+The conditional return is an extension to the conventional return in
+procedures. It does not conflict with other features. The conventional
+return is still available and equivalent to
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+.. code-block:: ada
 
-The section should return to the examples given in the previous section, and
-explain more fully how the detailed proposal makes those examples work.
+   return when True;
+
+An implementation of the same functionality could be
+
+.. code-block:: ada
+
+   if Condition then
+      return;
+   end if;
 
 Rationale and alternatives
 ==========================
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not
-  choosing them?
-- What is the impact of not doing this?
-- How does this feature meshes with the general philosophy of the languages ?
+This feature aims to increase the readability of an often used concept while
+reducing boiler plate code. It is similar to other features (`exit when`)
+and does not introduce new keywords. It is kept short, clear and unambiguously
+to make its meaning as clear as possible to the reader.
 
 Drawbacks
 =========
 
-- Why should we *not* do this?
-
+The scope where the conditional return is useful is relatively narrow. If the
+condition that shall result in a return requires further operations it cannot be used.
 
 Prior art
 =========
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-
-- For language, library, and compiler proposals: Does this feature exist in
-  other programming languages and what experience have their community had?
-
-- Papers: Are there any published papers or great posts that discuss this? If
-  you have some relevant papers to refer to, this can serve as a more detailed
-  theoretical background.
-
-This section is intended to encourage you as an author to think about the
-lessons from other languages, provide readers of your RFC with a fuller
-picture.
-
-If there is no prior art, that is fine - your ideas are interesting to us
-whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does
-not on its own motivate an RFC.
+The inspiration for this RFC comes from the loop exit syntax already
+implemented in Ada.
 
 Unresolved questions
 ====================
