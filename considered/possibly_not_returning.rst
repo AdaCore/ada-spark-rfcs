@@ -45,7 +45,7 @@ annotation on SPARK procedures that may not return:
      Annotate => (GNATprove, Possibly_Not_Returning);
 
 Such a procedure would be allowed to call a procedure marked ``No_Return``, and
-GNATprove would handle correctly the possibility of non-returning in flow
+GNATprove would handle correctly the possibility of nonreturning in flow
 analysis and in proof.
 
 Motivation
@@ -80,7 +80,7 @@ the tools.
 The new annotation should be described in `SPARK User's Guide appendix
 <http://docs.adacore.com/spark2014-docs/html/ug/en/appendix/additional_annotate_pragmas.html>`_.
 
-A possibly non-returning procedure is defined as a procedure annotated with
+A possibly nonreturning procedure is defined as a procedure annotated with
 ``Possibly_Not_Returning`` as follows:
 
 .. code-block:: ada
@@ -89,14 +89,14 @@ A possibly non-returning procedure is defined as a procedure annotated with
      Annotate => (GNATprove, Possibly_Not_Returning);
 
 In the body of such a procedure, it is not considered an error to call a
-non-returning procedure (marked with aspect/pragma ``No_Return``) or a possibly
-non-returning procedure (marked with annotation
-``Possibly_Not_Returning``). Instead, a call to a non-returning procedure is
+nonreturning procedure (marked with aspect/pragma ``No_Return``) or a possibly
+nonreturning procedure (marked with annotation
+``Possibly_Not_Returning``). Instead, a call to a nonreturning procedure is
 considered as stopping the flow of execution, while a call to a possibly
-non-returning procedure is considered to continue execution in the caller past
+nonreturning procedure is considered to continue execution in the caller past
 the call only for the cases that do return.
 
-Any other call to a (possibly) non-returning procedure inside a subprogram will
+Any other call to a (possibly) nonreturning procedure inside a subprogram will
 lead to a check that the call is provably unreachable. Beware of justifying
 such calls with pragma ``Annotate`` as this might lead to unsoundness.
 
@@ -105,25 +105,28 @@ Reference-level explanation
 
 The support for this feature in GNATprove consists of two parts:
 
-- in flow analysis, a call to (possibly) non-returning procedure inside a
-  possibly non-returning caller should take into account all effects occurring
+- in flow analysis, a call to (possibly) nonreturning procedure inside a
+  possibly nonreturning caller should take into account all effects occurring
   in the path leading to the call, contrary to what is done currently for calls
-  to non-returning procedures. Technically, this requires to modify the graph
+  to nonreturning procedures. Technically, this requires to modify the graph
   of statements inside the caller.
 
-- in proof, the contract of a possibly non-returning procedure inside a
-  possibly non-returning caller should only apply to those inputs that
-  return. Technicaly, this requires to model in Why3 the non-returning cases
+- in proof, the contract of a possibly nonreturning procedure inside a
+  possibly nonreturning caller should only apply to those inputs that
+  return. Technicaly, this requires to model in Why3 the nonreturning cases
   with a Boolean variable ``no_return`` in Why3 set to ``true`` when a call
   does not return. The postcondition of the callee becomes ``if not no_return
   then <original postcondition>``.
 
-Calls to (possibly) non-returning procedures outside of a possibly
-non-returning caller are handled like calls to non-returning procedures are
-currently handled. In the unlikely case of a possibly non-returning procedure
-being called from a non-returning subprogram, we also prefer to issue a check
+Calls to (possibly) nonreturning procedures outside of a possibly
+nonreturning caller are handled like calls to nonreturning procedures are
+currently handled. In the unlikely case of a possibly nonreturning procedure
+being called from a nonreturning subprogram, we also prefer to issue a check
 that the call is unreachable, as this non-sensical case would require too much
 special treatment otherwise.
+
+A dispatching subprogram and the subprogram it overrides shall be either
+both possibly nonreturning, or not.
 
 Rationale and alternatives
 ==========================
@@ -138,7 +141,7 @@ Handling of this specification by GNATprove will also make sure that future
 evolutions of the tools correctly handle this use case.
 
 This feature seems like a natural extension of SPARK to go beyond the overly
-restrictive current interpretation of calls to non-returning procedures.
+restrictive current interpretation of calls to nonreturning procedures.
 
 Drawbacks
 =========
@@ -159,7 +162,7 @@ Unresolved questions
 ====================
 
 Is the proposed annotation and handling adequate for all use cases where people
-may want to call a possibly non-returning procedure?
+may want to call a possibly nonreturning procedure?
 
 Future possibilities
 ====================
