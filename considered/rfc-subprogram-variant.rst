@@ -134,10 +134,10 @@ call the subprogram inside the variant. For example:
    G : Integer;
 
    procedure P (X : Integer; Y : in out Integer) with
-     Variant => (Descreases => F (X), Increases => Y + G);  --  correct
+     Variant => (Decreases => F (X), Increases => Y + G);  --  correct
 
    function F (X : Integer) return Integer with
-     Variant => (Descreases => F (X));  --  incorrect
+     Variant => (Decreases => F (X));  --  incorrect
 
 For dynamic semantics, all the expressions of the variant should be evaluated
 and stored in constants at the beginning of the subprogram. When compiling the
@@ -148,7 +148,7 @@ example:
 .. code-block:: ada
 
    procedure P (X : Integer; Y : in out Integer) with
-     Variant => (Descreases => F (X), Increases => Y + G)
+     Variant => (Decreases => F (X), Increases => Y + G)
    is
    begin
      G := G + 1;
@@ -156,7 +156,7 @@ example:
    end P;
 
    function F (X : Integer) return Integer with
-     Variant => (Descreases => X),
+     Variant => (Decreases => X),
      Pre     => (if X > 0 then F (X - 1))
    is
      C : constant Integer := F (X - 1);
@@ -184,7 +184,6 @@ could be handled like:
    end P;
 
    function F (X : Integer) return Integer with
-     Variant => (Descreases => X),
      Pre     => (if X > 0 then F (X - 1))
    is
      D1 : constant Integer := X;
