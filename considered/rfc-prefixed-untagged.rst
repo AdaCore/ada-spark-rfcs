@@ -1,6 +1,9 @@
 Feature Name: Prefixed notation (object.op()) for untagged types
+
 - Start Date: 2019-11-01
+
 - RFC PR: (leave this empty)
+
 - RFC Issue: (leave this empty)
 
 Summary
