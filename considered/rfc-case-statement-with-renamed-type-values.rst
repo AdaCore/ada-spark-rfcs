@@ -27,50 +27,63 @@ Guide-level explanation
 
 the key concepts are commented in the code below
 
--- compile command:
---    gnatmake case_statement.adb
+.. code:: ada
 
-procedure case_statement is
-   type dt is (a);
-   function x return dt renames a;
+  -- compile command:
+  --    gnatmake case_statement.adb
 
-   d : dt := a;
-begin
-  -- the following is OK
-  case d is
-     when  a  => null;
-  end case;
+  procedure case_statement is
+     type dt is (a);
+     function x return dt renames a;
+  
+     d : dt := a;
+  begin
+    -- the following is OK
+    case d is
+       when  a  => null;
+    end case;
+  
+    -- the following is OK also
+    case d is
+       when  x  => null;
+    end case;
 
-  -- the following is OK
-  case d is
-     when  x  => null;
-  end case;
+    -- for the following we will get:  
+    -- Error: duplication of choice value: "a" at line ...
+    case d is
+       when a | x  => null;    -- here a is duplicated, 
+                               -- but if we are writing a .. x  which is a .. a 
+                               -- it will work (this solution is not usable with multiple renames...)
+    end case;
 
-  -- for the following we will get:  
-  -- Error: duplication of choice value: "a" at line ...
-  case d is
-     when a | x  => null;    -- here a is duplicated, but if we are writing a .. x  which is a .. a it will work (this solution is not usable with multiple renames...)
-  end case;
-
--- because:
--- in this way we could get the same error
--- declare
+   -- because:
+   -- in this way we could get the same error
+   -- declare
    --   i : integer;
--- begin
---   case i is
---      when 2 | 2 => null;
---      when others => null;
---   end case;
--- end;
+   -- begin
+   --   case i is
+   --      when 2 | 2  => null;
+   --      when others => null;
+   --   end case;
+   -- end;
+  end case_statement;
 
--- From AA.pdf
--- "A case_statement selects for execution one of a number of alternative sequences_of_statements..."
--- "... The goal of these coverage rules is that any possible value of the selecting_ expression of a case_statement should be covered by exactly one discrete_choice of the case_statement , and that this should be checked at compile time. ..."
+From AA.pdf (Annotated Ada reference manual):
 
--- I think it would be better and logical to allow multiple occurrences of a type value in the same "when case" e.g. "2 | 2" should be valid but "when 2 => ... when 2 => " should not.
--- in this case "The execution of a case_statement chooses one and only one alternative." remains true.
--- In my opinion by using the "|" instead of ".." would be more readable in this case and it also scales better and we could use three or more alternative names (renames) also...
-end case_statement;
+"A case_statement selects for execution one of a number of alternative sequences_of_statements..."
+
+"... The goal of these coverage rules is that any possible value of the selecting_ expression of
+a case_statement should be covered by exactly one discrete_choice of the case_statement,
+and that this should be checked at compile time. ..."
+
+I think it would be better and logical to allow multiple occurrences of a type value in the same "when case" 
+e.g. "2 | 2" should be valid but "when 2 => ... when 2 => " should not.
+in this case 
+
+"The execution of a case_statement chooses one and only one alternative." remains true.
+
+In my opinion by using the "|" instead of ".." would be more readable in this case and it also scales better and we could use three or more alternative names (renames) also...
+
 
 
 Reference-level explanation
