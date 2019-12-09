@@ -15,13 +15,15 @@ Here sensitive data may be whatever the programmer defines
 
 We propose to add the new aspect Sensitive to an Ada object that needs to be
 sanitized:
-::
+
+.. code:: ada
 
   My_Key : Key_Type := Get_Key with Sensitive; -- will be sanitized
   KLen : constant Positive := Get_Len with Sensitive; -- even constants are concerned
 
 or to a type whom objects of that type need to be sanitized:
-::
+
+.. code:: ada
 
   type Key_Type is array (Positive range <>) of Byte with Sensitive;
   My_Key : Key_Type := Get_Key; -- will be sanitized
@@ -45,7 +47,8 @@ Motivation
 
 In order to achieve the sanitization goal, Ada is not so helpful and SPARK complains,
 for instance if we use current Ada:
-::
+
+.. code:: ada
 
     procedure Sensitive_Data_Process is
       My_Key : Key_Type := Get_Key;
@@ -61,7 +64,7 @@ b) Programmers may forget to sanitize, so strong peer reviews have to be set on 
 
 c) Assignation is not possible with limited types. A dedicated procedure may be declared for user defined limited types:
 
-::
+.. code:: ada
 
     procedure Sanitize (V : out Key_type);
 
@@ -89,7 +92,8 @@ The aspect is also suitable for types, thus all variables declared with these ty
 will be sanitized.
 
 Example 1:
-::
+
+.. code:: ada
 
     procedure Sensitive_Data_Process is
       pragma Sanitize_Policy (16#55AA#);
@@ -100,7 +104,8 @@ Example 1:
     end; -- My_Key is cleaned with specified value
 
 Example 2:
-::
+
+.. code:: ada
 
     package Sensitive_Definition is
       pragma Sanitize_Policy (16#55AA#);
@@ -116,7 +121,8 @@ Example 2:
     end; -- My_Key is cleaned with specified value
 
 Example 3:
-::
+
+.. code:: ada
 
     package Sensitive_Definition is
       type Key_Type is limited private;
@@ -142,7 +148,8 @@ Example 3:
     end; -- My_Key is cleaned (fields A and B) with specified value
 
 Example 4:
-::
+
+.. code:: ada
 
     package Sensitive_Definition is
       pragma Sanitize_Policy (16#55AA#);
@@ -202,7 +209,7 @@ a) controlled types, but:
   - it must be a valid value.
   - SPARK compatibility is not yet available.
   - it is not automatic see above Motivation point b).
-  
+
 b) erasing all stack, but:
 
   - it is not effective on dynamically allocated object.
