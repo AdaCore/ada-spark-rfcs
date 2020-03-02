@@ -62,12 +62,6 @@ Array declarations are the same as usual. In particular, when bound are provided
 
   V : A (1 .. 10);
   
-A new form is also provided to omit the lower bound and only provide the upper one:
-
-.. code-block:: ada
-
-  V : A (10);
-  
 With these arrays, slices always slide towards the lower bound. In particular, if you write:
 
 .. code-block:: ada
@@ -109,6 +103,15 @@ Arguably, there’s also a way to achieve this today through a type with discrim
   
 This is however a bit convoluted to write and use.
 
+An alternative would be to use a predicate:
+
+.. code-block:: ada
+
+ type My_String is array (Integer range <>) of Character
+   with Predicate => My_String'First = 0;
+
+This opens other difficulties - a predicate can be an arbitrary condition, this would require the compiler to somehow understand that this specific expression means something. It also means that the predicate has an impact on the type structure, for which there's no provision at this stage. 
+
 Drawbacks
 =========
 
@@ -128,4 +131,12 @@ Nothing specific here.
 Future possibilities
 ====================
 
-Nothing specific here.
+We could introduce ways to ommit the lower bound when declaring an array of a type that has a fixed lower bound. Indeas include:
+
+.. code-block:: ada
+
+  V1 : A (10);
+  V2 : A (<> .. 10);
+  V3 : A (.. 10);
+
+This is more of a "quality of life" / "cosmetic" feature comparted to the initial proposal. If we were going this route, this can be discussed separately.
