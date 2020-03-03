@@ -123,6 +123,8 @@ Prior art
 This would allow to make Ada arrays match - when needed - they counterparts (most languages have a static lower bound at 0) while
 keeping all the high level semantics and safety aspects.
 
+See also ARG previous discussions and proposals on http://www.ada-auth.org/cgi-bin/cvsweb.cgi/ai12s/ai12-0246-1.txt?rev=1.3 and http://www.ada-auth.org/ai-files/minutes/min-1801.html#AI246
+
 Unresolved questions
 ====================
 
