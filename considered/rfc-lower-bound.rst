@@ -33,7 +33,8 @@ The consequences are as follows
 
 - If the lower bound is a static expression, the compiler can now optimize operations and avoid loading from memory the lower bound
 - If the lower bound is 0, the compiler can avoid arithmetic when accessing an element from Index
-- The compiler can also optimize so called fat pointers by storing only one value (the length) instead of two.
+- A potentially more involving and optional optimization could be for the compiler to optimize so called fat pointers by storing only one value (the length) instead of two. This would not need to be implemented initially (and definitely not an explicit requirement
+in the language) but would be a potentially interesting option to have at some point
 
 Note that this also means that upon slicing, bounds are always slided towards the lower bound value.
 
@@ -43,6 +44,10 @@ Motivation
 This is specifically motivated by performances. In particular, when looking at low level driver implementation or HPC code where Ada 
 doesn’t look favorable in front of C. These constraint meet certain users requirements in high integrity applications that Ada is
 covering.
+
+There is also some conceptual motivation, as it allows you to fix the lower boundary and stop having to worry about it. Having 
+a variable lower bound is a common source of mistake where people assume a certain lower bound on a parameter without realizing that
+it may come from a slice (so much so that GNAT implemented specific warnings when detecting such assumptions). 
 
 Guide-level explanation
 =======================
@@ -74,6 +79,43 @@ With these arrays, slices always slide towards the lower bound. In particular, i
   begin
 
 In P, the indices of the String would be 0 .. 1 and not 1 .. 2.
+
+Subtypes should allow to fix the lower bound of a given type. This would be useful for example for Strings, e.g.:
+
+.. code-block:: ada
+  
+  subtype Fixed_String is String (1 .. <>); -- OK  
+  subtype Fixed_String_2 is String (Natural range 1 .. <>); -- OK   
+  
+Assigning from a type with a unconstrained lower bound to a type with a lower bound should be doing the usual sliding:
+
+.. code-block:: ada
+  
+  subtype Fixed_String is String (1 .. <>);
+  S1 : String (2 .. 3) := "AB";
+  S2 : Fixed_String := S1; -- S2 bounda are 1 .. 2
+
+It is an error to declare an object with a lower bound different than the one provided by its type. For example
+
+.. code-block:: ada
+  
+  subtype Fixed_String is String (1 .. <>);
+  S1 : Fixed_String (Fixed_String'First .. 10); -- OK
+  S2 : Fixed_String (1 .. 10); -- OK
+  S3 : Fixed_String (2 .. 10); -- NOK
+  
+S3 should raise Contraint_Error - or potentially issue a compiler warning / error on obvious cases. 
+
+Note that this proposal should also be generalized to multi-dimentional arrays, where one or more of the lower bounds could be fixed, 
+for example:
+
+.. code-block:: ada
+
+  type Int_Matrix_1 is array (Positive range 0 .. <>, Positive range <>) of Integer;
+  type Int_Matrix_2 is array (Positive range <>, Positive range 0 .. <>) of Integer;
+  type Int_Matrix_3_ is array (Positive range 0 .. <>, Positive range 0 .. <>) of Integer;
+
+The behavior should be similar to the one of single-dimension array, including in particular subtyping, assignment and slicing/sliding.
 
 Reference-level explanation
 ===========================
