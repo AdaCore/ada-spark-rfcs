@@ -338,7 +338,7 @@ An expression has `relaxed initialization` if either:
 
 Rules:
 
-* Wen assigning an expression which has relaxed initialization into an object
+* When assigning an expression which has relaxed initialization into an object
   which does not have it, a check is emitted (by proof) to make sure that this
   object is fully initialized (this also includes parameters before and after
   call statements).
