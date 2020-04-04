@@ -28,7 +28,7 @@ generic specification like:
        type Type2 is limited private;
        type Type3(<>);
        with package P1 is new Some_Generic_Package(<>);
-       with function Image(Value : Type1) return String);
+       with function Image(Value : Type1) return String;
     package My_Package is
        procedure Yay(Value : Type1);  -- calls Image internally
        -- Other Stuff
@@ -77,7 +77,7 @@ specification:
        type Type2 is limited private;
        type Type3(<>);
        with procedure Something(Param1 : Type2; Param2 : Type3);
-       with function Image(Value : Type1) return String);
+       with function Image(Value : Type1) return String;
     package My_Package is
        procedure Yay(Value : Type1);  -- calls Image internally
        -- Other Stuff
