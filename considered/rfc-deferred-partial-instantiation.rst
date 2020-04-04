@@ -52,6 +52,7 @@ Ideally one might want to provide the following API to the userbase:
     end My_Client_Package;
 
 In order to do this the options might include:
+
 1.  Instantiate My_Package publically inside of My_Client_Package.  This
 might be ok in some cases but is awkward as one might have to chain package
 calls (p1.p2.Yay) or perhaps expose Type2, Type3, and P1 to the intended
