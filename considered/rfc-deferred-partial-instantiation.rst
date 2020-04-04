@@ -152,7 +152,7 @@ detail that:
        (Type1 => My_Type, 
         Image -> Image_For_My_Type);
 
-  the compiler can internally replace it with 
+the compiler can internally replace it with 
 
 .. code-block:: ada
 
