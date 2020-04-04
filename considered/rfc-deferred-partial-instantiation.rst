@@ -143,8 +143,8 @@ detail that:
 
 - Deferred partial instantion of generics would otherwise follow all
   the same rules for formals as current generics.
-- This could be implemented by the compiler with simple copy / paste
-   mechanics.  When the user instantiates:
+- This could be implemented by the compiler with simple copy and paste
+  mechanics.  When the user instantiates:
 
 .. code-block:: ada
 
