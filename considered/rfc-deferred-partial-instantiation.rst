@@ -133,7 +133,113 @@ and can now make the call
 without needing either the internal package instantiation or the 
 API scaffolding.
 
+OPTIONAL (Up for discussion):
+
+Interaction with other generics as a formal package parameter would 
+work seemlessly.  Consider a generic such as
+
+.. code-block:: ada
+
+    generic
+       with package P is new My_Client_Package(<>);
+    package X is
+       -- Stuff
+    end X;
+
+Instances of My_Package that have the same formal values for parameters
+Type2, Type3, and Something can be used as a formal value for package X:
+
+.. code-block:: ada
+
+    package P1 is new My_Package
+       (Type1     => Natural,
+        Type2     => Integer,
+        Type3     => String,
+        Something => Something_For_Integer_And_String,
+        Image     => Image_For_Natural);
     
+    package P2 is new My_Package
+       (Type1     => Natural,
+        Type2     => Integer,
+        Type3     => Character,  -- Notice difference
+        Something => Something_For_Integer_And_Character,  -- Notice difference
+        Image     => Image_For_Natural);
+        
+    package X1 is new X(P => P1);  -- Types match, so this compiles fine
+    package X2 is new X(P => P2);  -- Types do not match, compiler error!
+
+If specific types are specified for the formal parameter for X, the types
+in the instance of My_Package would need to match those types:
+
+.. code-block:: ada
+
+    generic
+       with package P is new My_Client_Package(Type1 => Natural, others => <>);
+    package X is
+       -- Stuff
+    end X;
+    
+    package P1 is new My_Package
+       (Type1     => Natural,
+        Type2     => Integer,
+        Type3     => String,
+        Something => Something_For_Integer_And_String,
+        Image     => Image_For_Natural);
+    
+    package P2 is new My_Package
+       (Type1     => Character,  -- Notice difference
+        Type2     => Integer,
+        Type3     => String,
+        Something => Something_For_Integer_And_String,
+        Image     => Image_For_Character);  -- Notice difference
+        
+    package X1 is new X(P => P1);  -- Types match, so this compiles fine
+    package X2 is new X(P => P2);  -- Types do not match, compiler error!
+    
+If the formal of package X is that of My_Package instead, then it works very 
+similarly, except there is more flexibility in the formal values supplied:
+
+.. code-block:: ada
+
+    generic
+       with package P is new My_Package(<>);
+    package X is
+       -- Stuff
+    end X;
+    
+    package P1 is new My_Client_Package
+       (Type1     => Natural,
+        Image     => Image_For_Natural);
+    
+    package P2 is new My_Client_Package
+       (Type1     => Character,  -- Notice difference
+        Image     => Image_For_Character);  -- Notice difference
+        
+    package X1 is new X(P => P1);  -- This compiles fine
+    package X2 is new X(P => P2);  -- This compiles fine
+    
+But if one specifies one of the types in the formal, then it must match:
+
+.. code-block:: ada
+
+    generic
+       with package P is new My_Package(Type1 => Natural, others => <>);
+    package X is
+       -- Stuff
+    end X;
+    
+    package P1 is new My_Client_Package
+       (Type1     => Natural,
+        Image     => Image_For_Natural);
+    
+    package P2 is new My_Client_Package
+       (Type1     => Character,  -- Notice difference
+        Image     => Image_For_Character);  -- Notice difference
+        
+    package X1 is new X(P => P1);  -- Types match, so this compiles fine
+    package X2 is new X(P => P2);  -- Types do not match, compiler error!
+    
+
 
 Reference-level explanation
 ===========================
