@@ -273,7 +273,7 @@ A view to the type is dispatching, no matter if it's referenced in a primitive o
       end T1;
    end P;
 
-As a result, the reference to a class record is always indefinite.
+As a result, the reference to a class record is indefinite, unless it's declared final (described in a point below).
 
 In some cases, it's needed to reference a specific type for a non-dispatching call. In this case, there are two possibilities:
 
@@ -595,11 +595,12 @@ Drawbacks
 Prior art
 =========
 
+This proposal is heavily influence by C++, C# and Java (which arguably have influenced one another quite a lot).
 
 Unresolved questions
 ====================
 
-This proposal relies on the convergence of the unified record syntax proposal, and will need to be updated in light of potential
+This proposal relies on the unified record syntax proposal, and will need to be updated in light of potential
 revamped access model and finalization models.
 
 A number of the capabilities of the standard run-time library rely today on tagged type. A thorough review should be made to
