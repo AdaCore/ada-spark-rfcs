@@ -363,6 +363,41 @@ on the object creation, e.g.:
    V3 : T1'Ref := new T1;
    V4 : T1'Ref := new T1 (42);
 
+A constructor of a child class always call its parent constructor before its own. It's either implicit (parameterless constructor) 
+or explicit. When explicit, it's provided through the Super aspect, specified on the body of the constructor, for example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; V : Integer); 
+      end T1;
+
+      type T2 is new T1 with record
+         procedure T2 (Self : in out T1);
+      end T2;
+   end P;
+   
+   package body P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; V : Integer) is
+	 begin
+	     null;
+	 end T1;
+      end T1;
+
+      type T2 is new T1 with record
+         procedure T2 (Self : in out T1) 
+	    with Super (0) -- special notation for calling the super constructor. First parameter is omitted
+	 is
+	    null;
+	 end T2;
+      end T2;
+
+Destructors are implicitely called in sequence - the parent destructor is always called after it child.
+
+TODO: copy?
+
 When combined with discriminants, the discriminants values must be provided before the constructor values:
 
 .. code-block:: ada
@@ -380,8 +415,6 @@ When combined with discriminants, the discriminants values must be provided befo
 
 Note that the above can create ambiguous situations in corner cases, which are to be detected at compile time and resolved 
 through e.g. naming:
-
-TODO: copy?
 
 .. code-block:: ada
 
@@ -428,7 +461,8 @@ Other removed capabilities
 --------------------------
 
 Although discriminants are kept, coextensions should be removed under this proposal. They introduce various level of complexity and
-have not yet been fully implemented.
+have not yet been fully implemented. Their functionality can be completely replaced by constructors (it's possible to mandate an 
+object to be used in the construction of the class) and destructors (that same object can always be destroyed in the destructor).
 
 Tagged types
 ------------
