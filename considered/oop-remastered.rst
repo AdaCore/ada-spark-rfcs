@@ -454,15 +454,15 @@ Constructors default values and and aggregates
 
 Aggregates are still possible with class records. The order of evaluation for fields is:
 
- - their default value. Always computed
- - the constructor
- - any value from the aggregate
+- their default value. Always computed
+- the constructor
+- any value from the aggregate
  
 The rationale for this order is to go from the generic to the specific. This is a departure from the existing Ada model where
 aggregate override default initialization. In class records, there is no way to override default initialization - if initialization
 should only be done some times and not others, it is to be done in the constructor.
  
- For example:
+For example:
 
 .. code-block:: ada
 
@@ -494,6 +494,8 @@ Final fields
 Class record support constant fields, which are field which value cannot be changed after the constructor call, not even during 
 aggregate which is considered as a shortcut for assignment. For example:
 
+.. code-block:: ada
+
    package P is
       type T1 is class record
          procedure T1 (Self : in out T1; Val : Integer);
@@ -515,15 +517,15 @@ aggregate which is considered as a shortcut for assignment. For example:
       V : T1 := (Y => 2); -- Illegal, Y is final
    end P;
    
-Final fields
-------------   
+Final classes
+-------------  
    
 class record also implement the concept of final classes, which is a class not deriveable. There are two advantages of final classes:
 
- - In terms of design, this makes it clear that this class is not intended to be derived. It's ofen the case where derivation is
-   used just to have a class in a given framework but isn't prepared to be itself modified.
- - A very significant one: a final class is effectively a definite type. As a result, it can be stored on the stack or as a component,
-   calls to a view of a final class are not dispatching (the target is statically known). 
+- In terms of design, this makes it clear that this class is not intended to be derived. It's ofen the case where derivation is
+  used just to have a class in a given framework but isn't prepared to be itself modified.
+- A very significant one: a final class is effectively a definite type. As a result, it can be stored on the stack or as a component,
+  calls to a view of a final class are not dispatching (the target is statically known). 
    
 .. code-block:: ada
 
