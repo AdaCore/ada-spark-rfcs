@@ -1,0 +1,454 @@
+- Feature Name: Standard OOP model
+- Start Date: May 5th 2020
+- RFC PR: 
+- RFC Issue: 
+
+Summary
+=======
+
+The objective of this proposal is to draft an OOP model for a hypothetical new version of Ada, closer to the models languages 
+such as C++ and Java developers are accustomed to, fixing a number of oddities and vulnerabilities of the current Ada language.
+
+Motivation
+==========
+
+The current Ada OOP model is source of a number of confusions and errors from people accustomed to OOP, in particular in
+other languages such as C++ or Java. This proposal aims at adjusting the model to implement missing concept, fix Ada-specific 
+vulnerabilities and retain some of the Ada advantages.
+
+This proposal also attempts at keeping capabilities that do not need to be specifically removed to fit within a more intuitive
+OOP model, such as e.g. discriminants and aggregates.
+
+Guide-level explanation
+=======================
+
+The new design retains the difference between "regular" types and "classes". For consistency, both will be altered and consider that 
+https://github.com/AdaCore/ada-spark-rfcs/pull/13 is implemented.
+
+Class declaration
+-----------------
+
+The new class model is incompatible with the current tagged object model. In order to make the distinction, new tagged types will
+be marked with the new class reserved word:
+
+.. code-block:: ada
+
+   type A_Class is class record
+      null;
+   end A_Class;
+
+Primitives and component declarations
+-------------------------------------
+
+Under this new model, the notion of controlling primitive disapears. Instead, primitives have to be added in the declarative
+scope of the type. For consistency, this is possible for both class record and regular record. The first parameter of the
+primitive has to be of the type of the record. This allows the user to decide on the naming convention, as well as the mode
+of such parameter (in, out, in out, access, aliased). A record and and class record can have primitives declared both in the
+public and the private part. This is possibilty is extended to other components as well. The existence of a private part needs 
+to be specified in the public part of a package with the notation with private. The following demonstrates the above:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is record
+         F : Integer;
+         
+         procedure P (Self : in out T1; V : Integer); 
+       end T1 
+       with private;
+       
+       type T2 is class record
+          F : Integer;
+          
+          procedure P (Self : in out T2; V : Integer);
+       end T2
+       with private;
+
+   private
+
+       type T1 is record
+         F2 : Integer;
+         
+         procedure P2 (Self : in out T1; V : Integer); 
+       end T1;
+       
+       type T2 is class record
+          F2 : Integer;
+          
+          procedure P2 (Self : in out T2; V : Integer);
+       end T2;
+
+   end P;
+   
+   package body P is
+
+       type T1 is record
+         procedure P (Self : in out T1; V : Integer) is
+         begin
+            Self.F := V;
+         end P;
+
+         procedure P2 (Self : in out T1; V : Integer) is
+         begin
+            Self.F2 := V;
+         end P2;
+       end T1;
+       
+       type T2 is record
+         procedure P (Self : in out T2; V : Integer) is
+         begin
+            Self.F := V;
+         end P;
+
+         procedure P2 (Self : in out T2; V : Integer) is
+         begin
+            Self.F2 := V;
+         end P2;
+       end T2;
+
+   end P;
+
+In order to keep some legacy compatibility with Ada, the concept of primitive is kept for static subprograms outside of the scope
+of the type. They cannot be used for dynamic dispatching.
+
+Other ways to declare types are kept. For example, it's still possible to declare a private type and implement it through a
+record, but of course in this case properties are not available:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is private;
+
+      type T2 is private;
+
+   private
+
+       type T1 is record
+         F2 : Integer;
+         
+         procedure P2 (Self : in out T1; V : Integer); 
+       end T1;
+       
+       type T2 is class record
+          F2 : Integer;
+          
+          procedure P2 (Self : in out T2; V : Integer);
+       end T2;
+
+   end P;
+
+As for tagged types, there's a shortcut for a class private type, which means no public primitives or components:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class private; 
+   private
+      type T1 is class record
+         F2 : Integer;
+         
+         procedure P2 (Self : in out T1; V : Integer); 
+       end T1;
+   end P;
+
+Class record can still be limited or have discriminants, in which cases the set of constaints that they have follow similar rules
+as for tagged types.
+
+Overriding and extensions
+-------------------------
+
+Extension of class record types works similarly to tagged records:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure P (Self : in out T1);
+      end T1;
+
+      type T2 is new T1 with record
+         procedure P (Self : in out T1);
+      end T2;
+   end P;
+
+Primitives can be marked optionally overriding, following Ada 2005 rules. Inheritance model is single interitance of a class,
+multiple inheritance of interfaces.
+
+Interfaces and abstract types
+-----------------------------
+
+Intefaces and abstract types work the same way as for tagged types. Interfaces are specified differently, through 
+"interface record", but otherwise operate as other interfaces (no concrete components or primitive):
+
+.. code-block:: ada
+
+   package P is
+      type I is interface record
+         procedure P (Self : in out T1) is abstract;
+      end T1;
+   end P;
+
+Access types
+------------
+
+This topic is to be considered in the context of a larger overall of access types. However, in the absence of such proposal,
+the idea here is to have an access type declared implicitely at the same level as the type and accessible through the 'Ref notation.
+An attribute 'Unchecked_Free is also declared, doing unchecked deallocation. 'Unchecked_Free can also be called directly on
+the object. These are also available for definite view 'Super and 'Specific, with the only difference being that calling on these
+access types will not dispatch. For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure P (Self : in out T1);
+
+         procedure P2 (Self : in out T1);
+      end T1;
+   end P;
+
+   procedure Some_Procedure is
+      V : T1'Ref := new T1;
+      V2 : T1'Ref := new T1;
+   begin
+      T1'Unchecked_Free (V);
+      V2'Unchecked_Free;
+   end Some_Procedure;
+
+For homogenity, 'Ref and 'Unchecked_Free are available to all Ada type - including pointers themesleves. It's now possible to write:
+
+.. code-block:: ada
+
+    V : T1'Ref'Ref := new T1'Ref;
+
+'Ref access types for a given class object are compatible in the case of upcast, but need explicit conversions to downcase. You
+can write:
+
+.. code-block:: ada
+
+   package P is
+      type A is class record
+         procedure P (Self : in out T1);
+      end A;
+
+      type B is new T1 with record
+         procedure P (Self : in out T1);
+      end B;
+   end P;
+
+   procedure Some_Procedure is
+      A1 : A'Ref := new A;
+      A2 : A'Ref;
+
+      B1 : B'Ref := new B;
+      B2 : B'Ref; 
+   begin
+      A2 := B1; -- OK, upcast, no need for pointer conversion
+      B2 := A1; -- Illegal, downcast
+      B2 := B'Ref (A1); -- OK, explicit downcast.
+   end Some_Procedure;
+
+
+Dispatching
+-----------
+
+A view to the type is dispatching, no matter if it's referenced in a primitive or not. So for example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure P (Self : in out T1);
+
+         procedure P2 (Self : in out T1);
+      end T1;
+   end P;
+
+   package P is
+      type T1 is class record
+         procedure P (Self : in out T1) is
+         begin
+            Self.P2; -- Dispatching
+         end P;
+      end T1;
+   end P;
+
+As a result, the reference to a class record is always indefinite.
+
+In some cases, it's needed to reference a specific type for a non-dispatching call. In this case, there are two possibilities:
+
+(1) only reference to the parent class is needed, this can be accessed through 'Super. If 'Super is applied on a type, this
+refers to its direct parent. If it's applied on an object, it refers to the parent of the type of this object
+
+(2) a reference to a specific object. Rules are the same as above, with the usage of 'Specific (either refering to a non 
+dispatching specific type, or the specific view of the object):
+
+For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure P (Self : in out T1);
+      end T1;
+
+      type T2 is new T1 with record
+         procedure P (Self : in out T1);
+      end T2;
+   end P;
+
+   package body P is
+      type T1 is class record
+         procedure P (Self : in out T1) is
+         begin
+            null;
+         end P; 
+      end T1;
+
+      type T2 is new T1 with record
+         procedure P (Self : in out T1) is
+         begin
+            Self'Super.P;
+            T2'Super (Self).P;
+            Self'Specific.P;
+            T2'Specific (Self).P;
+         end P;
+      end T2;
+   end P;
+
+Global object hierarchy
+-----------------------
+
+All class object implicitely derive from a top level object, Ada.Classes.Object, defined as follows:
+
+.. code-block:: ada
+
+   package Ada.Classes is
+      type Object is class record
+         function Image (Self : Object) return String;
+
+         function Hash (Self : Object) return Integer;
+      end Object;  
+   end Ada.Classes;
+
+Other top level primitives may be needed here.
+
+Constructors, copy and destructors
+----------------------------------
+
+There is no Controlled object in class record. Instead, class record can declare constructors and one destructor. The constructor
+needs to be a procedure of the name of the object, taking an in out or access reference to the object. Destructors are named
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1);
+         procedure T1 (Self : in out T1; Some_Value : Integer);
+
+         procedure finalize (Self : in out T1);
+      end T1;
+   end P;
+
+This specific proposals is linked to an overal finalization proposal. If a different reserved word is used, it will be used for
+the destructor notation as well.
+
+As soon as a constructor exist, and object cannot be created without calling one of the available constructors. This call is made
+on the object creation, e.g.:
+
+.. code-block:: ada
+
+   V : T1; -- OK, parameterless constructor
+   V2 : T1 (42); -- OK, 1 parameter constructor
+   V3 : T1'Ref := new T1;
+   V4 : T1'Ref := new T1 (42);
+
+When combined with discriminants, the discriminants values must be provided before the constructor values:
+
+.. code-block:: ada
+
+   package P is
+      type T1 (L : Integer) is class record
+         procedure T1 (Self : in out T1);
+         procedure T1 (Self : in out T1; V : Integer);
+
+	 X : Some_Array (1 .. L);
+      end T1;
+   end P;
+
+   V : T1 (10)(10);
+
+Note that the above can create ambiguous situations in corner cases, which are to be detected at compile time and resolved 
+through e.g. naming:
+
+TODO: copy?
+
+.. code-block:: ada
+
+   package P is
+      type T1 (L : Integer := 0) is class record
+         procedure T1 (Self : in out T1);
+         procedure T1 (Self : in out T1; V : Integer);
+
+	 case L is
+            when 0 =>
+               X : Integer;
+            when others =>
+               null;
+          end case;
+      end T1;
+   end P;
+
+   V : T1 (10); -- Illegal, is this a discriminant with default constructor or a default discriminant with a constructor?
+   V2 : T1 (L => 10); -- Legal
+   V3 : T1 (V => 10); -- Legal
+
+Operators and exotic primitives
+-------------------------------
+
+Class record do not provide mutiple dispatching call, or dispatching on results. If you declare primitives with references to 
+the type other than the first parameter, they will not be used for controlling. This means that parameters that are the same
+at top level may differ when deriving:
+
+Operators can be declared as primitives:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure "=" (Left, Right : T1);
+      end T1;
+
+      type T2 is new T1 with record
+         procedure "=" (Left : T2; Right : T1);
+      end T1;
+   end P;
+
+Reference-level explanation
+===========================
+
+
+Rationale and alternatives
+==========================
+
+
+Drawbacks
+=========
+
+
+Prior art
+=========
+
+
+Unresolved questions
+====================
+
+This proposal relies on the convergence of the unified record syntax proposal, and will need to be updated in light of potential
+revamped access model and finalization models.
+
+Future possibilities
+====================
+
+One important aspect of Ada is to allow data to be as static as possible. OOP typically requires the use of pointer. The Max_Size
+proposal is a independent proposal to allow polymorphic object residing in automatic memory section such as fields or stack.
+
