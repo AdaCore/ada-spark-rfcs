@@ -119,7 +119,7 @@ record, but of course in this case properties are not available:
    package P is
       type T1 is private;
 
-      type T2 is private;
+      type T2 (<>) is private; -- T2 is completed by a class, it has to be indefinite private view
 
    private
 
@@ -517,6 +517,8 @@ For example:
 
 Note that it's of course always possible (and useful) to use an aggreate within a constructor, still as a shortcut to field by
 field assignment:
+
+.. code-block:: ada
 
    package P is
       type T1 is class record
