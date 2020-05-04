@@ -196,8 +196,7 @@ Access types
 This topic is to be considered in the context of a larger overall of access types. However, in the absence of such proposal,
 the idea here is to have an access type declared implicitely at the same level as the type and accessible through the 'Ref notation.
 An attribute 'Unchecked_Free is also declared, doing unchecked deallocation. 'Unchecked_Free can also be called directly on
-the object. These are also available for definite view 'Super and 'Specific, with the only difference being that calling on these
-access types will not dispatch. For example:
+the object. For example:
 
 .. code-block:: ada
 
@@ -414,6 +413,9 @@ or explicit. When explicit, it's provided through the Super aspect, specified on
 
 Destructors are implicitely called in sequence - the parent destructor is always called after its child.
 
+Copy constructor
+----------------
+
 A special constructor, a copy constructor, can be identified with the "Copy" aspect. It's called upon the copy of an object (for
 example, an assignment). It can also be called explicitely, and needs to call parent constructors. It needs to be a constructor with 
 two values of the same type. For example:
@@ -425,6 +427,13 @@ two values of the same type. For example:
          procedure T1 (Self : in out T1; Source : T1)
 	 with Copy; 
       end T1;
+      
+Note that to the difference of the Adjust function of controlled types, the copy constructor is responsible to do the actual copy from 
+Source to Self - it's not done ahead of time. 
+
+If not specified, a default constructor is automatically generated. It componses - it will will call the parent copy constructor,
+then copy field by field its additional components, calling component constructors if necessary.
+
 
 Constructors and discriminants
 ------------------------------
