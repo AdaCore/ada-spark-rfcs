@@ -423,6 +423,19 @@ Operators can be declared as primitives:
          procedure "=" (Left : T2; Right : T1);
       end T1;
    end P;
+   
+Other removed capabilities
+--------------------------
+
+Although discriminants are kept, coextensions should be removed under this proposal. They introduce various level of complexity and
+have not yet been fully implemented.
+
+Tagged types
+------------
+
+Under this proposal, tagged records and class record can co-exist, as they live in completely distinct hierarchies. Howeer, tagged
+types should only be considered for a comptability and migration standpoint. Most tagged record use cases should be relatively easy
+to move to class records.
 
 Reference-level explanation
 ===========================
@@ -446,9 +459,14 @@ Unresolved questions
 This proposal relies on the convergence of the unified record syntax proposal, and will need to be updated in light of potential
 revamped access model and finalization models.
 
+A number of the capabilities of the standard run-time library rely today on tagged type. A thorough review should be made to
+identify which should be removed (e.g. controlled type), which should be migrated, and which can actually be implemented without
+relying on classes altogether (things such as streams or pools come to mind). The removal of coextensions types also supposes a 
+different model for general iteration, as it currently relies on user-defined references (implemented through coextensions).
+
 Future possibilities
 ====================
 
 One important aspect of Ada is to allow data to be as static as possible. OOP typically requires the use of pointer. The Max_Size
-proposal is a independent proposal to allow polymorphic object residing in automatic memory section such as fields or stack.
+proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow polymorphic object residing in automatic memory section such as fields or stack.
 
