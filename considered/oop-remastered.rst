@@ -396,7 +396,20 @@ or explicit. When explicit, it's provided through the Super aspect, specified on
 
 Destructors are implicitely called in sequence - the parent destructor is always called after it child.
 
-TODO: copy?
+A special constructor, a copy constructor, can be identified with the "Copy" aspect. It's called upon the copy of an object (for
+example, an assignment). It can also be called explicitely, and needs to call parent constructors. It needs to be a constructor with 
+two values of the same type. For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; Source : T1)
+	 with Copy; 
+      end T1;
+
+Constructors and discriminants
+------------------------------
 
 When combined with discriminants, the discriminants values must be provided before the constructor values:
 
@@ -435,7 +448,91 @@ through e.g. naming:
    V : T1 (10); -- Illegal, is this a discriminant with default constructor or a default discriminant with a constructor?
    V2 : T1 (L => 10); -- Legal
    V3 : T1 (V => 10); -- Legal
+   
+Constructors default values and and aggregates
+----------------------------------------------
 
+Aggregates are still possible with class records. The order of evaluation for fields is:
+
+ - their default value. Always computed
+ - the constructor
+ - any value from the aggregate
+ 
+The rationale for this order is to go from the generic to the specific. This is a departure from the existing Ada model where
+aggregate override default initialization. In class records, there is no way to override default initialization - if initialization
+should only be done some times and not others, it is to be done in the constructor.
+ 
+ For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; Val : Integer);
+
+	 Y : Integer := 0;
+      end T1;
+   end P;
+   
+   package body P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; Val : Integer) is
+	 begin
+	    -- Y is 0 here
+	    Self.Y := Val;
+	    -- Y is val here
+         end T1;
+      end T1;
+      
+      V : T1 := (Y => 2); -- V.Y = 2
+      V2 : T1'Ref := new T1 (1)'(Y => 2); -- V.Y = 2
+   end P;
+
+Final fields and classes
+------------------------
+
+Class record support constant fields, which are field which value cannot be changed after the constructor call, not even during 
+aggregate which is considered as a shortcut for assignment. For example:
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; Val : Integer);
+
+	 Y : final Integer := 0;
+      end T1;
+   end P;
+
+   package body P is
+      type T1 is class record
+         procedure T1 (Self : in out T1; Val : Integer) is
+	 begin
+	    -- Y is 0 here
+	    Self.Y := Val; -- Legal
+	    -- Y is val here
+         end T1;
+      end T1;
+      
+      V : T1 := (Y => 2); -- Illegal, Y is final
+   end P;
+   
+class record also implement the concept of final classes, which is a class not deriveable.
+   
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         null;
+      end T1;
+
+      type T2 is final new T1 with record
+         null;
+      end T2;
+      
+      type T3 is new T2 with record -- Illegal, T2 is final
+         null;
+      end T3;
+   end P;
+   
 Operators and exotic primitives
 -------------------------------
 
