@@ -488,8 +488,8 @@ should only be done some times and not others, it is to be done in the construct
       V2 : T1'Ref := new T1 (1)'(Y => 2); -- V.Y = 2
    end P;
 
-Final fields and classes
-------------------------
+Final fields
+------------
 
 Class record support constant fields, which are field which value cannot be changed after the constructor call, not even during 
 aggregate which is considered as a shortcut for assignment. For example:
@@ -515,7 +515,15 @@ aggregate which is considered as a shortcut for assignment. For example:
       V : T1 := (Y => 2); -- Illegal, Y is final
    end P;
    
-class record also implement the concept of final classes, which is a class not deriveable.
+Final fields
+------------   
+   
+class record also implement the concept of final classes, which is a class not deriveable. There are two advantages of final classes:
+
+ - In terms of design, this makes it clear that this class is not intended to be derived. It's ofen the case where derivation is
+   used just to have a class in a given framework but isn't prepared to be itself modified.
+ - A very significant one: a final class is effectively a definite type. As a result, it can be stored on the stack or as a component,
+   calls to a view of a final class are not dispatching (the target is statically known). 
    
 .. code-block:: ada
 
@@ -532,6 +540,8 @@ class record also implement the concept of final classes, which is a class not d
          null;
       end T3;
    end P;
+   
+
    
 Operators and exotic primitives
 -------------------------------
