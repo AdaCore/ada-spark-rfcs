@@ -40,12 +40,12 @@ be marked with the new class reserved word:
 Primitives and component declarations
 -------------------------------------
 
-Under this new model, the notion of controlling primitive disapears. Instead, primitives have to be added in the declarative
-scope of the type. For consistency, this is possible for both class record and regular record. The first parameter of the
-primitive has to be of the type of the record. This allows the user to decide on the naming convention, as well as the mode
-of such parameter (in, out, in out, access, aliased). A record and and class record can have primitives declared both in the
-public and the private part. This is possibilty is extended to other components as well. The existence of a private part needs 
-to be specified in the public part of a package with the notation with private. The following demonstrates the above:
+Under this new model, controlling primitives are declared within the lexical scope of their type. For consistency, this is possible 
+for both class record and regular record. The first parameter of the primitive has to be of the type of the record. This allows the 
+user to decide on the naming convention, as well as the mode of such parameter (in, out, in out, access, aliased). A record and 
+and class record can have primitives declared both in the public and the private part. This is possibilty is extended to other
+components as well. The existence of a private part needs to be specified in the public part of a package with the notation "with
+private". The following demonstrates the above:
 
 .. code-block:: ada
 
@@ -154,10 +154,12 @@ As for tagged types, there's a shortcut for a class private type, which means no
 Class record can still be limited or have discriminants, in which cases the set of constaints that they have follow similar rules
 as for tagged types.
 
+Visibilty rules are the same as for types today. In particular, a class instance as access to private components of other instances of the same class.
+
 Overriding and extensions
 -------------------------
 
-Extension of class record types works similarly to tagged records:
+Extension of class record types work similarly to tagged records:
 
 .. code-block:: ada
 
@@ -221,7 +223,7 @@ For homogenity, 'Ref and 'Unchecked_Free are available to all Ada type - includi
 
     V : T1'Ref'Ref := new T1'Ref;
 
-'Ref access types for a given class object are compatible in the case of upcast, but need explicit conversions to downcase. You
+'Ref access types for a given class object are compatible in the case of upcast, but need explicit conversions to downcast. You
 can write:
 
 .. code-block:: ada
@@ -252,7 +254,7 @@ can write:
 Dispatching
 -----------
 
-A view to the type is dispatching, no matter if it's referenced in a primitive or not. So for example:
+A view to a (non-final) class record is dispatching, no matter if it's referenced in a primitive or not. So for example:
 
 .. code-block:: ada
 
@@ -273,14 +275,14 @@ A view to the type is dispatching, no matter if it's referenced in a primitive o
       end T1;
    end P;
 
-As a result, the reference to a class record is indefinite, unless it's declared final (described in a point below).
+As a result, the reference to a class record is indefinite, unless it's declared final (see later).
 
 In some cases, it's needed to reference a specific type for a non-dispatching call. In this case, there are two possibilities:
 
 (1) only reference to the parent class is needed, this can be accessed through 'Super. If 'Super is applied on a type, this
 refers to its direct parent. If it's applied on an object, it refers to the parent of the type of this object
 
-(2) a reference to a specific object. Rules are the same as above, with the usage of 'Specific (either refering to a non 
+(2) a reference to a specific definite type. Rules are the same as above, with the usage of 'Specific (either refering to a non 
 dispatching specific type, or the specific view of the object):
 
 For example:
@@ -293,7 +295,7 @@ For example:
       end T1;
 
       type T2 is new T1 with record
-         procedure P (Self : in out T1);
+         procedure P (Self : in out T2);
       end T2;
    end P;
 
@@ -306,7 +308,7 @@ For example:
       end T1;
 
       type T2 is new T1 with record
-         procedure P (Self : in out T1) is
+         procedure P (Self : in out T2) is
          begin
             Self'Super.P;
             T2'Super (Self).P;
@@ -315,11 +317,23 @@ For example:
          end P;
       end T2;
    end P;
+   
+Note that these can also be used to declare definite parameters, results or even variables:
+
+.. code-block:: ada
+
+  package P is
+      type T1 is class record
+         procedure P (Self : in out T1);
+      end T1;
+      
+      V1 : T1; -- Illegal, T1 is indefinite;
+      V : T1'Specific; -- Legal
 
 Global object hierarchy
 -----------------------
 
-All class object implicitely derive from a top level object, Ada.Classes.Object, defined as follows:
+All class object implicitely derives from a top level object, Ada.Classes.Object, defined as follows:
 
 .. code-block:: ada
 
@@ -336,8 +350,8 @@ Other top level primitives may be needed here.
 Constructors, copy and destructors
 ----------------------------------
 
-There is no Controlled object in class record. Instead, class record can declare constructors and one destructor. The constructor
-needs to be a procedure of the name of the object, taking an in out or access reference to the object. Destructors are named
+There is no controlled object in class records. Instead, class record can declare constructors and one destructor. The constructor
+needs to be a procedure of the name of the object, taking an in out or access reference to the object. Destructors are named "final".
 
 .. code-block:: ada
 
@@ -346,15 +360,18 @@ needs to be a procedure of the name of the object, taking an in out or access re
          procedure T1 (Self : in out T1);
          procedure T1 (Self : in out T1; Some_Value : Integer);
 
-         procedure finalize (Self : in out T1);
+         procedure final (Self : in out T1);
       end T1;
+      
+      type T2 is class record
+         procedure T2 (Self : in out T2; Some_Value : Integer);
+      end T2;
    end P;
 
-This specific proposals is linked to an overal finalization proposal. If a different reserved word is used, it will be used for
-the destructor notation as well.
+This specific proposals is linked to an overal finalization proposal. It may alter the actual syntax / reserved word for destructors.
 
-As soon as a constructor exist, and object cannot be created without calling one of the available constructors. This call is made
-on the object creation, e.g.:
+As soon as a constructor exist, and object cannot be created without calling one of the available constructors, omitting the
+self parameter. This call is made on the object creation, e.g.:
 
 .. code-block:: ada
 
@@ -362,6 +379,7 @@ on the object creation, e.g.:
    V2 : T1 (42); -- OK, 1 parameter constructor
    V3 : T1'Ref := new T1;
    V4 : T1'Ref := new T1 (42);
+   V5 : T2; -- NOT OK, there's no parameterless constructor
 
 A constructor of a child class always call its parent constructor before its own. It's either implicit (parameterless constructor) 
 or explicit. When explicit, it's provided through the Super aspect, specified on the body of the constructor, for example:
@@ -394,7 +412,7 @@ or explicit. When explicit, it's provided through the Super aspect, specified on
 	 end T2;
       end T2;
 
-Destructors are implicitely called in sequence - the parent destructor is always called after it child.
+Destructors are implicitely called in sequence - the parent destructor is always called after its child.
 
 A special constructor, a copy constructor, can be identified with the "Copy" aspect. It's called upon the copy of an object (for
 example, an assignment). It can also be called explicitely, and needs to call parent constructors. It needs to be a constructor with 
@@ -460,7 +478,7 @@ Aggregates are still possible with class records. The order of evaluation for fi
  
 The rationale for this order is to go from the generic to the specific. This is a departure from the existing Ada model where
 aggregate override default initialization. In class records, there is no way to override default initialization - if initialization
-should only be done some times and not others, it is to be done in the constructor.
+should only be done some times and not others, it is to be done in the constructor. With class records, aggreates are a shortcut for field by field assignment after iniitalization.
  
 For example:
 
@@ -487,6 +505,29 @@ For example:
       V : T1 := (Y => 2); -- V.Y = 2
       V2 : T1'Ref := new T1 (1)'(Y => 2); -- V.Y = 2
    end P;
+
+Note that it's of course always possible (and useful) to use an aggreate within a constructor, still as a shortcut to field by
+field assignment:
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1);
+
+	 A, B, C : Integer;
+      end T1;
+   end P;
+   
+   package body P is
+      type T1 is class record
+         procedure T1 (Self : in out T1) is
+	 begin
+	    Self := (1, 2, 3);
+         end T1;
+      end T1;
+      
+      V : T1 := (A => 99, others => <>); -- V.A = 99, V.B = 2, V.C = 3.
+   end P;
+
 
 Final fields
 ------------
@@ -522,7 +563,7 @@ Final classes
    
 class record also implement the concept of final classes, which is a class not deriveable. There are two advantages of final classes:
 
-- In terms of design, this makes it clear that this class is not intended to be derived. It's ofen the case where derivation is
+- In terms of design, this makes it clear that this class is not intended to be derived. It's often the case where derivation is
   used just to have a class in a given framework but isn't prepared to be itself modified.
 - A very significant one: a final class is effectively a definite type. As a result, it can be stored on the stack or as a component,
   calls to a view of a final class are not dispatching (the target is statically known). 
@@ -541,14 +582,16 @@ class record also implement the concept of final classes, which is a class not d
       type T3 is new T2 with record -- Illegal, T2 is final
          null;
       end T3;
+      
+      V1 : T1; -- Illegal, T1 is indefinite
+      V2 : T2; -- Legal, T2 is final.
    end P;
    
-
    
 Operators and exotic primitives
 -------------------------------
 
-Class record do not provide mutiple dispatching call, or dispatching on results. If you declare primitives with references to 
+Class record do not provide dispatching on multiple parameters, or dispatching on results. If you declare primitives with references to 
 the type other than the first parameter, they will not be used for controlling. This means that parameters that are the same
 at top level may differ when deriving:
 
@@ -566,12 +609,12 @@ Operators can be declared as primitives:
       end T1;
    end P;
    
-Other removed capabilities
---------------------------
+Coextensions
+------------
 
-Although discriminants are kept, coextensions should be removed under this proposal. They introduce various level of complexity and
-have not yet been fully implemented. Their functionality can be completely replaced by constructors (it's possible to mandate an 
-object to be used in the construction of the class) and destructors (that same object can always be destroyed in the destructor).
+Under the current model, coextensions are replaced by constructors (it's possible to mandate an object to be used in the construction
+of the class) and destructors (that same object can always be destroyed in the destructor). There is no way to create a coextension
+on a class record.
 
 Tagged types
 ------------
