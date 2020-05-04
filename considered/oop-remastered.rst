@@ -184,8 +184,8 @@ Intefaces and abstract types work the same way as for tagged types. Interfaces a
 
    package P is
       type I is interface record
-         procedure P (Self : in out T1) is abstract;
-      end T1;
+         procedure P (Self : in out I) is abstract;
+      end I;
    end P;
 
 Access types
@@ -237,7 +237,7 @@ can write:
    end P;
 
    procedure Some_Procedure is
-      A1 : A'Ref := new A;
+      A1 : A'Ref := new B;
       A2 : A'Ref;
 
       B1 : B'Ref := new B;
