@@ -335,7 +335,31 @@ Note that these can also be used to declare definite parameters, results or even
       
       V1 : T1; -- Illegal, T1 is indefinite;
       V : T1'Specific; -- Legal
+      
+Non-dispatching operations
+--------------------------
 
+The 'Specific notaton described above can also be used to declare non-primitive operations of a type. In this case, these operations
+can be called through the usual prefix notation, but they cannot be overriden and can't be used for dispatching. For example:
+
+.. code-block:: ada
+
+  package P is
+      type T1 is class record
+         procedure P (Self : in out T1'Specific);
+      end T1;
+
+      type T2 is new T1 with null record;
+      
+  end P;
+  
+  procedure Some_Procedure is
+     V : T1;
+     V2 : T2;
+  begin
+     V.P; -- Legal, P is an operation of T1
+     V2.P; -- Legal P is also an operation of T2, statically called
+     
 Global object hierarchy
 -----------------------
 
