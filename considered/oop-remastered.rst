@@ -662,6 +662,12 @@ Operators can be declared as primitives:
       end T1;
    end P;
    
+Body-only classes
+-----------------
+
+One limitation of the tagged type to lift under this system is the ability to declare a class only in the body of a package. This 
+should be legal under this new system.
+   
 Coextensions
 ------------
 
