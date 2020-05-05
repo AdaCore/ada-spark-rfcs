@@ -19,6 +19,10 @@ vulnerabilities and retain some of the Ada advantages.
 This proposal also attempts at keeping capabilities that do not need to be specifically removed to fit within a more intuitive
 OOP model, such as e.g. discriminants and aggregates.
 
+Experience shows that whenever possible, capabilities that can be enabled to regular records should as well. A good exemple of that
+is the trend observed of people declaring Ada types tagged just for the purpose of having access to prefix notation, while such notation
+does not require inheritance or dispatching. 
+
 Guide-level explanation
 =======================
 
@@ -37,14 +41,15 @@ be marked with the new class reserved word:
       null;
    end A_Class;
 
-Primitives and component declarations
--------------------------------------
+Primitives and components declarations
+--------------------------------------
 
-Under this new model, controlling primitives are declared within the lexical scope of their type. For consistency, this is possible 
-for both class record and regular record. The first parameter of the primitive has to be of the type of the record. This allows the 
-user to decide on the naming convention, as well as the mode of such parameter (in, out, in out, access, aliased). A record and 
-and class record can have primitives declared both in the public and the private part. This is possibilty is extended to other
-components as well. The existence of a private part needs to be specified in the public part of a package with the notation "with
+This new way of organizing components and primitives is available to both class records and simple records.
+
+Under this new model, controlling primitives are declared within the lexical scope of their type. The first parameter of the
+primitive has to be of the type of the record. This allows the user to decide on the naming convention, as well as the mode of
+such parameter (in, out, in out, access, aliased). A record and and class record can have primitives declared both in the public 
+and the private part. This is possibilty is extended to other components as well. The existence of a private part needs to be specified in the public part of a package with the notation "with
 private". The following demonstrates the above:
 
 .. code-block:: ada
@@ -192,6 +197,8 @@ Intefaces and abstract types work the same way as for tagged types. Interfaces a
 
 Access types
 ------------
+
+This capability is available to all types (including simple records).
 
 This topic is to be considered in the context of a larger overall of access types. However, in the absence of such proposal,
 the idea here is to have an access type declared implicitely at the same level as the type and accessible through the 'Ref notation.
@@ -346,8 +353,10 @@ All class object implicitely derives from a top level object, Ada.Classes.Object
 
 Other top level primitives may be needed here.
 
-Constructors, copy and destructors
-----------------------------------
+Constructors and destructors
+----------------------------
+
+Constructors are available to both class record and simple records.
 
 There is no controlled object in class records. Instead, class record can declare constructors and one destructor. The constructor
 needs to be a procedure of the name of the object, taking an in out or access reference to the object. Destructors are named "final".
@@ -416,6 +425,8 @@ Destructors are implicitely called in sequence - the parent destructor is always
 Copy constructor
 ----------------
 
+Copy constructors are available to both class records and simple records.
+
 A special constructor, a copy constructor, can be identified with the "Copy" aspect. It's called upon the copy of an object (for
 example, an assignment). It can also be called explicitely, and needs to call parent constructors. It needs to be a constructor with 
 two values of the same type. For example:
@@ -437,6 +448,8 @@ then copy field by field its additional components, calling component constructo
 
 Constructors and discriminants
 ------------------------------
+
+These considerations are applicatble to both class records and simple records.
 
 When combined with discriminants, the discriminants values must be provided before the constructor values:
 
@@ -479,6 +492,8 @@ through e.g. naming:
 Constructors default values and and aggregates
 ----------------------------------------------
 
+These considerations are applicatble to both class records and simple records.
+
 Aggregates are still possible with class records. The order of evaluation for fields is:
 
 - their default value. Always computed
@@ -486,8 +501,9 @@ Aggregates are still possible with class records. The order of evaluation for fi
 - any value from the aggregate
  
 The rationale for this order is to go from the generic to the specific. This is a departure from the existing Ada model where
-aggregate override default initialization. In class records, there is no way to override default initialization - if initialization
-should only be done some times and not others, it is to be done in the constructor. With class records, aggreates are a shortcut for field by field assignment after iniitalization.
+aggregate override default initialization. Under this model, there is no more way to override default initialization for records - 
+if initialization should only be done some times and not others, it is to be done in the constructor (which is available for records
+and class records). With class records, aggreates are a shortcut for field by field assignment after iniitalization.
  
 For example:
 
@@ -542,6 +558,8 @@ field assignment:
 
 Final fields
 ------------
+
+Final fields are available to both class records and simple records.
 
 Class record support constant fields, which are field which value cannot be changed after the constructor call, not even during 
 aggregate which is considered as a shortcut for assignment. For example:
@@ -602,9 +620,9 @@ class record also implement the concept of final classes, which is a class not d
 Operators and exotic primitives
 -------------------------------
 
-Class record do not provide dispatching on multiple parameters, or dispatching on results. If you declare primitives with references to 
-the type other than the first parameter, they will not be used for controlling. This means that parameters that are the same
-at top level may differ when deriving:
+Class record do not provide dispatching on multiple parameters, on parameters other than the first, or dispatching on results. 
+If you declare primitives with references to the type other than the first parameter, they will not be used for controlling. This 
+means that parameters that are the same at top level may differ when deriving:
 
 Operators can be declared as primitives:
 
@@ -666,5 +684,10 @@ Future possibilities
 ====================
 
 One important aspect of Ada is to allow data to be as static as possible. OOP typically requires the use of pointer. The Max_Size
-proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow polymorphic object residing in automatic memory section such as fields or stack.
+proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow
+polymorphic object residing in automatic memory section such as fields or stack.
 
+Some of the notations introduced could be extended to other types, such as protected or tasks type.
+
+The "with private;" notation should also be extended to nested packages, allowing to differenciate to nest the private part of a 
+nested package in the private part of its enclosing package.
