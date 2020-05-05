@@ -87,7 +87,7 @@ private". The following demonstrates the above:
    
    package body P is
 
-       type T1 is record
+       type body  T1 is record
          procedure P (Self : in out T1; V : Integer) is
          begin
             Self.F := V;
@@ -99,7 +99,7 @@ private". The following demonstrates the above:
          end P2;
        end T1;
        
-       type T2 is record
+       type body T2 is record
          procedure P (Self : in out T2; V : Integer) is
          begin
             Self.F := V;
@@ -273,7 +273,7 @@ A view to a (non-final) class record is dispatching, no matter if it's reference
    end P;
 
    package P is
-      type T1 is class record
+      type body T1 is class record
          procedure P (Self : in out T1) is
          begin
             Self.P2; -- Dispatching
@@ -429,14 +429,14 @@ or explicit. When explicit, it's provided through the Super aspect, specified on
    end P;
    
    package body P is
-      type T1 is class record
+      type body T1 is class record
          procedure T1 (Self : in out T1; V : Integer) is
 	 begin
 	     null;
 	 end T1;
       end T1;
 
-      type T2 is new T1 with record
+      type body T2 is new T1 with record
          procedure T2 (Self : in out T1) 
 	    with Super (0) -- special notation for calling the super constructor. First parameter is omitted
 	 is
@@ -542,7 +542,7 @@ For example:
    end P;
    
    package body P is
-      type T1 is class record
+      type body T1 is class record
          procedure T1 (Self : in out T1; Val : Integer) is
 	 begin
 	    -- Y is 0 here
@@ -569,7 +569,7 @@ field assignment:
    end P;
    
    package body P is
-      type T1 is class record
+      type body T1 is class record
          procedure T1 (Self : in out T1) is
 	 begin
 	    Self := (1, 2, 3);
@@ -599,7 +599,7 @@ aggregate which is considered as a shortcut for assignment. For example:
    end P;
 
    package body P is
-      type T1 is class record
+      type body T1 is class record
          procedure T1 (Self : in out T1; Val : Integer) is
 	 begin
 	    -- Y is 0 here
@@ -667,6 +667,22 @@ Body-only classes
 
 One limitation of the tagged type to lift under this system is the ability to declare a class only in the body of a package. This 
 should be legal under this new system.
+
+.. code-block:: ada
+
+   package body P is
+      type T2 is class record
+         F : Integer;
+         procedure P (Self : in out T2; V : Integer);
+      end T2;
+      
+      type body T2 is class record
+         procedure P (Self : in out T2; V : Integer) is
+         begin
+            Self.F := V;
+         end P;
+      end T2;
+   end P;
    
 Coextensions
 ------------
