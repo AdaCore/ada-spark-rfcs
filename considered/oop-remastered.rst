@@ -113,18 +113,23 @@ private". The following demonstrates the above:
 
    end P;
 
-In order to keep some legacy compatibility with Ada, the concept of primitive is kept for static subprograms outside of the scope
-of the type. They cannot be used for dynamic dispatching.
+In this model, it is not possible to write record types primitives outside of the scope anymore. Subprograms declared outside of such 
+scope are just regular subprograms.
 
-Other ways to declare types are kept. For example, it's still possible to declare a private type and implement it through a
-record, but of course in this case properties are not available:
+As a consequence, it's not possible anymore to have a record or a class record as a completion of a private type. This type now needs
+to be marked either record private, or be a regular record with a private extension. For example
 
 .. code-block:: ada
 
    package P is
-      type T1 is private;
+      type T1 is record private;
 
-      type T2 (<>) is private; -- T2 is completed by a class, it has to be indefinite private view
+      type T2 (<>) is record private; -- T2 is completed by a class, it has to be indefinite private view
+      
+      type T3 is record
+         procedure P (Self : T3);
+      end T3
+      with private;
 
    private
 
@@ -140,6 +145,9 @@ record, but of course in this case properties are not available:
           procedure P2 (Self : in out T2; V : Integer);
        end T2;
 
+       type T3 is record
+          null;
+       end T3;
    end P;
 
 As for tagged types, there's a shortcut for a class private type, which means no public primitives or components:
@@ -737,3 +745,6 @@ Some of the notations introduced could be extended to other types, such as prote
 
 The "with private;" notation should also be extended to nested packages, allowing to differenciate to nest the private part of a 
 nested package in the private part of its enclosing package.
+
+The scoped primitive notation is currently specific to record types. It could be extended to all types (which would have the effect
+or re-enabling the possibility to complete a simple private type by a record).
