@@ -122,12 +122,16 @@ R     : Rec;
 R.Comp := Named.all'Unchecked_Access;
 ```
 
-This is also compatible with the [use of anonymous access types in
+This is also mostly compatible with the [use of anonymous access types in
 SPARK](http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types),
 in particular because components of anonymous access type are currently not
-allowed in SPARK. The new rules should make it possible to support such
-components in SPARK, with in particular the benefit of allowing use of `access
-Cell` during the definition of `Cell`:
+allowed in SPARK. Changing the accessibility level of a function anonymous
+access result to be the same as their designated type means that it will remain
+legal to assign this result to an object of either anonymous access type or
+named access type when it is declared at the same level as the designated type.
+The new rules should make it possible to support such components in SPARK, with
+in particular the benefit of allowing use of `access Cell` during the
+definition of `Cell`:
 
 ```ada
 type Cell is record
