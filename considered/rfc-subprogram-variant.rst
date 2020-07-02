@@ -188,7 +188,7 @@ could be handled like:
    is
      D1 : constant Integer := X;
      function F_Ann (X : Integer) is (F (X)) with
-      Pre => X < D1 /\ (if X > 0 then F _Ann (X - 1));
+      Pre => X < D1 and (if X > 0 then F_Ann (X - 1));
      
      C : constant Integer := F_Ann (X - 1);
    begin
