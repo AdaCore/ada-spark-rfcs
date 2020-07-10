@@ -21,8 +21,21 @@ or expressions of the corresponding alternative.
 Motivation
 ==========
 
-Why are we doing this? What use cases does it support? What is the expected
-outcome?
+Pattern matching as we describe in this document is a feature that exists in
+many programming languages already. It is slowly gaining traction in more
+programming languages because it is a very expressive way to match against
+values that can have different heterogeneous shapes, in a concise and complete
+way.
+
+We believe that it is a very expressive tool for the modern programming world,
+as well as a great fit for Ada, which already has pretty expressive ways of
+constructing data with heterogeneous structure, via discriminated types and
+tagged types.
+
+Pattern matching is in-line with the Ada philosophy because it reduces the
+surface where errors can happen in complex type/value/structure matching code,
+making the code simpler to read and understand, as well as giving the compiler
+more tools to help the programmer.
 
 Guide-level explanation
 =======================
