@@ -80,6 +80,12 @@ have the same type.  Here is an example:
        when (Zero, <>) | (<>, Zero) => return Zero,
        when (Neg, Pos) | (Pos, Neg) => return Neg);
 
+
+.. note:: This feature is here because it's a relatively cheap way of working
+    around a particular issue caused by the lack of tuples in Ada. It is
+    however our hope that we can add tuples to Ada and remove this syntax
+    sugar.
+
 The function ``Multiply`` returns the sign of the result of a multiplication,
 depending on the sign of the operands. The connector ``|`` is used here to
 group together toplevel patterns, but it can also be used inside a pattern.
