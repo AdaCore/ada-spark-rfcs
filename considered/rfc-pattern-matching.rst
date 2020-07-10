@@ -106,14 +106,19 @@ unconstrained array type:
   Arr : Int_Array := ...;
 
   case Arr is
+    --  Match all arrays of length 3 containing elements 1, 2, and 3
     when (1, 2, 3)                                => null
-      --  Match all arrays of length 3 containing elements 1, 2, and 3
+
+    --  Match arrays ranging from 1 to 8 whose first two elements are 4
     when (1 | 2 => 4, 3 .. 8 => <>)               => null
-      --  Match arrays ranging from 1 to 8 whose first two elements are 4
+
+    --  Match arrays ranging from 1 to 10 which do not contain zero
     when Arr_1_10'(others => Positive | Negative) => null;
-      --  Match arrays ranging from 1 to 10 which do not contain zero
+
+    --  Match arrays ranging from 1 to 10
     when Arr_1_10                                 => null;
-      --  Match arrays ranging from 1 to 10
+
+    --  Match every other cases. Equivalent to `when others`
     when <>                                       => null;
   end case;
 
@@ -197,11 +202,10 @@ using a subtype pattern, or a qualified composite pattern.
  S : Shape'Class := ...;
 
  case S is
-    when Circle'Class'(Radius => 0, others => <>)
-       => Ada.Text_IO.Put_Line ("point");
-    when Circle'Class => Ada.Text_IO.Put_Line ("circle");
-    when Line'Class   => Ada.Text_IO.Put_Line ("line");
-    when <>           => Ada.Text_IO.Put_Line ("other shape");
+    when Circle'Class'(Radius => 0, others => <>) => Put_Line ("point");
+    when Circle'Class                             => Put_Line ("circle");
+    when Line'Class                               => Put_Line ("line");
+    when <>                                       => Put_Line ("other shape");
  end case;
 
 Note that, unlike regular aggregates, composite patterns can be used for
