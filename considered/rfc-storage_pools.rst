@@ -225,13 +225,34 @@ straightforward to create a pool that would be deallocated.
 There is a way to emulate this that might be close enough if the instantiation
 of NUMA_Memory is local and parametrized with local subprograms, e.g.:
 
-procedure Some_Procedure is
-   -- Some data for the pool
+.. code-block:: Ada
 
-   function Allocate is [...]
-   --  other functions
+  procedure Some_Procedure is
+    --  Some data for the pool
 
-   package Local_Memory is new System.NUMA_Memory ([...]);
+    function Allocate is [...]
+    --  other functions
+
+    package Local_Memory is new System.NUMA_Memory ([...]);
+
+And of course, this could be further generalized though a generic to provide
+re-usable local memory models:
+
+.. code-block:: Ada
+  generic
+
+  package Memory_Model is
+   --  Some data for the pool
+
+    function Allocate is [...]
+    --  other functions
+
+    package NUMA is new System.NUMA_Memory ([...]);
+  
+  procedure Some_Procedure is
+    package Local_Model is new Memory_Model;
+
+It's not entirely clear if anything is needed beyond that.
 
 Future possibilities
 ====================
