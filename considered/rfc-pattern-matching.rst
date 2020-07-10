@@ -6,14 +6,17 @@
 Summary
 =======
 
-We extend case statements and expressions to support `patterns` inside choices of
-alternatives. A pattern is an expression which contains holes or wild card
-values, which can represent any subexpression of the corresponding type.
-As opposed to regular case statements, pattern matching is defined for all types,
-be they elementary or composite.
-We also provide the possibility of binding values matched by a subpattern
-to a new name as part of the matching. This name can then be used in the
-statements or expressions of the corresponding alternative.
+We extend case statements and expressions to support `patterns` inside choices
+of alternatives. A pattern is an expression that represents a blueprint for a
+value of the matched type. It might contain holes or wild card values, which
+can match any subexpression of the corresponding type.
+
+As opposed to regular case statements, the user can pattern match on a value of
+any type, be it elementary or composite.
+
+We also provide the possibility of binding values matched by a subpattern to a
+new name as part of the matching. This name can then be used in the statements
+or expressions of the corresponding alternative.
 
 Motivation
 ==========
