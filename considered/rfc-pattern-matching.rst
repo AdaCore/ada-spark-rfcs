@@ -90,12 +90,12 @@ The function ``Multiply`` returns the sign of the result of a multiplication,
 depending on the sign of the operands. The connector ``|`` is used here to
 group together toplevel patterns, but it can also be used inside a pattern.
 
-For composite types, patterns can take the form of aggregates, with
+For composite types, patterns take a form that mimics aggregates, with
 component values that are themselves patterns. It is possible to use
 qualification to provide the type of a pattern. In this case, a check is first
-executed to ensure that the selecting expression is in the type, then the pattern
-is processed assuming that the selecting expression as the type of the
-qualification. Here is an example of a code matching an object of an
+executed to ensure that the selecting expression is in the type, then the
+pattern is processed assuming that the selecting expression as the type of the
+qualification. Here is an example of code matching an object of an
 unconstrained array type:
 
 .. code-block:: ada
@@ -117,21 +117,24 @@ unconstrained array type:
     when <>                                       => null;
   end case;
 
-Remark that, since the type ``Int_Array`` is unconstrained, all composite
-patterns should be constrained. To use unconstrained patterns, like
-``(others => 12)``, it is possible to qualify the pattern to a constrained
-type. [We could allow unconstrained patterns too, it remains to be seen whether
-it notably complicates implementation.]
+Note that, since the type ``Int_Array`` is unconstrained, all composite
+patterns should be constrained. To use unconstrained patterns, like ``(others
+=> 12)``, it is possible to qualify the pattern to a constrained type.
+
+.. note:: We could allow unconstrained patterns too, it remains to be seen
+    whether it notably complicates implementation.
+
 Unlike for regular aggregates, whether associations are explicit or not makes a
 difference for pattern matching. For a value to match an array pattern which
-uses named associations, both the
-bounds and the values should agree. On the other hand, if the composite pattern
-is positional, the values only are relevant. String literals are considered to be
-positional, so the literal ``"foo"`` will match all strings equal to ``"foo"``,
-whether they start at index ``1`` or not.
+uses named associations, both the bounds and the values should agree.  On the
+other hand, if the composite pattern is positional, the values only are
+relevant.
 
-A similar syntax can be used to match records, in particular records with
-discriminants. Here is an example:
+String literals are considered to be positional, so the literal ``"foo"`` will
+match all strings equal to ``"foo"``, whether they start at index ``1`` or not.
+
+A similar syntax can be used to match records, including discriminated records.
+Here is an example:
 
 .. code-block:: ada
 
@@ -153,28 +156,40 @@ discriminants. Here is an example:
     when (Has_Value => True, Val => Positive) => return 1;
  end case;
 
+
 The case statement returns the sign of an optional value. If no values are
 present, ``0`` is returned. The subtype ``None`` is introduced to act as a short
 form for the pattern ``(Has_Value => False)``.
 
-Pattern matching can also be used on derivation trees of tagged types. It is
-not possible to match the tag directly inside a pattern,
-instead, subtypes and qualified composite patterns should be used. Usually,
-subtypes used as patterns, as well as in qualified expressions, should be
-compatible with the type of the selecting expression. However, if the selecting
-expression is tagged, it is possible to use any (classwide) type from the
-hierarchy, as long as they are convertible. Note that, as
-derivation trees can always be extended, a default case should necessarily be
-used when matching an object of a classwide type. Here is an example:
+.. note:: Pattern matching is seen as particularly useful in the context of
+    discriminated records, because it allows safe and complete handling of
+    every case, in a fashion that is very close to what is done with sum types
+    in functional languages. It is seen as a strictly better way of accessing
+    fields whose existence depends on a discriminant, because it cannot fail at
+    runtime.
+
+Pattern matching can also be used on tagged types: It is possible to match on
+an object of a classwide type. Matching different shapes can be done either
+using a subtype pattern, or a qualified composite pattern.
+
+.. note:: Usually, subtypes used as patterns, as well as in qualified
+   expressions, should be compatible with the type of the selecting expression.
+   However, if the selecting expression is tagged, it is possible to use any
+   (possibly classwide) type from the hierarchy, as long as they are convertible.
+   Note that, as derivation trees can always be extended, a default case should
+   necessarily be used when matching an object of a classwide type. Here is an
+   example:
 
 .. code-block:: ada
 
  type Shape is tagged record
     X, Y : Integer;
  end record;
+
  type Line is new Shape with record
     X2, Y2 : Integer;
  end record;
+
  type Circle is new Shape with record
     Radius : Natural;
  end record;
