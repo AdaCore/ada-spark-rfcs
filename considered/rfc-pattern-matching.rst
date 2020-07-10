@@ -11,8 +11,9 @@ of alternatives. A pattern is an expression that represents a blueprint for a
 value of the matched type. It might contain holes or wild card values, which
 can match any subexpression of the corresponding type.
 
-As opposed to regular case statements, the user can pattern match on a value of
-any type, be it elementary or composite.
+Patterns will encompass the current abilities of Ada's cases statements and
+expressions. As opposed to Ada's current case functionality, the user will be
+able to pattern match on a value of any type, be it elementary or composite.
 
 We also provide the possibility of binding values matched by a subpattern to a
 new name as part of the matching. This name can then be used in the statements
@@ -40,15 +41,17 @@ more tools to help the programmer.
 Guide-level explanation
 =======================
 
-Pattern matching can be used to select the execution of a number of alternatives,
-depending on the form of an expression of any elementary
-or composite types. It takes the form of a disjonction of cases, corresponding to
-different patterns. For scalar types, a pattern can be either a static literal, a
-range, a subtype, or a hole, represented with the ``<>`` notation. We say that an
-expression matches a pattern if it is included in the set of values represented
-by the pattern, with the hole matching any values of the type. Patterns that
-lead to a similar treatment can be grouped together using the ``|`` connector.
-For example, we can write a match on a discrete type as follows:
+Pattern matching can be used to select the execution of a number of
+alternatives, depending on the form of an expression of any elementary or
+composite type. It takes the form of a disjunction of cases, corresponding to
+different patterns.
+
+For scalar types, a pattern can be either a static literal, a range, a subtype,
+or a hole, represented with the ``<>`` notation. We say that an expression
+matches a pattern if it is included in the set of values represented by the
+pattern, with the hole matching any values of the type.  Patterns that lead to
+a similar treatment can be grouped together using the ``|`` connector.  For
+example, we can write a match on a discrete type as follows:
 
 .. code-block:: ada
 
