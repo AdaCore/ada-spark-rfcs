@@ -46,6 +46,9 @@ alternatives, depending on the form of an expression of any elementary or
 composite type. It takes the form of a disjunction of cases, corresponding to
 different patterns.
 
+Matching scalar types
+---------------------
+
 For scalar types, a pattern can be either a static literal, a range, a subtype,
 or a hole, represented with the ``<>`` notation. We say that an expression
 matches a pattern if it is included in the set of values represented by the
@@ -89,6 +92,9 @@ have the same type.  Here is an example:
 The function ``Multiply`` returns the sign of the result of a multiplication,
 depending on the sign of the operands. The connector ``|`` is used here to
 group together toplevel patterns, but it can also be used inside a pattern.
+
+Matching composite types
+------------------------
 
 For composite types, patterns take a form that mimics aggregates, with
 component values that are themselves patterns. It is possible to use
@@ -137,6 +143,9 @@ relevant.
 
 String literals are considered to be positional, so the literal ``"foo"`` will
 match all strings equal to ``"foo"``, whether they start at index ``1`` or not.
+
+Records
+^^^^^^^
 
 A similar syntax can be used to match records, including discriminated records.
 Here is an example:
@@ -214,6 +223,9 @@ in the root type of the hierarchy. Since potential subsequent derivations might
 add components, these patterns should always contain a default case
 ``others => <>``.
 
+Accesses
+--------
+
 It is possible to match access objects, along with the value they designate.
 A pattern for a non-null access value is represented as an aggregate with a
 single component named ``all``. Here is an example:
@@ -233,23 +245,38 @@ single component named ``all``. Here is an example:
 Static checks are done at compilation to ensure that the alternatives of a
 pattern matching statement or expression supply an appropriate partition of the
 domain of the selecting expression.
-Like for regular case statements (or expressions), if the selecting
-expression is a name having a static and constrained subtype, every pattern
-must cover values that are in this subtype, and all values in the subtype must
-be covered by at least one alternative. Otherwise, alternatives should cover
-all values that cannot statically be excluded from the match (ie, all values of
-the base range for scalars, all arrays ranging over the base range of the index
-type for unconstrained or statically constrained arrays etc). Additionally, if
-one value ``V`` can be matched by two alternatives then either one alternative
-is strictly contained in the other, or there is a 3rd alternative which is
-strictly contained in both and also matches ``V``. Alternatives should be
-ordered so that an alternative strictly contained in another appears before.
-[Do we want to forbid overlapping of scalar ranges even if they fall in the above
-category?]
 
-As part of a pattern matching, it is possible to give a name to a part of the
-selecting expression corresponding to a subpattern of the selected alternative.
-This can be done using the keyword ``as``. Here is an example:
+Completeness & overlap checks
+-----------------------------
+
+Like for regular case statements (or expressions), if the selecting expression
+is a name having a static and constrained subtype, every pattern must cover
+values that are in this subtype, and all values in the subtype must be covered
+by at least one alternative.
+
+Otherwise, alternatives should cover all values that cannot statically be
+excluded from the match (ie. all values of the base range for scalars, all
+arrays ranging over the base range of the index type for unconstrained or
+statically constrained arrays etc).
+
+Additionally, if one value ``V`` can be matched by two alternatives then either
+one alternative is strictly contained in the other, or there is a 3rd
+alternative which is strictly contained in both and also matches ``V``.
+
+Alternatives should be ordered so that an alternative strictly contained in
+another appears before.
+
+.. admonition:: design question
+
+    Do we want to forbid overlapping of scalar ranges even if they fall in the
+    above category?
+
+Binding values
+--------------
+
+As part of a pattern, it is possible to give a name to a part of the selecting
+expression corresponding to a subpattern of the selected alternative.  This can
+be done using the keyword ``as``. Here is an example:
 
 .. code-block:: ada
 
@@ -259,11 +286,12 @@ This can be done using the keyword ``as``. Here is an example:
  end case;
 
 The name can be used to refer to the part of the selecting expression in the
-statements/expression associated with the selected alternative. A name can be
-associated to any subpattern as long as it does not stand for multiple values.
-In particular, it is not possible to give a name to a pattern if it is associated
-with the ``others`` choice in a composite pattern. For example, the bindings
-below are all illegal:
+statements/expression associated with the selected alternative.
+
+A name can be associated to any subpattern as long as the pattern matches only
+one value.  In particular, it is not possible to give a name to a pattern if it
+is associated with the ``others`` choice in a composite pattern. For example,
+the bindings below are all illegal:
 
 .. code-block:: ada
 
@@ -291,7 +319,7 @@ write ``<V>`` instead of ``<> as V`` for short. For example, the function
 
 Note that here, binding values in pattern matching brings additional safety, as
 it avoids the use of dereferences.
- 
+
 If a binding is done in one of the members of pattern disjunction (with ``|``),
 then the same name should be bound in other members of the disjunction. For
 example, the second pattern in ``Add`` is ok because ``X`` is bound in both
