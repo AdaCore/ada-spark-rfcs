@@ -164,8 +164,6 @@ write:
     type Host_Access is access all Arr_Type;
     type Device_Access is access all Cuda_Arr_Type;
 
-    type Cuda_Arr_Type is new Arr with Address_Type => Cuda_Address;
-
     Host_Arr : Host_Access := new Arr_Type (1 .. 100);
     Device_Arr : Device_Access := new Cuda_Arr_Type (1 .. 100);
   begin
