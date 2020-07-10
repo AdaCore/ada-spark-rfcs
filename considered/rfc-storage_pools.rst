@@ -136,22 +136,27 @@ For example:
      Host_Arr := Arr_Type (Device_Arr); -- Ok, calling copy function
   end; -- calling deallocation
 
-Note that however, direct references such as:
+Direct references such as:
 
 .. code-block:: Ada
 
   Device_Arr (1) := 0;
 
-would would also be allowed. This would simplify development of portable code.
+would would also be allowed. This would simplify development of portable code, 
+even if there are performances consequences that would make you favor bulk 
+copies instead.
 
-We should also allow to use System.Address directly and as a consequence have
-just the regular address system be used (e.g. no instrumentation):
+The package System.NUMA_Memory exist for Standard.Address, and is called 
+System.NUMA_Standard.Memory. It can be used to provide alternat spec depending
+on the context. For example you could have a file for host compilation that
+looks like the CUDA_Memory instantiation above, and a version for the device
+that looks like:
 
 .. code-block:: Ada
 
-  type Cuda_Address is new System.Address;
+  package CUDA_Memory renames System.NUMA_Standard.Memory;
 
-It would then be able to manipulate the resulting objects direclty.
+as for the device code, the memory model is local.
 
 Note that the above also works with pointers, so that it's also possible to
 write:
@@ -159,7 +164,7 @@ write:
 .. code-block:: Ada
 
     type Arr_Type is array (Integer range <>) of Integer;
-    type Cuda_Arr_Type is new Arr with Address_Type => Cuda_Address;
+    type Cuda_Arr_Type is new Arr with NUMA_Memory => CUDA_Memory.Memory;
 
     type Host_Access is access all Arr_Type;
     type Device_Access is access all Cuda_Arr_Type;
@@ -172,8 +177,9 @@ write:
 In the above case, Unchecked_Deallocation on the Device_Access type will call 
 the specific Cuda deallocation.
 
-Note that the usage of Address_Type also changes the result of 'Address, which
-now returns a value of Address_Type instead of System.Address.
+The usage of NUMA_Memory also changes the type of 'Address, which
+now returns a value of the address provided as the generic parameter
+instead of System.Address.
 
 Reference-level explanation
 ===========================
@@ -212,7 +218,20 @@ TBD
 Unresolved questions
 ====================
 
-TBD
+This system doesn't fully replace the Storage_Pool abstraction. While the 
+various allocate / deallocate functions can work with a global object, it's not
+straightforward to create a pool that would be deallocated.
+
+There is a way to emulate this that might be close enough if the instantiation
+of NUMA_Memory is local and parametrized with local subprograms, e.g.:
+
+procedure Some_Procedure is
+   -- Some data for the pool
+
+   function Allocate is [...]
+   --  other functions
+
+   package Local_Memory is new System.NUMA_Memory ([...]);
 
 Future possibilities
 ====================
