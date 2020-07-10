@@ -52,9 +52,8 @@ Matching scalar types
 For scalar types, a pattern can be either a static literal, a range, a subtype,
 or a hole, represented with the ``<>`` notation. We say that an expression
 matches a pattern if it is included in the set of values represented by the
-pattern, with the hole matching any values of the type.  Patterns that lead to
-a similar treatment can be grouped together using the ``|`` connector.  For
-example, we can write a match on a discrete type as follows:
+pattern, with the hole matching any values of the type. For example, we can
+write a match on a discrete type as follows:
 
 .. code-block:: ada
 
@@ -68,10 +67,18 @@ example, we can write a match on a discrete type as follows:
     end case;
   end Increase;
 
-All choices in a pattern must be static (literals, bounds of ranges, and
-subtypes). It is possible to match several values at once, by grouping them
-together in an aggregate like notation. All values do not need to
-have the same type.  Here is an example:
+A few other things of note:
+
+- All choices in a pattern must be static (literals, bounds of ranges, and
+  subtypes).
+
+- Patterns that lead to a similar treatment can be grouped together using the
+  ``|`` connector.
+
+- It is possible to match several values at once, by grouping them together in
+  an aggregate like notation. All values do not need to have the same type.
+
+Here is another example:
 
 .. code-block:: ada
 
@@ -84,10 +91,10 @@ have the same type.  Here is an example:
        when (Neg, Pos) | (Pos, Neg) => return Neg);
 
 
-.. note:: This feature is here because it's a relatively cheap way of working
-    around a particular issue caused by the lack of tuples in Ada. It is
-    however our hope that we can add tuples to Ada and remove this syntax
-    sugar.
+.. note:: The "matching several values" feature is here because it's a
+    relatively cheap way of working around a particular issue caused by the
+    lack of tuples in Ada. It is however our hope that we can add tuples to Ada
+    and remove this syntax sugar.
 
 The function ``Multiply`` returns the sign of the result of a multiplication,
 depending on the sign of the operands. The connector ``|`` is used here to
