@@ -56,29 +56,45 @@ stack.
 - They require the usage of System.Address to handle addresses, while we may
 want to represent an address on the target environment differently.
 
-This proposal introduces a new concept as an alternative to a Storage_Pool: a 
-Custom_Address. A Custom_Address is a type that models an address in a memory
-pool potentially located at a different physical space. At its core, a 
-Custom_Address is a definite type (could be scalar or composite) associated 
-with 4 aspects, that describe 4 capabilities:
+This proposal introduces a new concept as an alternative to a Storage_Pool: 
+NUMA_Memory. A NUMA_Memory is a different memory model providing a new type
+of address togather with specific functions to manipulate objects addressed by
+this type. An object of such memory type can potentially located at a different
+physical space. The following capabiliies need to be specified:
 
 - How to allocate memory on this section
 - How to deallocate memory from this section
 - How to copy from the main memory to this section
 - How to copy from this section to the main memory
 
-The expected profile of the functions designated by the aspect is pre-set. 
-Here's a simple example:
+Such an address is created through a generic package:
+
+.. code-block:: Ada
+  generic 
+    type Address_Type is private;
+    function Allocate (Size : Storage_Count) return Address_Type;
+    procedure Free (Addr : in out Address_Type);
+    function Copy_Out (From : System.Address; To : Address_Type; Size : Storage_Count);
+    function Copy_In (From : Address_Type; To : System.Address; Size : Storage_Count);
+  package System.NUMA_Memory is
+    type Memory is private;
+  private
+    [...]
+  end System.NUMA_Memory;
+
+This can be then instantiated e.g. with CUDA functions:
 
 .. code-block:: Ada
 
-  type Cuda_Address is mod 2 ** 64 with
-    Cutsom_Address (
-      Allocate         => Cuda_Allocate,
-      Deallocate       => Cuda_Deallocate,
-      Copy_To_Target   => Cuda_From_Host_To_Device,
-      Copy_From_Target => Cuda_From_Device_To_Host,
-      );
+  type CUDA_Address is mod 2 ** 64;
+
+  package CUDA_Memory is
+    new System.NUMA_Memory
+      (Address_Type => CUDA_Address,
+	     Allocate     => CUDA_Allocate,
+	     Free         => CUDA_Free,
+	     Copy_Out     => CUDA_From_Host_To_Device,   
+	     Copy_In      => CUDA_From_Device_To_Host);
 
   function Allocate (Size : Storage_Count) return Cuda_Address;
   procedure Deallocate (Addr : in out Cuda_Address);
@@ -103,7 +119,7 @@ For example:
 
     type Arr_Type is array (Integer range <>) of Integer;
 
-    type Cuda_Arr_Type is new Arr with Address_Type => Cuda_Address;
+    type Cuda_Arr_Type is new Arr with NUMA_Memory => CUDA_Memory.Memory;
 
     Host_Arr : Arr_Type (1 .. 100);
 
@@ -126,8 +142,10 @@ Note that however, direct references such as:
 
   Device_Arr (1) := 0;
 
-would not be allowed. However, in a typicall program like the above, the device
-program would declare Cuda_Address differently:
+would would also be allowed. This would simplify development of portable code.
+
+We should also allow to use System.Address directly and as a consequence have
+just the regular address system be used (e.g. no instrumentation):
 
 .. code-block:: Ada
 
@@ -167,7 +185,21 @@ Nothing specific at this stage.
 Rationale and alternatives
 ==========================
 
-TBD
+We initially considered using an aspect-based syntax instead of a generic, e.g.:
+
+.. code-block:: Ada
+
+  type Cuda_Address is mod 2 ** 64 with
+    Cutsom_Address (
+      Allocate         => Cuda_Allocate,
+      Deallocate       => Cuda_Deallocate,
+      Copy_To_Target   => Cuda_From_Host_To_Device,
+      Copy_From_Target => Cuda_From_Device_To_Host,
+      );
+
+However, it turns out that there no clear advantage of the aspect v.s. the
+generic, and that the generic has the clear advantage to have a source-readable
+profile.
 
 Drawbacks
 =========
