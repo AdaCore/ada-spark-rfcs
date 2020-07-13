@@ -196,10 +196,12 @@ using a subtype pattern, or a qualified composite pattern.
 .. note:: Usually, subtypes used as patterns, as well as in qualified
    expressions, should be compatible with the type of the selecting expression.
    However, if the selecting expression is tagged, it is possible to use any
-   (possibly classwide) type from the hierarchy, as long as they are convertible.
-   Note that, as derivation trees can always be extended, a default case should
-   necessarily be used when matching an object of a classwide type. Here is an
-   example:
+   (possibly classwide) type from the hierarchy, as long as they are
+   convertible.
+   
+Note that, as derivation trees can always be extended, a default case should
+necessarily be used when matching an object of a classwide type. Here is an
+example:
 
 .. code-block:: ada
 
@@ -230,6 +232,13 @@ in the root type of the hierarchy. Since potential subsequent derivations might
 add components, these patterns should always contain a default case
 ``others => <>``.
 
+Semantics
+^^^^^^^^^
+A value of a composite types matches a pattern if every element of the value
+matches the corresponding element in the pattern (or the default `others` case
+if there is none). In particular, this means that equality on composite types
+is never relevant in pattern matching.
+
 Accesses
 --------
 
@@ -249,12 +258,12 @@ single component named ``all``. Here is an example:
     end case;
  end Add;
 
+Completeness & overlap checks
+-----------------------------
+
 Static checks are done at compilation to ensure that the alternatives of a
 pattern matching statement or expression supply an appropriate partition of the
 domain of the selecting expression.
-
-Completeness & overlap checks
------------------------------
 
 Like for regular case statements (or expressions), if the selecting expression
 is a name having a static and constrained subtype, every pattern must cover
@@ -264,7 +273,7 @@ by at least one alternative.
 Otherwise, alternatives should cover all values that cannot statically be
 excluded from the match (ie. all values of the base range for scalars, all
 arrays ranging over the base range of the index type for unconstrained or
-statically constrained arrays etc).
+dynamically constrained arrays etc).
 
 Additionally, if one value ``V`` can be matched by two alternatives then either
 one alternative is strictly contained in the other, or there is a 3rd
