@@ -1,4 +1,4 @@
-- Feature Name: Extended Storage Pools
+- Feature Name: Non-Uniform Memory Access (NUMA)
 - Start Date: 2020-07-09
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
@@ -6,8 +6,9 @@
 Summary
 =======
 
-This features proposes a new way to design storage pools, in particular to deal
-with support of platforms with incompatible memory segments such as CUDA.
+This features proposes a way to specifi non-uniform memory access, as an 
+alternative to storage pools, in particular to deal with support of platforms 
+with incompatible memory segments such as CUDA.
 
 Motivation
 ==========
@@ -57,17 +58,18 @@ stack.
 want to represent an address on the target environment differently.
 
 This proposal introduces a new concept as an alternative to a Storage_Pool: 
-NUMA_Memory. A NUMA_Memory is a different memory model providing a new type
-of address togather with specific functions to manipulate objects addressed by
-this type. An object of such memory type can potentially located at a different
-physical space. The following capabiliies need to be specified:
+Non-Uniform Memory Access, or NUMA. A NUMA_Memory is a different memory model 
+providing a new type of address togather with specific functions to manipulate 
+objects addressed by this type. An object of such memory type can potentially
+located at a different physical space. The following capabilities need to be 
+specified:
 
 - How to allocate memory on this section
 - How to deallocate memory from this section
 - How to copy from the main memory to this section
 - How to copy from this section to the main memory
 
-Such an address is created through a generic package:
+Such an model is created through a generic package:
 
 .. code-block:: Ada
   generic 
@@ -107,11 +109,7 @@ using a new Address_Type aspect. The consequence is that:
 - allocation is done through the allocate functon
 - deallocation is done through the deallocation function
 - it is only possible to modify/read values of these types through full copies
-from and to a host values
-
-These three rules are only enforced if the custom address is different than 
-System.Address. It's also possible to use System.Address straight out, which
-can become handy in cases decribed below.
+from and to a host values.
 
 For example:
 
@@ -136,21 +134,20 @@ For example:
      Host_Arr := Arr_Type (Device_Arr); -- Ok, calling copy function
   end; -- calling deallocation
 
-Direct references such as:
+Partial read and write are also allowed, for example:
 
 .. code-block:: Ada
 
-  Device_Arr (1) := 0;
+  Device_Arr (1) := Device_Arr (1) + 1;
 
-would would also be allowed. This would simplify development of portable code, 
-even if there are performances consequences that would make you favor bulk 
-copies instead.
+Note that the above code may be expensive in some models (it is for CUDA), so
+coding standards may provide restrictions. 
 
 The package System.NUMA_Memory exist for Standard.Address, and is called 
-System.NUMA_Standard.Memory. It can be used to provide alternat spec depending
-on the context. For example you could have a file for host compilation that
-looks like the CUDA_Memory instantiation above, and a version for the device
-that looks like:
+System.NUMA_Standard.Memory. It can be used to provide alternative specification
+selected at compilation time. For example you could have a file for host 
+compilation that looks like the CUDA_Memory instantiation above, and a version 
+for the device that looks like:
 
 .. code-block:: Ada
 
