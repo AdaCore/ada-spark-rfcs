@@ -297,8 +297,8 @@ be done using the keyword ``as``. Here is an example:
 .. code-block:: ada
 
  case I is
-   when (Has_Value => True, <> as Val : Integer) => return Val;
-   when (Has_Value => False) => Val;
+   when (Has_Value => True, Val => <> as V : Integer) => return V;
+   when (Has_Value => False) => 0;
  end case;
 
 The name can be used to refer to the part of the selecting expression in the
@@ -405,6 +405,21 @@ TBD
 
 Unresolved questions
 ====================
+
+ - Which semantics should we use for binders? If we consider them as renamings,
+   it would be possible to update the underlaying structure through a binder.
+   However, it would no longer be possible to bind parts of an object which
+   might be erased (components of a variant part of a record with mutable
+   discriminants in particular). We could possibly have both with a different
+   syntax. For example, the constant keyword could be used to state that we want
+   a copy, not a renaming:
+
+   .. code-block:: ada
+
+     case A is
+       when (Has_Value => True, Val => <> as constant V) => return V;
+       when None                                         => return 0;
+     end case;
 
 TBD
 
