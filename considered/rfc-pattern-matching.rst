@@ -78,6 +78,13 @@ A few other things of note:
 - It is possible to match several values at once, by grouping them together in
   an aggregate like notation. All values do not need to have the same type.
 
+
+.. note::
+
+   ``others`` is still a valid wildcard at the top level of a match, when
+   standing alone in a when branch, for backward compatibility reasons but
+   cannot substitute to the ``<>`` wildcard in general.
+
 Here is another example:
 
 .. code-block:: ada
@@ -282,10 +289,21 @@ alternative which is strictly contained in both and also matches ``V``.
 Alternatives should be ordered so that an alternative strictly contained in
 another appears before.
 
-.. admonition:: design question
+Alternatives contained in the same ``when`` branch are exempted of the overlap
+check.
+
+.. admonition:: design
 
     Do we want to forbid overlapping of scalar ranges even if they fall in the
     above category?
+
+.. admonition:: design
+
+   It has been considered adopting a more lax strategy akin to
+   OCaml's/Haskell's/etc, but the above strategy seems to fit the Ada
+   philosophy very well. Also the fact that the rule doesn't exist for
+   alternatives in the same branch (via   ``|``) does make the rules expressive
+   enough in our opinion.
 
 Binding values
 --------------
@@ -531,6 +549,22 @@ Future possibilities
 This AI has been purposedly contained to the very basics of what pattern
 matching can offer while still remaining useful. There are many possible forays
 into making pattern matching in Ada more powerful in the future:
+
+Conditional guards
+------------------
+
+A lot of languages offer the possibility of restricting the match of a branch
+to a case where a runtime boolean predicate is satisfied:
+
+.. code-block:: ada
+
+   case Point is
+      when (0, 0) => ...
+      when (<X>, <Y>) if X < Y => ...
+   end case;
+
+This is useful and expressive, but overlap checks would have to be adapted, so
+we didn't try to include it in the first version.
 
 Custom matching for private types
 ---------------------------------
