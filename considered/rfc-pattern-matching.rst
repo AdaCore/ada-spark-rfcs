@@ -8,8 +8,8 @@ Summary
 
 We extend case statements and expressions to support `patterns` inside choices
 of alternatives. A pattern is an expression that represents a blueprint for a
-value of the matched type. It might contain holes or wild card values, which
-can match any subexpression of the corresponding type.
+value of the matched type. It might contain wildcards, which can match any
+subexpression of the corresponding type.
 
 Patterns will encompass the current abilities of Ada's cases statements and
 expressions. As opposed to Ada's current case functionality, the user will be
@@ -50,9 +50,9 @@ Matching scalar types
 ---------------------
 
 For scalar types, a pattern can be either a static literal, a range, a subtype,
-or a hole, represented with the ``<>`` notation. We say that an expression
+or a wildcard, represented with the ``<>`` notation. We say that an expression
 matches a pattern if it is included in the set of values represented by the
-pattern, with the hole matching any values of the type. For example, we can
+pattern, with the wildcard matching any values of the type. For example, we can
 write a match on a discrete type as follows:
 
 .. code-block:: ada
@@ -198,7 +198,7 @@ using a subtype pattern, or a qualified composite pattern.
    However, if the selecting expression is tagged, it is possible to use any
    (possibly classwide) type from the hierarchy, as long as they are
    convertible.
-   
+
 Note that, as derivation trees can always be extended, a default case should
 necessarily be used when matching an object of a classwide type. Here is an
 example:
@@ -318,7 +318,7 @@ the bindings below are all illegal:
     when <>                                    => null;
   end case;
 
-In the most common case, when the bound pattern is a hole, it is possible to
+In the most common case, when the bound pattern is a wildcard, it is possible to
 write ``<V>`` instead of ``<> as V`` for short. For example, the function
 ``Add`` on access types can be rewritten as:
 
@@ -341,10 +341,14 @@ then the same name should be bound in other members of the disjunction. For
 example, the second pattern in ``Add`` is ok because ``X`` is bound in both
 alternatives of the disjunction.
 
+The same name cannot be used twice in the same branch.
+
 Reference-level explanation
 ===========================
 
-TBD
+This won't be written in the first version of the AI: we're waiting for
+feedback from the prototyping phase before we write a low level version of this
+AI.
 
 .. note::
     This is the technical portion of the RFC. Explain the design in sufficient
@@ -360,7 +364,56 @@ TBD
 Rationale and alternatives
 ==========================
 
-TBD
+Rationale
+---------
+
+The current design is what we believe to be the best compromise to bring a
+battle tested feature (pattern matching) to Ada.
+
+We believe that pattern matching, as expressed in this document, is a natural
+extension of the matching capabilities of the case statement, which is why it
+is possible to subsume the existing feature set with a superset. We also
+believe that is brings necessary expressivity and safety to Ada:
+
+* It makes working with heterogeneous data safer, by providing a tool that
+  ensures that you can only work on data that has been previously validated by
+  the match, where it was previously easy to make mistakes, and no tools short
+  of full static analyzers were able to warn you in every case.
+
+* It encourages factorization of the shape testing logic in a way that will
+  improve readability rather than hamper it, by allowing the users to focus on
+  the non repetitive logic.
+
+This is why we believe that pattern matching is worth the complexity it brings
+to the language. Also, we believe that this complexity is pretty local and in
+line with the benefits of the feature.
+
+Alternatives
+------------
+
+While not strictly an alternative, something that is often compared with
+pattern matching is flow sensitive (sub)type narrowing:
+
+.. code-block:: ada
+
+   A : access Integer;
+   if A /= null then
+      --  A has type not null access Integer
+      Put_Line (A.all'Image);
+   end if;
+
+   R : Optional_Integer;
+
+   if R.Has_Value then
+      --  R has type Optional_Integer (True)
+      Put_Line (R.Value'Image);
+   end if;
+
+This feature could also be a good fit for Ada, at least for subtypes - it would
+be weird to have the type of a value change in a branch. However, we believe
+pattern matching to provide most of the benefits, especially if we, in later
+revisions, take advantage of irrefutable patterns, which could allow similar
+things.
 
 .. note::
     - Why is this design the best in the space of possible designs?
@@ -372,16 +425,56 @@ TBD
 Drawbacks
 =========
 
-TBD
+The complexity of the feature - and the implementation price - should obviously
+be considered a drawback for any added feature. In the case of pattern
+matching, the complexity is pretty big - but so is, we believe, the benefit.
+
+The complexity is also pretty well contained to the case statement.
 
 .. note::
-    - Why should we *not* do this?
 
+   If anybody has legitimate reasons that are not variations of "Ada is too
+   big" or "I don't see myself using this feature", please share!
 
 Prior art
 =========
 
-TBD
+There is a of wealth of prior art related to pattern matching, because a very
+big proportion of languages now include pattern matching or something very
+closely related. Worth mentionning are:
+
+- Ocaml and Haskell's pattern matching are very similarly flavored, and can be
+  considered the "reference" today, as they stick very closely to the original
+  pattern as expressed in ML, which is the basis for the feature set that you
+  can find in many languages today. See `here for a description of Haskell's
+  pattern matching <https://www.haskell.org/tutorial/patterns.html>`_.
+
+.. note:: It is worth mentionning that pattern matching in different forms found
+   itself in programming language even earlier:
+
+   * COMIT and `SNOBOL <https://en.wikipedia.org/wiki/SNOBOL>`_ have a form of
+     pattern matching, although limited to strings, and thus more akin to
+     regular expressions.
+
+   * `Refal <https://en.wikipedia.org/wiki/Refal>_` is one of the first
+     languages with generalized structured pattern matching.
+
+   * Prolog introduced a limited form of structural pattern matching in the
+     logic programming context.
+
+- Rust and Swift both have pattern matching that is very similar to the ML
+  family pattern matching.
+
+Amongst the list of languages currently considering pattern matching
+
+- Java has introduced a limited form of pattern matching in Java 14, and is
+  considering expanding it further to support full composite type matching.
+
+- Python has a recent RFC for `pattern matching
+  <https://www.python.org/dev/peps/pep-0622/>`_ that is garnering a lot of
+  support from the language design team.
+
+.. note:: expand if needed ?
 
 .. note::
     Discuss prior art, both the good and the bad, in relation to this proposal.
@@ -412,16 +505,14 @@ Unresolved questions
    might be erased (components of a variant part of a record with mutable
    discriminants in particular). We could possibly have both with a different
    syntax. For example, the constant keyword could be used to state that we want
-   a copy, not a renaming:
+   copy semantics, not a renaming:
 
-   .. code-block:: ada
+.. code-block:: ada
 
      case A is
        when (Has_Value => True, Val => <> as constant V) => return V;
        when None                                         => return 0;
      end case;
-
-TBD
 
 .. note::
     - What parts of the design do you expect to resolve through the RFC process
@@ -437,23 +528,79 @@ TBD
 Future possibilities
 ====================
 
-TBD
+This AI has been purposedly contained to the very basics of what pattern
+matching can offer while still remaining useful. There are many possible forays
+into making pattern matching in Ada more powerful in the future:
 
-.. note::
-    Think about what the natural extension and evolution of your proposal would
-    be and how it would affect the language and project as a whole in a holistic
-    way. Try to use this section as a tool to more fully consider all possible
-    interactions with the project and language in your proposal.
-    Also consider how the this all fits into the roadmap for the project
-    and of the relevant sub-team.
+Custom matching for private types
+---------------------------------
 
-    This is also a good place to "dump ideas", if they are out of scope for the
-    RFC you are writing but otherwise related.
+Ada relies very heavily on encapsulation via private types, which doesn't mesh
+well with private types, which is why there is no facility for matching private
+types except via a wildcard. This is why providing facilities to allow matching
+of private types would be great.
 
-    If you have tried and cannot think of any future possibilities,
-    you may simply state that you cannot think of anything.
+There are existing functionalities in other languages such as:
 
-    Note that having something written down in the future-possibilities section
-    is not a reason to accept the current or a future RFC; such notes should be
-    in the section on motivation or rationale in this or subsequent RFCs.
-    The section merely provides additional information.
+- F#'s `Active patterns <https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/active-patterns>`_
+- Scala's `Extractor objects <https://docs.scala-lang.org/tour/extractor-objects.html>`_
+
+It is one of the main next goals of the working group on pattern matching to
+investigate such facilities to make usage of pattern matching in Ada easier.
+
+Irrefutable patterns
+--------------------
+
+An irrefutable pattern is a pattern that never fails to match. For example, given a simple record type:
+
+.. code-block:: ada
+
+   type Point is record
+      X, Y : Integer;
+   end record;
+
+The pattern ``(<X>, <Y>)`` can never fail. Using irrefutable patterns might allow many interesting possibilities like:
+
+- Destructuring assignment/object declaration
+
+.. code-block:: ada
+
+   (<X>, <Y>) := P;
+
+- Destructuring in formals/parameters
+- Destructuring in for loops:
+
+.. code-block:: ada
+
+   for (<X>, <Y>) of Point_Array loop
+      ...
+   end loop;
+
+Sealed tagged hierarchies
+-------------------------
+
+Having sealed tagged hierarchies - while having a ton of other benefits for OO
+in a low level language, like definite size - will make it easier to use
+pattern matching, because the ``others`` clause won't be necessary anymore:
+
+.. code-block:: ada
+
+   type Maybe is tagged null record;
+   type None is new Maybe with null record;
+   type Some is new Maybe with record
+      Val : T;
+   end record;
+
+
+   -- Without sealed classes:
+    case I is
+       when Some'(12) => ...
+       when None => ...
+       when others => ...
+    end case;
+
+   -- With sealed classes:
+    case I is
+       when Some'(12) => ...
+       when None => ...
+    end case;
