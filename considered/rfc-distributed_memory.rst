@@ -56,7 +56,7 @@ The following capabilities need to be specified for each memory:
 - How to allocate memory
 - How to deallocate memory
 - How to copy from main (default) memory
-- How to copy from main (default) memory
+- How to copy to main (default) memory
 
 A temporary of default memory is used to perform a copy from one memory to another,
 
@@ -84,7 +84,7 @@ An example of an instantiation for CUDA device memory is:
   type CUDA_Address is mod 2 ** 64;
 
   package CUDA_Memory is
-    new System.NUMA_Memory
+    new System.Distributed_Memory
       (Address_Type => CUDA_Address,
        Allocate     => CUDA_Allocate,
        Free         => CUDA_Free,
@@ -108,7 +108,7 @@ For example:
 
     type Arr_Type is array (Integer range <>) of Integer;
 
-    type Cuda_Arr_Type is new Arr with Destributed_Memory => CUDA_Memory.Memory;
+    type Cuda_Arr_Type is new Arr with Distributed_Memory => CUDA_Memory.Memory;
 
     Host_Arr : Arr_Type (1 .. 100);
 
@@ -137,7 +137,7 @@ To enable explicit specification of the default memory, a package called System.
 
 .. code-block:: Ada
 
-  package CUDA_Memory renames System.NUMA_Standard.Memory;
+  package CUDA_Memory renames System.Distributed_Memory_Standard.Memory;
 
 This way, you can use the same value of the Distributed_Memory aspect throughout and select whether it's device or host memory by selecting the desired file (or directory) during the build process.
 
