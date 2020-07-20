@@ -58,7 +58,28 @@ The following capabilities need to be specified for each memory:
 - How to copy from main (default) memory
 - How to copy to main (default) memory
 
-A temporary of default memory is used to perform a copy from one memory to another,
+A temporary of default memory is used to perform a copy between two differen
+distributed memory models, e.g.:
+
+.. code-block:: Ada
+  type Foo_I is new Integer with Distributed_Memory => Foo;
+  type Bar_I is new Integer with Distributed_Memory => Bar;
+
+  X : Foo_I;
+  Y : Bar_I;
+begin
+  X := Foo_I (Y);
+
+conceptually becomes:
+
+.. code-block:: Ada
+
+    X : Foo_I;
+    T : Integer;
+    Y : Bar_I;
+  begin
+    T := Integer (Y);
+    X := Foo_I (T);
 
 Each memory is created as an instantiation of a generic package:
 
