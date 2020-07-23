@@ -1,6 +1,6 @@
 - Feature Name: pattern_matching
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: (leave this empty)
+- Start Date: 2020-07-15
+- RFC PR: `#50 <https://github.com/AdaCore/ada-spark-rfcs/pull/50>`_
 - RFC Issue: (leave this empty)
 
 Summary
