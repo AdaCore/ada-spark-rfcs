@@ -11,7 +11,7 @@ of alternatives. A pattern is an expression that represents a blueprint for a
 value of the matched type. It might contain wildcards, which can match any
 subexpression of the corresponding type.
 
-Patterns will encompass the current abilities of Ada's cases statements and
+Patterns will encompass the current abilities of Ada's case statements and
 expressions. As opposed to Ada's current case functionality, the user will be
 able to pattern match on a value of any type, be it elementary or composite.
 
@@ -50,7 +50,7 @@ Matching scalar types
 ---------------------
 
 For scalar types, a pattern can be either a static literal, a range, a subtype,
-or a wildcard, represented with the ``<>`` notation. We say that an expression
+or a wildcard, represented with the ``<>`` box notation. We say that an expression
 matches a pattern if it is included in the set of values represented by the
 pattern, with the wildcard matching any values of the type. For example, we can
 write a match on a discrete type as follows:
@@ -101,7 +101,7 @@ Here is another example:
 .. note:: The "matching several values" feature is here because it's a
     relatively cheap way of working around a particular issue caused by the
     lack of tuples in Ada. It is however our hope that we can add tuples to Ada
-    and remove this syntax sugar.
+    and remove this syntax sugar in the future.
 
 The function ``Multiply`` returns the sign of the result of a multiplication,
 depending on the sign of the operands. The connector ``|`` is used here to
@@ -112,9 +112,9 @@ Matching composite types
 
 For composite types, patterns take a form that mimics aggregates, with
 component values that are themselves patterns. It is possible to use
-qualification to provide the type of a pattern. In this case, a check is first
-executed to ensure that the selecting expression is in the type, then the
-pattern is processed assuming that the selecting expression as the type of the
+qualification to provide the type of a pattern. In this case, a test is first
+executed to check if the selecting expression is in the type, then the
+pattern is processed assuming that the selecting expression has the type of the
 qualification. Here is an example of code matching an object of an
 unconstrained array type:
 
@@ -135,7 +135,7 @@ unconstrained array type:
     --  Match arrays ranging from 1 to 10 which do not contain zero
     when Arr_1_10'(others => Positive | Negative) => null;
 
-    --  Match arrays ranging from 1 to 10
+    --  Match other arrays ranging from 1 to 10
     when Arr_1_10                                 => null;
 
     --  Match every other cases. Equivalent to `when others`
@@ -241,7 +241,7 @@ add components, these patterns should always contain a default case
 
 Semantics
 ^^^^^^^^^
-A value of a composite types matches a pattern if every element of the value
+A value of a composite type matches a pattern if every element of the value
 matches the corresponding element in the pattern (or the default `others` case
 if there is none). In particular, this means that equality on composite types
 is never relevant in pattern matching.
@@ -459,9 +459,9 @@ Prior art
 
 There is a of wealth of prior art related to pattern matching, because a very
 big proportion of languages now include pattern matching or something very
-closely related. Worth mentionning are:
+closely related. Worth mentioning are:
 
-- Ocaml and Haskell's pattern matching are very similarly flavored, and can be
+- OCaml and Haskell's pattern matching are very similarly flavored, and can be
   considered the "reference" today, as they stick very closely to the original
   pattern as expressed in ML, which is the basis for the feature set that you
   can find in many languages today. See `here for a description of Haskell's
@@ -518,7 +518,7 @@ Unresolved questions
 ====================
 
  - Which semantics should we use for binders? If we consider them as renamings,
-   it would be possible to update the underlaying structure through a binder.
+   it would be possible to update the underlying structure through a binder.
    However, it would no longer be possible to bind parts of an object which
    might be erased (components of a variant part of a record with mutable
    discriminants in particular). We could possibly have both with a different
