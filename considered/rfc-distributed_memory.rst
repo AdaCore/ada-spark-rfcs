@@ -62,6 +62,7 @@ A temporary of default memory is used to perform a copy between two differen
 distributed memory models, e.g.:
 
 .. code-block:: Ada
+
   type Foo_I is new Integer with Distributed_Memory => Foo;
   type Bar_I is new Integer with Distributed_Memory => Bar;
 
@@ -84,6 +85,7 @@ conceptually becomes:
 Each memory is created as an instantiation of a generic package:
 
 .. code-block:: Ada
+
   generic 
     type Address_Type is private;
     function Allocate (Size : Storage_Count) return Address_Type;
