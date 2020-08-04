@@ -1,6 +1,6 @@
 - Feature Name: Distributed Memory
 - Start Date: 2020-07-09
-- RFC PR: (leave this empty)
+- RFC PR: `#51 <https://github.com/AdaCore/ada-spark-rfcs/pull/51>`_
 - RFC Issue: (leave this empty)
 
 Summary
