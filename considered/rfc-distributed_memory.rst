@@ -7,7 +7,6 @@ Summary
 =======
 
 This features proposes a way to support Distributed Memory, an architecture where various components of a system have separate memory components that are (at least conceptually) addressed independently from each other and where special actions are needed to copy between the memory components.  That latter can't be supported by storage pools.  An example of such an architecture is CUDA, where each "device" (the GPU) has memory distinct from that of the host.
-mechanism to copy data between the memory
 
 Motivation
 ==========
@@ -42,14 +41,13 @@ Guide-level explanation
 
 If we tried to implement this in Ada using Storage Pools, we run into several limitations:
 
-- They don't provide provision for initializations
+- They don't provide provision for initializations.
 - They don't model copies in both directions.
 - The usage of a controlled type requires complexity and run-time contraints that could be avoided.
 - They require the usage of access types, while in a number of cases it would be more convenient to declare automatic objects as if they were declared normally.
 - They assume that all addresses are of type System.Address, but there's no guarantee that each memory has the same address range.
 
-This proposal introduces a new concept as an alternative to a
-Storage_Pool: Distributed_Memory.  We provide the ability to create different memories, each with its own address type and functions that manipulate that memory.  Objects in different memories will normally be located on different physical components in the system architecture.
+This proposal introduces a new concept as an alternative to Storage_Pools: Distributed_Memory.  We provide the ability to create different memories, each with its own address type and functions that manipulate that memory.  Objects in different memories will normally be located on different physical components in the system architecture.
 
 The following capabilities need to be specified for each memory:
 
@@ -58,8 +56,7 @@ The following capabilities need to be specified for each memory:
 - How to copy from main (default) memory
 - How to copy to main (default) memory
 
-A temporary of default memory is used to perform a copy between two differen
-distributed memory models, e.g.:
+A temporary of default memory is used to perform a copy between two different distributed memory models, e.g.:
 
 .. code-block:: Ada
 
