@@ -1,4 +1,4 @@
-- Feature Name: Distibuted Memory
+- Feature Name: Distributed Memory
 - Start Date: 2020-07-09
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
