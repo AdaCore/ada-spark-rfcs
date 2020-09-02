@@ -98,7 +98,11 @@ Each memory is created as an instantiation of a generic package:
     [...]
   end System.Distributed_Memory;
 
-The intent is that the type of System.Distributed_Memory.Memory be a record that contains accesses to each of the defined subprograms.
+System.Distributed_Memory.Memory is then used in the ``Distributed_Memory`` aspect
+to retreive these subprograms. Code expansion could identify the generic instance
+it's coming from and expand with the right function. Note that an alternative 
+could be to allow a package instance name to be provided to an aspect, which would
+remove the need for a type here.
 
 An example of an instantiation for CUDA device memory is:
 
@@ -114,10 +118,10 @@ An example of an instantiation for CUDA device memory is:
        Copy_Out     => CUDA_From_Host_To_Device,   
        Copy_In      => CUDA_From_Device_To_Host);
 
-  function Allocate (Size : Storage_Count) return Cuda_Address;
-  procedure Deallocate (Addr : in out Cuda_Address);
-  procedure Copy_To_Target (From : System.Address; To : Cuda_Address; Size : Storage_Count);
-  procedure Copy_From_Target (From : Cuda_Address; To : System.Address; Size : Storage_Count);
+  function CUDA_Allocate (Size : Storage_Count) return Cuda_Address;
+  procedure CUDA_Deallocate (Addr : in out Cuda_Address);
+  procedure CUDA_Copy_To_Target (From : System.Address; To : Cuda_Address; Size : Storage_Count);
+  procedure CUDA_Copy_From_Target (From : Cuda_Address; To : System.Address; Size : Storage_Count);
 
 We indicate that an object or a type is in this memory using a new Distributed_Memory aspect. This means that:
 
@@ -206,6 +210,11 @@ We initially considered using an aspect-based syntax instead of a generic, e.g.:
       );
 
 However, it turns out that there no clear advantage of the aspect v.s. the generic, and that the generic has the clear advantage of having a source-readable profile.
+
+Another drawback of this approach is that these 4 functions have to be provided
+for each type that needs this specific address model. Using a generic instantiation
+instead allows to name a model and reuse the same name consistently across various
+types.
 
 Drawbacks
 =========
