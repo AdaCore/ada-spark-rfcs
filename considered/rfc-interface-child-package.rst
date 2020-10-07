@@ -18,7 +18,7 @@ in a child package.
 Proposal:
 .. code-block:: ada
 
-   overriding interface <name> in <package.child>;
+      overriding interface <name> in <package.child>;
 
 Motivation
 ==========
@@ -45,11 +45,11 @@ and specification of the package deriving the interface:
 
 - in the containing specification (Adat_Pushup_Punch_Unit.ads):
 .. code-block:: ada
-     overriding
 
    type Pushup_Punch_Type is
       new Diagnose_Interface.Diagnose with private;
 
+     overriding
      function Do_Diagnose
         (Pu : not null access Pushup_Punch_Type)
         return Boolean;
@@ -105,7 +105,7 @@ Guide-level explanation
 The new language concept could be:
 .. code-block:: ada
 
-   overriding interface <name> in <package.child>;
+      overriding interface <name> in <package.child>;
 
 I have choosen to add the overriding declarator to make it the child package
 is overriding the interface methods.
@@ -139,7 +139,7 @@ Reference-level explanation
 This proposed statement could be seen as the interface version of
 .. code-block:: ada
 
-   procedure <name> is separate;
+      procedure <name> is separate;
 
 
 But then the child package name is forced by the interface name. 
@@ -154,7 +154,7 @@ Rationale and alternatives
 An alternative for the proposed concept could also be:
 .. code-block:: ada
 
-  interface <name> is separate;
+      interface <name> is separate;
 
 The design proposes a single line statement to redirect the overriding implementation
 of an interface to a child package. 
