@@ -16,6 +16,7 @@ Proposed is a solution request to instruct the compiler to look for the interfac
 in a child package.
 
 Proposal:
+
 .. code-block:: ada
 
       overriding interface <name> in <package.child>;
@@ -103,6 +104,7 @@ Guide-level explanation
 =======================
 
 The new language concept could be:
+
 .. code-block:: ada
 
       overriding interface <name> in <package.child>;
@@ -137,6 +139,7 @@ Reference-level explanation
 ===========================
 
 This proposed statement could be seen as the interface version of
+
 .. code-block:: ada
 
       procedure <name> is separate;
@@ -152,6 +155,7 @@ Rationale and alternatives
 ==========================
 
 An alternative for the proposed concept could also be:
+
 .. code-block:: ada
 
       interface <name> is separate;
