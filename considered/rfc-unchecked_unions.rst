@@ -48,9 +48,11 @@ A discriminant record declaration that is annotated with pragma Unchecked_Union
 is subject to a static check. This check is identical to the static check
 currently performed for Address clauses. It checks that the definition of the
 discriminant record does not allow for the introduction of invalid values, even
-if the discriminant checks (which are suppressed) would fail. In effect, this
-allows the programmer to use Unchecked_Union as a way to convert between two
-(or more) types, similar to an unchecked conversion.
+if the discriminant checks (which are suppressed) would fail. If the static
+check succeeds, the execution of the construct is not erroneous even if the
+discriminant check would fail. In effect, this allows the programmer to use
+Unchecked_Union as a way to convert between two (or more) types, similar to an
+unchecked conversion.
 
 .. code-block:: ada
 
@@ -78,8 +80,67 @@ allows the programmer to use Unchecked_Union as a way to convert between two
          end case;
       end record;
   pragma Unchecked_Union (T);
-  X : T := (False, 1);
+  X : T := (Flag => True, F2 => 25);
   Y : Byte := X.F1 (2); -- no check
+
+Reference-level explanation
+===========================
+
+The RM already contains a definition for subtypes to be "suitable for unchecked
+conversion":
+
+A subtype ``S`` is said to be `suitable for unchecked conversion` if:
+
+- ``S`` has a contiguous representation. No part of ``S`` is of a tagged type,
+  of an access type, of a subtype that is subject to a predicate, of a type
+  that is subject to a type_invariant, of an immutably limited type, or of a
+  private type whose completion fails to meet these requirements.
+
+- Given the size N of ``S`` in bits, there exist exactly 2**N distinct values
+  that belong to ``S`` and contain no invalid scalar parts.  [In other words,
+  every possible assignment of values to the bits representing an object of
+  subtype ``S`` represents a distinct value of ``S``.]
+
+The new rules concerning unchecked unions are as follows:
+
+1. The discriminant can only appear in the "case" part of a variant part. This
+  rule is to avoid that the discriminant be used for sizes of fields of array
+  type, which would likely result in violation of subsequent rules anyway.
+2. Every subtype of a component which appears in a variant part has to be
+   suitable for unchecked conversion;
+3. For every variant part of the record, the sum of the sizes of the components
+   of each component list shall be identical.
+4. The size of the entire record type with Unchecked_Union shall be equal to
+   the sum of the sizes of its components, where for each variant part, an
+   arbitrary component list is chosen for this computation.
+
+.. code-block:: ada
+
+  --  This type declaration is rejected as the discriminant is not only used in
+  --  the case part of the variant part.
+  type A (X : Integer := 100) is
+     record
+         case X is
+             when 0 =>
+                 F1 : Boolean;
+             when others =>
+                 F2 : String (1 .. X);
+         end case;
+      end record;
+  pragma Unchecked_Union (U);
+
+  --  This type declaration raises a static check because
+  --  the two branches of the variant part don't have the same size.
+  type A (Flag : Boolean := False) is
+     record
+         case Flag is
+             when False =>
+                 F1 : Byte;
+             when True =>
+                 F2 : Integer;
+         end case;
+      end record;
+  pragma Unchecked_Union (U);
 
 Drawbacks
 =========
