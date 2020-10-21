@@ -123,19 +123,19 @@ Here's an example of how this could be instantiated in the context of CUDA:
          Size            : Storage_Count; 
          Alignment       : Storage_Count);
 
-      with procedure CUDA_Deallocate 
+      procedure CUDA_Deallocate 
         (Model           : in out CUDA_Storage_Data_Model; 
          Storage_Address : out CUDA_Address;
          Size            : Storage_Count;   
          Alignment       : Storage_Count);    
 
-      with procedure CUDA_Copy_In 
+      procedure CUDA_Copy_In 
         (Model : in out CUDA_Storage_Data_Model; 
          From  : System.Address; 
          To    : CUDA_Address; 
          Size  : Storage_Count);
 
-      with procedure CUDA_Copy_Out
+      procedure CUDA_Copy_Out
         (Model : in out CUDA_Storage_Data_Model; 
          From  : CUDA_Address; 
          To    : System.Address; 
@@ -216,7 +216,7 @@ explicit dynamic allocation and deallocation, e.g.:
 
       Host_Array : Host_Array_Type := (1 .. 10);
 
-      Device_Array : Host_Array_Type (1 .. 10);
+      Device_Array : Device_Array_Type (1 .. 10);
       --  Calls CUDA_Storage_Model.Allocate to allocate the fat pointers and
       --  the bounds, then CUDA_Storage_Model.Write to copy the values of the
       --  boundaries.
