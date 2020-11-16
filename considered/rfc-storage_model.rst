@@ -72,7 +72,7 @@ The profile of these procedures are as follow:
 
    procedure Allocate 
      (Model           : in out Storage_Data_Model; 
-      Storage_Address : out Address_Type;
+      Storage_Address : out Address_Type;      
       Size            : Storage_Count; 
       Alignment       : Storage_Count);
 
@@ -83,16 +83,18 @@ The profile of these procedures are as follow:
       Alignment       : Storage_Count);    
 
    procedure Copy_In 
-     (Model : in out Storage_Data_Model; 
-      From  : System.Address;
-      To    : Address_Type; 
-      Size  : Storage_Count);
+     (Model   : in out Storage_Data_Model; 
+      From    : System.Address;
+      To      : Address_Type; 
+      Offset  : Storage_Count;
+      Size    : Storage_Count);
 
    procedure Copy_Out
-     (Model : in out Storage_Data_Model; 
-      From  : Address_Type; 
-      To    : System.Address; 
-      Size  : Storage_Count);
+     (Model  : in out Storage_Data_Model; 
+      From   : Address_Type; 
+      Offset : Storage_Count;
+      To     : System.Address; 
+      Size   : Storage_Count);
 
    function Storage_Size
      (Pool : Storage_Data_Model)
@@ -130,16 +132,18 @@ Here's an example of how this could be instantiated in the context of CUDA:
          Alignment       : Storage_Count);    
 
       procedure CUDA_Copy_In 
-        (Model : in out CUDA_Storage_Data_Model; 
-         From  : System.Address; 
-         To    : CUDA_Address; 
-         Size  : Storage_Count);
+        (Model  : in out CUDA_Storage_Data_Model; 
+         From   : System.Address; 
+         To     : CUDA_Address; 
+         Offset : Storage_Count;
+         Size   : Storage_Count);
 
       procedure CUDA_Copy_Out
-        (Model : in out CUDA_Storage_Data_Model; 
-         From  : CUDA_Address; 
-         To    : System.Address; 
-         Size  : Storage_Count);
+        (Model   : in out CUDA_Storage_Data_Model; 
+         From    : CUDA_Address; 
+         Offset  : Storage_Count;
+         To      : System.Address; 
+         Size    : Storage_Count);
 
       with function CUDA_Storage_Size
         (Pool : CUDA_Storage_Data_Model)
@@ -261,6 +265,190 @@ conceptually becomes:
   begin
     T := Integer (Y);
     X := Foo_I (T);
+
+System.Storage_Model.Native_Model
+---------------------------------
+
+A new package is created, System.Storage_Model. It declares in particular a
+model "Native_Model" that refers to the default native memory. When applied
+to storage models, the effect is a no-op. It can be used to explicitely declare
+usage of native global memory, which is convenient in some situations. It is
+also useful as a live reference of the profile for the various functions.
+
+.. code-block:: Ada
+
+   package System.Storage_Model is
+
+      subtype Native_Address is System.Address;
+
+      type Native_Storage_Model_Type is null record 
+         with Storage_Model_Type => (
+            Address_Type => Native_Address,
+            Allocate     => Native_Allocate,
+            Deallocate   => Native_Deallocate,
+            Copy_In      => Native_Copy_In,
+            Copy_Out     => Native_Copy_Out,
+            Storage_Size => Native_Storage_Size'Last
+         );
+
+      procedure Native_Allocate 
+        (Model           : in out Native_Storage_Model_Type; 
+         Storage_Address : out Native_Address;
+         Size            : Storage_Count; 
+         Alignment       : Storage_Count);
+
+      procedure Native_Deallocate 
+        (Model           : in out Native_Storage_Model_Type; 
+         Storage_Address : out Native_Address;
+         Size            : Storage_Count;   
+         Alignment       : Storage_Count);    
+
+      procedure Native_Copy_In 
+        (Model  : in out Native_Storage_Model_Type; 
+         From   : System.Address; 
+         To     : Native_Address; 
+         Offset : Storage_Count;
+         Size   : Storage_Count);
+
+      procedure Native_Copy_Out
+        (Model   : in out Native_Storage_Model_Type; 
+         From    : Native_Address; 
+         Offset  : Storage_Count;
+         To      : System.Address; 
+         Size    : Storage_Count);
+
+      with function Native_Storage_Size
+        (Pool : Native_Storage_Data_Model)
+         return Storage_Count return Storage_Count'Last;
+
+      Native_Memory : Native_Storage_Model_Type;
+
+   end System.Storage_Model;
+
+Offset in Storage_Model
+-----------------------
+
+In some situations, copies in and out are not done on the object itself, but
+on a component of such object (e.g. for record and array types). For example:
+
+.. code-block:: Ada
+
+      type R is record
+         A, B : Integer;
+      end record;
+
+      V : R with Storage_Model => Some_Model;
+      X : Integer := 98;
+   begin
+      V.B : X; -- Will call Copy_In with offset 4 assuming 32 bits integer.
+      
+Aspect Storage_Section_Type
+---------------------------
+
+On top of Storage_Model, this proposal also introduces the concept of 
+Storage_Section. A storage section allows to introduce a specific section of
+a storage model that can be managed separately, and possibly deallocated at
+once. It is working at the same level (and replacing) Ada 2012 subpools.
+
+A Storage_Section_Type is declared using the name of the model it is a section
+of - by default the default native model, and an allocator that describes how
+to create memory in such section. E.g.:
+
+.. code-block:: Ada
+
+      type My_Model_Type is null record with Storage_Model_Type (...)
+
+      type My_Section_Type is null record 
+         with Storage_Section => (
+            Storage_Model => My_Model,
+            Allocate      => My_Section_Allocate
+         );
+
+      procedure My_Section_Allocate 
+        (Model           : in out My_Model_Type; 
+         Section         : in out My_Section_Type
+         Storage_Address : out CUDA_Address;
+         Size            : Storage_Count; 
+         Alignment       : Storage_Count);
+
+      My_Model   : My_Model_Type;
+      My_Section : My_Section_Type with Enclosing_Storage_Model => My_Model;
+
+      subtype Some_Type is Integer with Storage_Model => My_Section;
+
+      V : Some_Type;
+
+As seen above, a section can be provided instead of a model to the 
+Storage_Model attribute. In this case, the only change is that allocation is
+done through the My_Section_Allocate call instead of the default allocator. 
+Like before, this is resolved statically.
+
+Subtypes Compatibility
+----------------------
+
+Since memory models statically instrument allocation, deallocation and copies, 
+it is necessary to know at compile time which to call. While this is not an
+issue for object at the global or stack level, it is when referenced through
+pointers.
+
+As a consequence to the above, it is illegal for a pointer to point to an 
+object with a different storage model than its designated target, or to
+assigned to a pointer a value comping from another pointer with an different
+storage model. For example:
+
+.. code-block:: Ada
+
+      type My_Model_Type is null record with Storage_Model_Type (...)
+
+      Model : My_Model_Type;
+
+      subtype My_Integer is Integer with Storage_Model => Model;
+
+      type P1 is access all Integer;
+      type P2 is access all My_Integer;
+   
+      V1 : P1 := new My_Integer; -- Illegal, incompatible models.
+      V2 : P2 := V1; -- Illegal, incompatble models
+
+However, the above is not true if both models end up being sections of the
+same model, for example the following is legal:
+
+.. code-block:: Ada
+
+      type My_Model_Section_Type is null record with Storage_Section_Type (...)
+
+      Section : My_Model_Section_Type with 
+         Enclosing_Storage_Model => System.Storage_Model.Native_Model;
+
+      subtype My_Integer is Integer with Storage_Model => Section;
+
+      type P1 is access all Integer;
+      type P2 is access all My_Integer;
+   
+      V1 : P1 := new My_Integer; 
+      V2 : P2 := V1; 
+
+Storage_Model Sortcuts
+----------------------
+
+Since Storage_Model is applied directly on a subtype, it can also be applied
+directly at object creation time. For example:
+
+.. code-block:: Ada
+
+   Section_1 : Section_Type with 
+      Enclosing_Storage_Model => System.Storage_Model.Native_Model;
+   Section_2 : Section_Type with 
+      Enclosing_Storage_Model => System.Storage_Model.Native_Model; 
+
+   subtype Acc is new Integer;
+
+   V1 : Integer with Storage_Model => Section_1;
+
+   X : Acc := new (Section_1) Integer;
+   
+Note that in the case of access types, we're re-using the current subpool
+syntax. Compatibilty between subtypes as described before still apply.
 
 Legacy Storage Pools
 --------------------
