@@ -53,12 +53,12 @@ A Storage model is a type which is associated with an aspect
 
 Storage_Model_Type itself allow for 6 parameters:
 
-   - Address_Type, the type of the address managed by this model.
-   - Allocate, a procedure used for allocating memory in this model
-   - Deallocate, a procedure used for deallocating memory in this model
-   - Copy_In, a procedure used to copy memory from native memory to this model
-   - Copy_Out, a procedure used to copy memory from this model to native memory
-   - Storage_Size, a function returning the amount of memory left
+- Address_Type, the type of the address managed by this model.
+- Allocate, a procedure used for allocating memory in this model
+- Deallocate, a procedure used for deallocating memory in this model
+- Copy_In, a procedure used to copy memory from native memory to this model
+- Copy_Out, a procedure used to copy memory from this model to native memory
+- Storage_Size, a function returning the amount of memory left
 
 By default, Address_Type is System.Address, and all other 5 procedures are 
 performing native operations (e.g. the allocator is the native new allocator).
@@ -246,10 +246,10 @@ is used as a temporary between the two. E.g.:
   subtype Foo_I is Integer with Storage_Model => Foo;
   subtype Bar_I is Integer with Storage_Model => Bar;
 
-  X : Foo_I;
-  Y : Bar_I;
-begin
-  X := Foo_I (Y);
+    X : Foo_I;
+    Y : Bar_I;
+  begin
+    X := Foo_I (Y);
 
 conceptually becomes:
 
