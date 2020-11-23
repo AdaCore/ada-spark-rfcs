@@ -1,122 +1,137 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: lightweight-finalization
+- Start Date: 2020-11-23
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
 
 Summary
 =======
 
-One paragraph explanation of the feature.
+We introduce a new finalization mechanism that does not rely on tagged types, has simpler semantics and weaker guarantees than today's controlled types in such a way that:
+ 1. It imposes less design constraints to users.
+ 2. It can be supported on broader range of platforms (e.g. embedded).
+ 3. It allows for an efficient implementation.
+ 
+*note: we employ the term "finalization" throughout this RFC to denote control over the whole lifetime of an object, i.e. the same level of control that controlled objects procur today.
 
 Motivation
 ==========
 
-Why are we doing this? What use cases does it support? What is the expected
-outcome?
+First of all, current finalization based on controlled objects forces users to turn their untagged type into a tagged type in order for it to benefit from finalization. Thus, new legality rules apply (e.g. RM 3.9.2) which can break existing code in many different ways. One such example is illustrated below:
+```ada
+type T is tagged null record;
+type U is record;
+
+function F (X : T) return U;
+```
+In this situation, one cannot simply turn `U` into a controlled object, otherwise the subprogram `F` would become a primitive of two tagged types, which is forbidden.
+
+Second, the guarantees provided by controlled types are very strong, requiring a complex implementation and incurring a substential runtime performance penalty. On some platform, it is extremely difficult (impossible?) to write an implementation that fulfills all those guarantees. 
+
+One such guarantee is that an access-to-controlled type should finalize all objects that have been **heap-allocated** through it once it goes out of scope (*todo: link to RM*). The compiler must therefore generate code to keep track of these objects, untrack them upon explicit deallocation, etc., which obviously induces a significant overhead at runtime.
+
+For the record, GNAT already supports some custom aspects to weaken the default guarantees mandated by the Ada specification, such as `pragma No_Heap_Finalization` and `pragma Finalize_Storage_Only`.
 
 Guide-level explanation
 =======================
 
-Explain the proposal as if it was already included in the language and you were
-teaching it to another Ada/SPARK programmer. That generally means:
+We propose to introduce three new Ada 2012 aspects, analogous to the three controlled-type primitives, as in the following template:
+```ada
+type T is ...
+   with Initialize => <Initialize_Procedure>,
+        Adjust     => <Adjust_Procedure>,
+        Finalize   => <Finalize_Procedure>;
+```
 
-- Introducing new named concepts.
+The three procedures have the same profile, taking a single `in out T` parameter.
 
-- Explaining the feature largely in terms of examples.
+We follow the same dynamic semantics as controlled objects:
+ - `Initialize` is called when an object of type `T` is declared without default expression.
+ - `Adjust` is called after an object of type `T` is assigned a new value.
+ - `Finalize` is called when an object of type `T` goes out of scope (for stack-allocated objects) or is explicitly deallocated (for heap-allocated objects).
 
-- Explaining how Ada/SPARK programmers should *think* about the feature, and
-  how it should impact the way they use it. It should explain the impact as
-  concretely as possible.
+### Examples
 
-- If applicable, provide sample error messages, deprecation warnings, or
-  migration guidance.
+A simple implementation of shared pointers:
 
-For implementation-oriented RFCs (e.g. for RFCS that have no or little
-user-facing impact), this section should focus on how compiler contributors
-should think about the change, and give examples of its concrete impact.
+```ada
+type T is record
+   Value : Integer;
+   Ref_Count : Natural := 0;
+end record;
 
-For "bug-fixes" RFCs, this section should explain briefly the bug and why it
-matters.
+type T_Access is access all T;
+
+type T_Ref is record
+   Value : T_Access;
+end record
+   with Adjust   => Adjust,
+        Finalize => Finalize;
+
+procedure Adjust (Ref : in out T_Ref) is
+begin
+   Inc_Ref (Ref.Value);
+end Adjust;
+
+procedure Finalize (Ref : in out T_Ref) is
+begin
+   Def_Ref (Ref.Value);
+end Finalize;
+```
+
+A simple file handle that ensures resources are properly released (Taken from a discussion in [this RFC](https://github.com/AdaCore/ada-spark-rfcs/pull/29#issuecomment-539025062))
+```ada
+type File is limited ...
+   with Finalize => Close;
+```
+
+### Heap-allocated finalized types
+
+As already mentioned, today's controlled objects allocated on the heap through an access type T must be finalized when T goes out of scope. First of all, we propose to completely drop this guarantee for libary-level access types, meaning program termination will not require finalization of heap-allocated types. The rationale for this is that in most cases, finalization is used to reclaim memory or release resources, which the underlying system (if any) generally does regardless upon program termination. As for embedded systems, heap allocation is generally not available or restricted enough that this shouldn't have any impact.
+
+As for nested access-to-finalized types, there are at least two simple ways to reason about them:
+ - Don't do anything when such an access type goes out of scope.
+ - Forbid such access types for now, until we have enough tools (such as an ownership system) to ensure that objects allocated through those access types are properly free'd (and therefore their finalize procedures properly called).
+
+### Finalized tagged types
+
+There are several ways to handle finalization of tagged types. The easiest one is to disallow those aspects on tagged types, and resort to controlled-types for those. In that case however, the difference in semantics w.r.t heap-allocated finalized types should be addressed.
+
+The preferred option would be to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense.
+
+### Finalized type components
+
+TBD.
+
+### Interoperability with controlled types
+
+TBD.
 
 Reference-level explanation
 ===========================
 
-This is the technical portion of the RFC. Explain the design in sufficient
-detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and
-explain more fully how the detailed proposal makes those examples work.
+TBD.
 
 Rationale and alternatives
 ==========================
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not
-  choosing them?
-- What is the impact of not doing this?
-- How does this feature meshes with the general philosophy of the languages ?
+TBD.
 
 Drawbacks
 =========
 
-Why should we *not* do this?
+Since this partly overlaps with controlled-types, new users could get a bit lost.
 
 Prior art
 =========
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-
-- For language, library, and compiler proposals: Does this feature exist in
-  other programming languages and what experience have their community had?
-
-- Papers: Are there any published papers or great posts that discuss this? If
-  you have some relevant papers to refer to, this can serve as a more detailed
-  theoretical background.
-
-This section is intended to encourage you as an author to think about the
-lessons from other languages, provide readers of your RFC with a fuller
-picture.
-
-If there is no prior art, that is fine - your ideas are interesting to us
-whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does
-not on its own motivate an RFC.
+TBD. Talk about RAII in languages such as C++.
 
 Unresolved questions
 ====================
 
-- What parts of the design do you expect to resolve through the RFC process
-  before this gets merged?
-
-- What parts of the design do you expect to resolve through the implementation
-  of this feature before stabilization?
-
-- What related issues do you consider out of scope for this RFC that could be
-  addressed in the future independently of the solution that comes out of this
-  RFC?
+TBD.
 
 Future possibilities
 ====================
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how the this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+TBD.
