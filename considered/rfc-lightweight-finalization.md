@@ -11,7 +11,7 @@ We introduce a new finalization mechanism that does not rely on tagged types, ha
  2. It can be supported on broader range of platforms (e.g. embedded).
  3. It allows for an efficient implementation.
  
-*note: we employ the term "finalization" throughout this RFC to denote control over the whole lifetime of an object, i.e. the same level of control that controlled objects procur today.
+*note: we abuse the term "finalization" throughout this RFC to denote control over the whole lifetime of an object, i.e. the same level of control that controlled objects procur today.*
 
 Motivation
 ==========
