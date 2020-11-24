@@ -11,7 +11,7 @@ We introduce a new finalization mechanism that does not rely on tagged types, ha
  2. It can be supported on broader range of platforms (e.g. embedded).
  3. It allows for an efficient implementation.
  
-*note: we abuse the term "finalization" throughout this RFC to denote control over the whole lifetime of an object, i.e. the same level of control that controlled objects procur today.*
+*Note: we abuse the term "finalization" throughout this RFC to denote control over the whole lifetime of an object, i.e. the same level of control that controlled objects procur today.*
 
 Motivation
 ==========
@@ -104,7 +104,7 @@ As for nested access-to-finalized types, there are at least two simple ways to r
 
 ### Finalized tagged types
 
-Due to the difference with the semantics of controlled-types w.r.t to heap-allocated finalized types, we should avoid resorting to controlled-types to handle finalized tagged types. In that case the only option is to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense.
+Due to the difference with the semantics of controlled-types w.r.t to heap-allocated finalized types, we should avoid resorting to controlled-types to handle finalized tagged types. In that case the only option is to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense, i.e. the object in question is of classwide type and the class includes at least one finalized-type.
 
 ### Composite types
 
@@ -112,7 +112,7 @@ When a finalized type is used as a component of a composite type, the latter sho
 
 ### Interoperability with controlled types
 
-In order to simplify implementation, we propose to initially forbid any of these new aspects on a controlled-type, components of a controlled types and composite types of which any part is controlled.
+In order to simplify implementation, we propose to initially forbid any of these new aspects on a controlled-type, components of a controlled types, composite types of which any part is controlled and interfaces which are derived by a controlled type.
 
 ### Constant objects with finalization
 
