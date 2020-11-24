@@ -96,7 +96,7 @@ private
 
 ### Heap-allocated finalized types
 
-As already mentioned, today's controlled objects allocated on the heap through an access type T must be finalized when T goes out of scope. First of all, we propose to completely drop this guarantee for libary-level access types, meaning program termination will not require finalization of heap-allocated types. The rationale for this is that in most cases, finalization is used to reclaim memory or release resources, which the underlying system (if any) generally does regardless upon program termination. As for baremetal platforms, heap allocation is either not available (making this a non-issue).
+As already mentioned, today's controlled objects allocated on the heap through an access type T must be finalized when T goes out of scope. First of all, we propose to completely drop this guarantee for libary-level access types, meaning program termination will not require finalization of heap-allocated types. The rationale for this is that in most cases, finalization is used to reclaim memory or release resources, which the underlying system (if any) generally does regardless upon program termination. As for baremetal platforms, heap allocation is either not available/allowed (meaning this is a non-issue) and if it is, we assume that manual deallocation is required and therefore finalization will be properly executed.
 
 As for nested access-to-finalized types, there are at least two simple ways to reason about them:
  - Don't do anything when such an access type goes out of scope: it is the responsibility of users to finalize their object, much like it is their responsibility to free the memory.
