@@ -51,13 +51,15 @@ We follow the same dynamic semantics as controlled objects:
 
 ### Examples
 
-A simple implementation of shared pointers:
-
+A simple example of a ref-counted type:
 ```ada
 type T is record
    Value : Integer;
    Ref_Count : Natural := 0;
 end record;
+
+procedure Inc_Ref (X : in out T);
+procedure Dec_Ref (X : in out T);
 
 type T_Access is access all T;
 
@@ -80,31 +82,43 @@ end Finalize;
 
 A simple file handle that ensures resources are properly released (Taken from a discussion in [this RFC](https://github.com/AdaCore/ada-spark-rfcs/pull/29#issuecomment-539025062))
 ```ada
-type File is limited ...
-   with Finalize => Close;
+   type File (<>) is limited private;
+   
+   function Open (Path : String) return File;
+   
+   procedure Close (F : in out File);
+private
+   type File is limited record
+      Handle : ...;
+   end record
+      with Finalize => Close;
 ```
 
 ### Heap-allocated finalized types
 
-As already mentioned, today's controlled objects allocated on the heap through an access type T must be finalized when T goes out of scope. First of all, we propose to completely drop this guarantee for libary-level access types, meaning program termination will not require finalization of heap-allocated types. The rationale for this is that in most cases, finalization is used to reclaim memory or release resources, which the underlying system (if any) generally does regardless upon program termination. As for embedded systems, heap allocation is generally not available or restricted enough that this shouldn't have any impact.
+As already mentioned, today's controlled objects allocated on the heap through an access type T must be finalized when T goes out of scope. First of all, we propose to completely drop this guarantee for libary-level access types, meaning program termination will not require finalization of heap-allocated types. The rationale for this is that in most cases, finalization is used to reclaim memory or release resources, which the underlying system (if any) generally does regardless upon program termination. As for baremetal platforms, heap allocation is either not available (making this a non-issue).
 
 As for nested access-to-finalized types, there are at least two simple ways to reason about them:
- - Don't do anything when such an access type goes out of scope.
+ - Don't do anything when such an access type goes out of scope: it is the responsibility of users to finalize their object, much like it is their responsibility to free the memory.
  - Forbid such access types for now, until we have enough tools (such as an ownership system) to ensure that objects allocated through those access types are properly free'd (and therefore their finalize procedures properly called).
 
 ### Finalized tagged types
 
-There are several ways to handle finalization of tagged types. The easiest one is to disallow those aspects on tagged types, and resort to controlled-types for those. In that case however, the difference in semantics w.r.t heap-allocated finalized types should be addressed.
+Due to the difference with the semantics of controlled-types w.r.t to heap-allocated finalized types, we should avoid resorting to controlled-types to handle finalized tagged types. In that case the only option is to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense.
 
-The preferred option would be to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense.
+### Composite types
 
-### Finalized type components
-
-TBD.
+When a finalized type is used as a component of a composite type, the latter should become finalized as well. The three primitives are derived automatically in order to call the primitives of their components. If that composite type was already user-finalized, we propose that the compiler calls the primitives of the components so as to stay consistent with today's controlled types's behavior. So, `Initialize` and `Adjust` are called on components before they are called on the composite object, but `Finalize` is  called on the composite object first. This is the easiest approach, as it avoid confusing users and its semantics are already battle-tested, but could still be revised.
 
 ### Interoperability with controlled types
 
-TBD.
+In order to simplify implementation, we propose to initially forbid any of these new aspects on a controlled-type, components of a controlled types and composite types of which any part is controlled.
+
+### Constant objects with finalization
+
+The profile suggested above for the three primitives takes an `in out` parameter. How should we handle constant objects of a finalized type?
+
+First, note that `Initialize` is out of the equation since constant object require explicit initialization. `Adjust` is also out because constant objects obviously cannot be reassigned to. We are therefore left with `Finalize`. We could either take the same approach as controlled-types and let the parameter be `in out`, or we could introduce a new aspect `Finalize_Constant` that is called in-place of `Finalize`, which takes an `in` parameter instead. In this scenario, we suggest a warning could be emitted if a type specifies `Finalize` but does not specify `Finalize_Constant` and a constant object of that type is declared.
 
 Reference-level explanation
 ===========================
