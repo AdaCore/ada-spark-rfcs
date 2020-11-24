@@ -47,7 +47,7 @@ The three procedures have the same profile, taking a single `in out T` parameter
 We follow the same dynamic semantics as controlled objects:
  - `Initialize` is called when an object of type `T` is declared without default expression.
  - `Adjust` is called after an object of type `T` is assigned a new value.
- - `Finalize` is called when an object of type `T` goes out of scope (for stack-allocated objects) or is explicitly deallocated (for heap-allocated objects).
+ - `Finalize` is called when an object of type `T` goes out of scope (for stack-allocated objects) or is explicitly deallocated (for heap-allocated objects). It is also called when on the value being replaced in an assignment.
 
 ### Examples
 
@@ -104,15 +104,15 @@ As for nested access-to-finalized types, there are at least two simple ways to r
 
 ### Finalized tagged types
 
-Due to the difference with the semantics of controlled-types w.r.t to heap-allocated finalized types, we should avoid resorting to controlled-types to handle finalized tagged types. In that case the only option is to support tagged types from scratch, where aspects are inherited by derived types and optionally overriden by those. Calls to the user-defined operations should then be dispatching whenever it makes sense, i.e. the object in question is of classwide type and the class includes at least one finalized-type.
+We propose that aspects are inherited by derived types and optionally overriden by those. The compiler-generated calls to the user-defined operations should then be dispatching whenever it makes sense, i.e. the object in question is of classwide type and the class includes at least one finalized-type.
 
 ### Composite types
 
-When a finalized type is used as a component of a composite type, the latter should become finalized as well. The three primitives are derived automatically in order to call the primitives of their components. If that composite type was already user-finalized, we propose that the compiler calls the primitives of the components so as to stay consistent with today's controlled types's behavior. So, `Initialize` and `Adjust` are called on components before they are called on the composite object, but `Finalize` is  called on the composite object first. This is the easiest approach, as it avoid confusing users and its semantics are already battle-tested, but could still be revised.
+When a finalized type is used as a component of a composite type, the latter should become finalized as well. The three primitives are derived automatically in order to call the primitives of their components. If that composite type was already user-finalized, we propose that the compiler calls the primitives of the components so as to stay consistent with today's controlled types's behavior. So, `Initialize` and `Adjust` are called on components before they are called on the composite object, but `Finalize` is  called on the composite object first. This is the easiest approach as it avoids confusing users and its semantics are already battle-tested, but could still be revised.
 
 ### Interoperability with controlled types
 
-In order to simplify implementation, we propose to initially forbid any of these new aspects on a controlled-type, components of a controlled types, composite types of which any part is controlled and interfaces which are derived by a controlled type.
+In order to simplify implementation, we propose to initially forbid any of these new aspects on a controlled-type, components of a controlled type, composite types of which any part is controlled and interfaces which are derived by a controlled type.
 
 ### Constant objects with finalization
 
