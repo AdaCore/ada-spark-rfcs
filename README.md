@@ -21,7 +21,7 @@ It is recommended to refer to the following resources for the current
 definition of Ada and SPARK languages:
 
 - [current Ada Reference Manual (Ada 2012)](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-TOC.html)
-- [draft Ada Reference Manual for next version (Ada 202X)](http://www.ada-auth.org/standards/2xrm/html/RM-TTL.html>)
+- [draft Ada Reference Manual for next version (Ada 202X)](http://www.ada-auth.org/standards/2xrm/html/RM-TTL.html)
 - [current SPARK Reference Manual](http://docs.adacore.com/spark2014-docs/html/lrm/)
 
 There is no guarantee that changes discussed and eventually prototyped &
