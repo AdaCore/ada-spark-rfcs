@@ -428,6 +428,60 @@ same model, for example the following is legal:
       V1 : P1 := new My_Integer; 
       V2 : P2 := V1; 
 
+Components and Storage Models
+-----------------------------
+
+A subtype and its representation always belongs to a unique storage model. As a
+consequence, and composite subtype and its components always belong to a unique
+model, no matter how the storage model of the underlying type is declared. 
+This allows in particular the following:
+
+.. code-block:: Ada
+
+      type R1 is record
+         F1, F2 : Integer;
+      end record
+      with Storage_Model => Model_1;
+
+      type R2 is record
+         F1, F2 : Integer;
+      end record
+      with Storage_Model => Model_2;
+
+      suybtype R3 is R1 with Storage_Model => Model_3;
+
+      V1 : R1;
+      V2 : R2;
+      V3 : R3;
+      V4 : Integer;
+   begin
+      V2.F1 := V1.F1; -- Calls copy-in and copy-out between model 2 and model 1
+      V3.F1 := V1.F1; -- Calls copy-in and copy-out between model 3 and model 1
+      V4 := V1.F1; -- Calls copy-in and copy-out between native model and model 1
+
+Generics and Storage Models
+---------------------------
+
+Generic expansion will take into account storage model of formal parameters
+when expanding code. On top of that, it is possible to explicitely constrain a
+storage model when declaring a generic formal parameter and to ensure 
+consistency of usage of said storage model, e.g.:
+
+.. code-block:: Ada
+
+   generic
+      Model : in Storage_Model_Type;
+      type T1 is private with Storage_Model => Model;
+      type T2 is private with Storage_Model => Model;
+   
+Default_Storage_Model
+---------------------
+
+Similar to the Ada pragma Default_Storage_Pool, a pragma 
+efault_Storage_Section is provided and specifies the Storage_Section to be 
+used for all types and subtypes explicitely declared in a given package.
+
+
 Storage_Model Sortcuts
 ----------------------
 
@@ -488,16 +542,18 @@ Legacy Storage Pools are now a Storage_Model. They are implemented as follows:
    is abstract;
 
    procedure Copy_In 
-     (Model : in out Root_Storage_Pool; 
-      From  : System.Address;
-      To    : System.Address; 
-      Size  : Storage_Count);
+     (Model  : in out Root_Storage_Pool; 
+      From   : System.Address;
+      To     : System.Address; 
+      Offset : Storage_Count;
+      Size   : Storage_Count);
 
    procedure Copy_Out
-     (Model : in out Root_Storage_Pool; 
-      From  : System.Address; 
-      To    : System.Address; 
-      Size  : Storage_Count);
+     (Model  : in out Root_Storage_Pool; 
+      From   : System.Address; 
+      Offset : Storage_Count;
+      To     : System.Address;       
+      Size   : Storage_Count);
 
 As an extra capability, they are augmented with the Copy_In / Copy_Out
 capabilities.
@@ -518,7 +574,7 @@ can still be accepted as a shortcut for the previous expression.
 Legacy Subpools 
 ---------------
 
-To be studied
+Legacy subpools capabilities should be acheiveable through storage sections.
 
 Reference-level explanation
 ===========================
@@ -554,9 +610,10 @@ https://github.com/AdaCore/ada-spark-rfcs/pull/51/. E.g.:
 
       with procedure Copy_In 
         (Model : in out Storage_Data_Model; 
-         From  : System.Address;
-         To    : Address_Type; 
-         Size  : Storage_Count) is <>;
+         From    : System.Address;
+         To      : Address_Type; 
+         Offset  : Storage_Count;
+         Size    : Storage_Count) is <>;
 
       with procedure Copy_Out
         (Model : in out Storage_Data_Model; 
@@ -599,16 +656,18 @@ This then could have been used e.g. in the following way:
          Alignment       : Storage_Count);    
 
       with procedure Copy_In 
-        (Model : in out CUDA_Storage_Data_Model; 
-         From  : System.Address; 
-         To    : CUDA_Address; 
-         Size  : Storage_Count);
+        (Model  : in out CUDA_Storage_Data_Model; 
+         From   : System.Address; 
+         To     : CUDA_Address; 
+         Offset : Storage_Count;
+         Size   : Storage_Count);
 
       with procedure Copy_Out
-        (Model : in out CUDA_Storage_Data_Model; 
-         From  : CUDA_Address; 
-         To    : System.Address; 
-         Size  : Storage_Count);
+        (Model  : in out CUDA_Storage_Data_Model; 
+         From   : CUDA_Address; 
+         Offset : Storage_Count;
+         To     : System.Address; 
+         Size   : Storage_Count);
 
       with function Storage_Size
         (Pool : CUDA_Storage_Data_Model)
@@ -638,6 +697,28 @@ can't be passed as-is is impossible (they are abstract).
 Once may also argue that getting the type to retreive the 
 formal parameter of the instantiation is a bit of an exotic mechanism in Ada,
 aspects feel more canonical, closer to e.g. user defined iterators.
+
+Another question is wether Storage_Model should be allowed:
+   - (1) only for access types (as storage pools)
+   - (2) only at type level
+   - (3) only for subtype
+
+The rationale for not bounding the model to an access type but rather a type
+or subtype is to allow to write code manipulating different model without the
+need of explicitely using pointers, allocation and deallocation. This allows in
+particular stack-like notation which is overall safer and more readable. One
+direct advantage of this is that this also opens the possibilty to developming
+heap based pools on native memory used as stack - a common case of this is
+the need to declare a large local temporary array.
+
+Once the above is said, it is not possible to use type-level declaration to
+specify memory model. In particular, this does not work for OOP, as declaring
+tagged types with different memory models would essensially require to create
+different hierarchies.
+
+Using subtypes introduces one specific incompatibilty, see the section on 
+subtype incompatibilty. Besides this specific aspect, it still allows to 
+identify specific places where conversions need to happen.
 
 Drawbacks
 =========
