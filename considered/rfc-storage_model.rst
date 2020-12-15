@@ -281,7 +281,7 @@ also useful as a live reference of the profile for the various functions.
 
       subtype Native_Address is System.Address;
 
-      type Native_Storage_Model_Type is null record 
+      type Native_Storage_Model_Type is limited private 
          with Storage_Model_Type => (
             Address_Type => Native_Address,
             Allocate     => Native_Allocate,
@@ -322,7 +322,9 @@ also useful as a live reference of the profile for the various functions.
          return Storage_Count return Storage_Count'Last;
 
       Native_Memory : Native_Storage_Model_Type;
-
+   
+   private
+      
    end System.Storage_Model;
 
 Offset in Storage_Model
@@ -340,7 +342,7 @@ on a component of such object (e.g. for record and array types). For example:
       V : R with Storage_Model => Some_Model;
       X : Integer := 98;
    begin
-      V.B : X; -- Will call Copy_In with offset 4 assuming 32 bits integer.
+      V.B := X; -- Will call Copy_In with offset 4 assuming 32 bits integer.
       
 Aspect Storage_Section_Type
 ---------------------------
@@ -459,6 +461,54 @@ This allows in particular the following:
       V3.F1 := V1.F1; -- Calls copy-in and copy-out between model 3 and model 1
       V4 := V1.F1; -- Calls copy-in and copy-out between native model and model 1
 
+Parameters and Storage Models
+-----------------------------
+
+It is illegal to pass to a subprogram that is expecting a formal parameter of
+a specific storage model an object of a different storage model. This caters
+in particular for cases where the object is passed by reference - explicitely
+or not. For example:
+
+.. code-block:: Ada
+
+      subtype My_Integer is Integer with Storage_Model => Some_Model;
+      procedure P (V : aliased Integer);
+
+      O : My_Integer;
+   begin
+      P (O); -- error
+
+In these cases, instead, an explicit copy would need to be made, as to make
+it clear that there are two object to consider and identify where the copy 
+should be made:
+
+.. code-block:: Ada
+
+      subtype My_Integer is Integer with Storage_Model => Some_Model;
+      procedure P (V : aliased Integer);
+
+      O1 : My_Integer;
+      O2 : Integer;
+   begin
+      O2 := O1;
+      P (O2); -- ok
+
+Note that we could have consider making such restriction apply only on 
+by-reference mechanism. However, there are cases where the decision on wether
+a given parameter is passed by reference or not is implementation-dependent, 
+it's easier to have a general rule that work the same for all cases.
+
+As a consequence, the following example is also illegal:
+
+.. code-block:: Ada
+
+      subtype My_Integer is Integer with Storage_Model => Some_Model;
+      procedure P (V : Integer);
+
+      O : My_Integer;
+   begin
+      P (O); -- error
+
 Generics and Storage Models
 ---------------------------
 
@@ -478,12 +528,12 @@ Default_Storage_Model
 ---------------------
 
 Similar to the Ada pragma Default_Storage_Pool, a pragma 
-efault_Storage_Section is provided and specifies the Storage_Section to be 
+Default_Storage_Section is provided and specifies the Storage_Section to be 
 used for all types and subtypes explicitely declared in a given package.
 
 
-Storage_Model Sortcuts
-----------------------
+Storage_Model Shortcuts
+-----------------------
 
 Since Storage_Model is applied directly on a subtype, it can also be applied
 directly at object creation time. For example:
@@ -503,6 +553,12 @@ directly at object creation time. For example:
    
 Note that in the case of access types, we're re-using the current subpool
 syntax. Compatibilty between subtypes as described before still apply.
+
+In a similar way, Storage_Model can also be applied directly on a type.
+
+.. code-block:: Ada
+
+   type Some_Type is new Integer with Storage_Model => Some_Model;
 
 Legacy Storage Pools
 --------------------
@@ -574,7 +630,10 @@ can still be accepted as a shortcut for the previous expression.
 Legacy Subpools 
 ---------------
 
-Legacy subpools capabilities should be acheiveable through storage sections.
+Legacy subpools capabilities should be acheiveable through storage sections. 
+One aspect of subpools that is not carried over by storage sections is the
+fact that subpools are finalizing their contents when dealocatted, storage
+sections do not. If needed, finalization needs to be done at the object level.
 
 Reference-level explanation
 ===========================
