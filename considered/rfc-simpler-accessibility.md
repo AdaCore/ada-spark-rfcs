@@ -44,7 +44,29 @@ We propose to distinguish three different uses of anonymous access types.
 Standalone objects and parameters
 ---------------------------------
 
-This concerns standalone objects, whether constants or variables:
+Concerning _access parameters_, both of access-to-variable type and
+access-to-constant type:
+
+```ada
+procedure P (V : access T; X : access constant T);
+```
+
+We propose making the level that of its corresponding subprogram since otherwise
+safe conversions would be considered illegal. Namely, locally declared access
+types. The following example illustrates this complication.
+
+```ada
+package body Foo is
+   procedure Bar (Param : access Integer) is
+      type Local_Ptr is access all Integer;
+      Local_Obj : Local_Ptr;
+   begin
+      Local_Obj := Param; -- Would required “.all’Unchecked_Access”
+   end;
+end;
+```
+
+On the other hand, for standalone objects, whether constants or variables:
 
 ```ada
 Var        : access T := ...
@@ -53,29 +75,36 @@ Cst        : constant access T := ...
 Cst_To_Cst : constant access constant T := ...
 ```
 
-and so-called _access parameters_, both of access-to-variable type and
-access-to-constant type:
+We propose to define their accessibility level to be that of their designated
+type (note: *not* the designated subtype). This allows to convert freely from a
+value of a named access type to such an anonymous type since each named access
+type will also have to be at a level the same or deeper than the designated type.
+This has the feature of allowing many common use-cases without the employment of `.all'Unchecked_Access` while still removing the need for dynamic checks. The
+most major benefit, however, would be easy-of-understanding in the eyes of the
+user since the rules for anonymous access types would be identical to that of 
+named access types - in so far as they would behave as if they were named access
+types declared at the point of the type declaration.
+
+For example the following would be legal:
 
 ```ada
-procedure P (V : access T; X : access constant T);
+type T is ...
+type T_Ptr is access T;
+Anon  : access T := ...
+Named : T_Ptr := Anon; -- Allowed
 ```
 
-We propose to define their accessibility level to be infinite. This allows to
-convert freely from a value of a named access type to such an anonymous type
-(as the rule only allows going to a higher accessibility level corresponding to
-a more nested scope, in order to avoid creating dangling pointers), but any
-conversion in the other direction won't be allowed. If a user wants to do that
-anyway, she will need to use attribute `Unchecked_Access` on the dereference of
-the object (which requires the object not to be null):
+However, the following would not be and the user would be forced to use
+`.all'Unchecked_Access`.
 
 ```ada
 type T_Ptr is access T;
 Anon  : access T := ...
-Named : T_Ptr := Anon.all'Unchecked_Access;
+Named : T_Ptr := Anon.all'Unchecked_Access; -- Notation is forced
 ```
 
 This is compatible with the [use of anonymous access types in
-SPARK](http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
+SPARK] ??? (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
 
 Components and function results
 -------------------------------
@@ -97,17 +126,18 @@ function Get (X : Rec) return access T;
 ```
 
 We propose to define their accessibility level to be the same as the one of
-their designated type. Thus, such uses of anonymous types `access T` would be
-equivalent to using a named access type defined at the same scope as the
-designated type `T`.
+their designated type (note: *not* subtype). Thus, such uses of anonymous types
+`access T` would be equivalent to using a named access type defined at the same
+scope as the designated type `T`.
 
-This choice allows to convert freely from a value of such an anonymous type to
-a named access type, which will necessarily be defined in the same or a nested
-scope to have visibility over the designated type `T` (as the rule only allows
-going to a higher accessibility level corresponding to a more nested scope),
-but any conversion in the other direction won't be allowed. If a user wants to
-do that anyway, she will need to use attribute `Unchecked_Access` on the
-dereference of the object (which requires the object not to be null):
+As with standalone objects and parameters, this choice allows to convert freely
+from a value of such an anonymous type to a named access type, which will
+necessarily be defined in the same or a nested scope to have visibility over the
+designated type `T` (as the rule only allows going to a higher accessibility
+level corresponding to a more nested scope), but any conversion in the other
+direction won't be allowed. If a user wants to do that anyway, she will need to
+use attribute `Unchecked_Access` on the dereference of the object (which
+requires the object not to be null):
 
 ```ada
 type T_Ptr is access T;
@@ -139,6 +169,25 @@ type Cell is record
    Next : access Cell;
 end record;
 ```
+
+An additional rule, however, must be made for discriminant-based anonymous
+access components which introduce discriminant-based subtypes. Making the level
+of such components that of their parent type.
+
+Consider the following:
+
+```ada
+package body Library_Level is
+   procedure Proc1 (N : Natural) is
+      type R is record
+         F : access String (1 .. N);
+      end record;
+   begin ... end;
+end Library_Level; 
+```
+
+Without the new mechanism, any access type declared outside Proc1 would be
+unable to evaluate the parameter N.
 
 Discriminants and allocators
 ----------------------------
