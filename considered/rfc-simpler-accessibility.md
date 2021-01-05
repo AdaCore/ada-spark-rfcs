@@ -77,9 +77,10 @@ Cst_To_Cst : constant access constant T := ...
 
 We propose to define their accessibility level to be that of their designated
 type (note: *not* the designated subtype). This allows to convert freely from a
-value of a named access type to such an anonymous type since each named access
+value of a such an anonymous type to a named access type since each named access
 type will also have to be at a level the same or deeper than the designated type.
-This has the feature of allowing many common use-cases without the employment of `.all'Unchecked_Access` while still removing the need for dynamic checks. The
+This has the feature of allowing many common use-cases without the employment of
+`.all'Unchecked_Access` while still removing the need for dynamic checks. The
 most major benefit, however, would be easy-of-understanding in the eyes of the
 user since the rules for anonymous access types would be identical to that of 
 named access types - in so far as they would behave as if they were named access
@@ -103,8 +104,9 @@ Anon  : access T := ...
 Named : T_Ptr := Anon.all'Unchecked_Access; -- Notation is forced
 ```
 
-This is compatible with the [use of anonymous access types in
-SPARK] ??? (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
+This is somewhat incompatible with the [use of anonymous access types in
+SPARK] with regards to locally declared named access types, however, library
+level named access types would be compatible. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
 
 Components and function results
 -------------------------------
