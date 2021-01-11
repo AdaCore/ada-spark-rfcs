@@ -7,13 +7,13 @@ Summary
 =======
 
 Default initialization is allowed only for ``in`` parameters. This adds the
-possibility of allowing them for ``out`` parameters,
+possibility of allowing them for ``out`` parameters in the body of subprograms.
 
 Motivation
 ==========
 
 When writing the body of a subprogram which has one or more ``out``
-parameters, one has to ensure that all these parameters are initialized
+parameters, the author has to ensure that all these parameters are initialized
 in all the paths that the function could take, otherwise the program
 might access unitialized memory.
 
@@ -25,47 +25,35 @@ value.
 Guide-level explanation
 =======================
 
-Any ``out`` parameter in a subprogram declaration can be assigned
-a default expression, just line ``in`` parameters.
+Any ``out`` parameter in the specification for a subprogram body
+may be assigned a default expression, just line ``in`` parameters.
 
 .. code-block:: ada
 
    procedure Save (The_Data : in  Integer := 0;
-                   Success  : out Boolean := False);
+                   Success  : out Boolean);
+   --  Save The_Data to disk.
+   --  Success is set to True iff the operation succeeded.
+
+   procedure Save (The_Data : in  Integer := 0;
+                   Success  : out Boolean := False)
+   --  Default initialization for Success ^^^^^^^^
+   is
+      ...
 
 When present, this default expression will always be evaluated as part of the
 call, and the result will be initially assigned to the variable at the
 start of the subprogram execution, before evaluating its declarative part.
-
-This does not make it possible to omit the out parameter at the point of the
-call.
-
-.. code-block:: ada
-
-   declare
-      Data        : Integer;
-      Did_Succeed : Boolean;
-   begin
-
-      Save (The_Data => Data, Success => Did_Succeed);
-      --  the above is valid
-
-      Save (Success => Did_Succeed);
-      --  the above is valid
-
-      Save (The_Data => Data);
-      --  the above is invalid: an error message should be produced, saying
-      --     missing argument for parameter "Success"
-
-   end;
 
 Reference-level explanation
 ===========================
 
 6.1.19 should be changed to say ::
 
-    A default_expression is allowed in a parameter_specification
-    for a formal parameter of mode in or out.
+   In subprogram declarations, a default_expression is only allowed
+    in a parameter_specification for a formal parameter of mode in.
+   In subprogram bodies, a default_expression is only allowed
+    in a parameter_specification for a formal parameter of mode in or out.
 
 Just like default expression for ``in`` parameters, default expressions
 for ``out`` parameters should be evaluated at the point of the call, ie
@@ -74,7 +62,14 @@ before the evaluation of the declarative part.
 Rationale and alternatives
 ==========================
 
-Some alternative considered:
+The first alternative considered was to allow initialisation of ``out``
+variables in the specification as well as in the body. This would have
+introduced pitfalls (or the necessity to introduce complexity) when
+renaming or overriding subprograms. Furthermore, it makes little sense
+to publicise the default value of ``out`` parameters: this is a decision
+that should concern only the implementation of the subprogram.
+
+Other alternatives considered:
 
   - remove the ``out`` mode altogether: this seemed too much of an earthquake,
     not backwards-compatible, so I don't think this is a viable option.
@@ -87,12 +82,14 @@ Some alternative considered:
 
   - enforce (via a compiler flag?) the initialization of all ``out`` parameters
     at the beginning of the sequence of statements in the subprogram: I found
-    this inelegant and unnatural
+    this inelegant and unnatural.
 
 Drawbacks
 =========
 
-See unresolved questions.
+This proposal means that there can be differences in the formal_part
+of the specification and body of a given subprogram, if the implementor
+chose to use a default initialization for one or more ``out`` parameters.
 
 Prior art
 =========
@@ -102,8 +99,7 @@ I don't know.
 Unresolved questions
 ====================
 
-Should we think about the impact that this has on requiring initialization
-for unconstrained types? (Although the use of these types
+None so far.
 
 Future possibilities
 ====================
