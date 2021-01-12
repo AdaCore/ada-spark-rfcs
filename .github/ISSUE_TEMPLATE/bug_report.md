@@ -9,7 +9,7 @@ assignees: ''
 
 ### Problem
 
-One paragraph explanation of the problem, *with examples*
+One-paragraph explanation of the problem, *with examples*
 
 ### Possible solution
 
