@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Ada language design problem that deserves a fix
+about: Ada language problem that deserves a fix
 title: ''
 labels: ''
 assignees: ''
