@@ -51,7 +51,7 @@ It follows that, in 99% of the cases, and when in doubt, you should start by
 creating an issue rather than a RFC. There are existing issue templates to help
 you in the process.
 
-### If you really think you should create an RFC
+### If you really think you should create a RFC
 
 Any language change can have potentially large effects on other parts of the
 language. There are several questions that need to be discussed for any new
