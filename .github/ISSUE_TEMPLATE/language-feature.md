@@ -9,7 +9,7 @@ assignees: ''
 
 ### Summary
 
-One paragraph explanation of the feature, *with examples of use*
+One-paragraph explanation of the feature, *with examples of use*
 
 ### Motivation
 
