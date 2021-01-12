@@ -42,7 +42,7 @@ Before creating an RFC
 
 ### Creating an issue
 
-**All features ideas that are not in a very close to finished state** should go
+**All features ideas that are not very close to a finished state** should go
 through an issue first. It is expected that, in most cases, features ideas
 should go through an issue first, so that we can assess the interest there is
 around it.
