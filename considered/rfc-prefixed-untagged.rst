@@ -10,8 +10,7 @@ Summary
 =======
 
 The "object.op()" notation has become popular enough that we should
-consider generalizing it to apply to untagged private types, and the
-types that implement them.
+consider generalizing it to apply to all types.
 
 Motivation
 ==========
@@ -26,30 +25,29 @@ private types are declared as **tagged** merely to ensure the availability
 of this notation.  This seems like an indication that we should consider
 generalizing the notation so it applies to untagged as well as tagged types.
 
-There are both technical and methodological reasons why we are only proposing
-generalizing this notation to *private* untagged types.  To avoid confusing situations 
-that arise from allowing a notation on a private type but not on its full type,
-we are proposing to allow the notation even when within the scope of
-the full type implementing the private type, but the notation is limited
-to primitive operations declared within the spec of the package where the
-private type is declared.
+Due to both technical and methodological reasons we originally considered proposing
+generalizing this notation only to *private* untagged types.  However, the general
+consensus seems to be that it would be simpler to allow it for any type, and
+presume we can solve the technical problems without introducing too much
+upward incompatibility.
 
 Guide-level explanation
 =======================
 
-When operating on an untagged private type, if it has any primitive operations,
-and the first parameter of an operation is of the private type (or
-is an access parameter with an anonymous type that designates the private type),
+When operating on an untagged type, if it has any primitive operations,
+and the first parameter of an operation is of the type (or
+is an access parameter with an anonymous type that designates the type),
 you may invoke these operations using an "object.op(...)" notation, where the
 parameter that would normally be the first parameter is brought out front,
 and the remaining parameters (if any) appear within parentheses after the name
 of the primitive operation.
 
 This same notation is already available for tagged types.  We are proposing to
-allow it for untagged private types.  It is allowed for all primitive operations
-of the private type declared in the package spec where the private type
-is declared, and can be used even if the caller has visibility on the full type
-implementing the private type.
+allow it for untagged types.  It would be allowed for all primitive operations
+of the type independent of whether they were originally declared in a package spec or
+its private part, or were inherited and/or overridden as part of a derived type declaration
+occuring anywhere, so long as the first
+parameter is of the type, or an access parameter designating the type.
 
 For example::
 
@@ -82,21 +80,27 @@ Reference-level explanation
 ===========================
 
 The notion of a *prefixed view of a subprogram* introduced in **RM 4.1.3 Selected_Components**
-is generalized to apply to primitives of an untagged private type declared in the visible
-or private part of the package.  It also applies in places where the full type is visible.
+is generalized to apply to primitives of an untagged type.
 The current feature is defined in paragraph (9.2/3) of **RM 4.1.3**.  This would be adjusted a
-bit to allow untagged private types as well, including when in the scope of their full
-type.
+bit to allow untagged types as well.
 
 In the example above, we see a use of the notation in statements and assertion pragmas outside
 the package, but we also see the notation used inside the private part of the package
-to define a Type_Invariant on the full type.  When the full type is visible, there
-might be more overloading to deal with.  For example, if the full type is a record type,
+to define a Type_Invariant on the full type.  When the type is not a private type,
+or in places where the full type is visible, there
+might be more overloading to deal with.  For example, if the (full) type is a record type,
 it might have a component named Length or Capacity.  If so, as for tagged types,
 the component takes precedence during overload resolution.  Similarly, if the
-full type is an access-to-record type, the record type might have components
+(full) type is an access-to-record type, the record type might have components
 called Length or Capacity.  Again, the name resolution rules would favor the
 components in such a case.
+
+Here is possible revised wording for **RM 4.1.3(9.1/2-9.2/5)**:
+
+Given a specific type T, a view of a primitive subprogram of T whose first formal parameter is of type T or is an access parameter whose designated type is T,
+or, if T is tagged, a view of a subprogram whose first formal parameter is of a class-wide type or is an access parameter whose designated type is class-wide:
+
+The prefix (after any implicit dereference) shall resolve to denote an object or value of type T or class-wide type T'Class. The selector_name shall resolve to denote a view of a subprogram declared immediately within the declarative region in which an ancestor of the type T (including T itself) is declared. The first formal parameter of the subprogram shall be of type T, or a class-wide type that covers T, or an access parameter designating one of these types. The designator of the subprogram shall not be the same as that of a component of the type visible at the point of the selected_component. Furthermore, if T is an access-to-object type, the designator of the subprogram shall not be the same as that of a visible component of the type designated by T. The subprogram shall not be an implicitly declared primitive operation of type T that overrides an inherited subprogram implemented by an entry or protected subprogram visible at the point of the selected_component. The selected_component denotes a view of this subprogram that omits the first formal parameter. This view is called a prefixed view of the subprogram, and the prefix of the selected_component (after any implicit dereference) is called the prefix of the prefixed view.
 
 Rationale and alternatives
 ==========================
@@ -106,20 +110,16 @@ At the time, the ARG considered generalizing it further, but chose to stick
 to tagged types because those seemed the most critical.  We expressed an intent to
 create another AI to extend it to more types, but ultimately never got around
 to it.  Since Ada 2005 was released, we have seen growing use of object.op
-notation, to the point that some private types are being made **tagged**
+notation, to the point that some types are being declared **tagged**
 merely to ensure the availability of the notation.  
 
-We considered generalizing this to all untagged types, but this seemed to open
-up more possibilities for confusion.  The places where we have noticed the
-demand for this has been with private types.  It is conceivable that there
-is also interest in having this for visible types, or at least visible
-untagged record types.  That would be a relatively simple extension, but
-the whole notion of primitive operations for non-private types is
-somewhat less interesting, as the operations other than operators tend
-to be only loosely linked to the type.  The predefined operators themselves
-are not interesting for this notation, as normal infix notation (e.g. X + Y) 
-is far superior in readability to a corresponding prefix notation using a 
-quoted operator symbol (e.g. X."+"(Y)).
+Our original reason for limiting this to *private* types
+was that we had noticed more demand for this feature there,
+and because for private types, the notion of *primitive*
+operations is more important.
+But we concluded that since we needed to support it on the
+full type of a private type, we might as well support it for
+all types. 
 
 We have been taking other steps to remove some of the distinctions between
 tagged and untagged types (e.g. in the handling of "=" on untagged
@@ -144,16 +144,14 @@ prefix notation is quite common.
 Unresolved questions
 ====================
 
-Whether to allow this for non-private untagged types is still open.  We could
-see allowing it on untagged record types, since it is allowed on tagged
-record types.  Extending it to all untagged types seems like it might
-sink the whole idea from a complexity or confusion point of view, and 
-doesn't seem to provide significant benefit.
+Whether to restrict this to only private untagged types is still debatable,
+but lacking any strong argument to restrict it, we have chosen to
+allow any type, at least for initial prototyping.
 
 Future possibilities
 ====================
 
-Conceivably in future versions we could extend this further, to all types.
-I personally wouldn't recommend it, as the whole notion of whether an
-"operation" actually *belongs* to an object begins to break down for
-non-private types.
+Conceivably in future versions we could extend this further, to all subprograms,
+even those that are not primitive.  However, this might make it even harder
+to figure out what subprogram is being invoked.  For primitive operations,
+there is no real doubt.
