@@ -217,8 +217,10 @@ I added a sample with the following files:
 Inside the sample code, there are more comments explaining what I propose.
 
 sample_reset_if.ads
--------------------
+------------------- 
+
 .. code-block:: ada
+
    package Sample_Reset_If is
    
       type Resettable is limited interface;
@@ -242,7 +244,9 @@ sample_reset_if.ads
 
 sample_xy_table_if.ads
 ----------------------
+
 .. code-block:: ada
+
    with Sample_Reset_If;
    
    package Sample_XY_Table_If is
@@ -272,8 +276,10 @@ sample_xy_table_if.ads
    end Sample_XY_Table_If;
 
 sample_xy_table.ads
+
 -------------------
 .. code-block:: ada
+
    with Sample_XY_Table_If;
    
    package Sample_XY_Table is
@@ -348,7 +354,9 @@ sample_xy_table.ads
 
 sample_xy_table.adb
 -------------------
+
 .. code-block:: ada
+
    package body Sample_XY_Table is
    
       --  Normally I now have to implement all abstract functions
@@ -410,7 +418,9 @@ sample_xy_table.adb
 
 sample_xy_table-reset.ads
 -------------------------
+
 .. code-block:: ada
+
    --  Declaring the inherited reset interface with XY_Table_Type
    package Sample_XY_Table.Reset is
    
@@ -434,7 +444,9 @@ sample_xy_table-reset.ads
 
 sample_xy_table-reset.adb
 -------------------------
+
 .. code-block:: ada
+
    --  Implementing the inherited reset interface with XY_Table_Type
    package body Sample_XY_Table.Reset is
    
