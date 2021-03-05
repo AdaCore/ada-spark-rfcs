@@ -3,6 +3,13 @@
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
 
+Short description
+=================
+
+Ada has an option to place bodies in a separate compilation unit using the **seperate** keyword.
+I would like to have an option to have a seperate compilation unit for an interface inherited by a type.
+This proposal describe a possible solution.
+
 Summary
 =======
 
@@ -193,3 +200,280 @@ Future possibilities
 ====================
 
 I cannot think of anything more.
+
+Extensive example
+=================
+I do refer to the tagged type interface, but I would like to be able to have the actual inheritance by a type, to be implemented in a subpackage.
+This to reduces the package size of the type inheriting the interface and have a better maintainability.
+
+I added a sample with the following files:
+- sample_reset_if.ads : a generic interface for a moudle which supports a reset action
+- sample_xy_table_if.ads : an interface with XY tables which inherits the reset interface
+- sample_xy_table.ads : the actual XY table type which inherits the XY table interface and thus the reset interface
+- sample_xy_table.adb : implementing the methods of the XY table
+- sample_xy_table-reset.ads : overriding the reset interface for the actual XY table type 
+- sample_xy_table-reset.adb : implementing the reset interface for the actual XY table type
+
+Inside the sample code, there are more comments explaining what I propose.
+
+sample_reset_if.ads
+-------------------
+.. code-block:: ada
+   package Sample_Reset_If is
+   
+      type Resettable is limited interface;
+      type Resettable_Iwa is access all Resettable'Class;
+   
+      procedure Do_Reset
+        (I    : not null access Resettable)
+         is null;
+   
+      function Is_Reset_In_Progress
+         (I    : not null access Resettable)
+         return Boolean
+         is abstract;
+   
+      procedure Set_Axes_Enabled
+         (I         : not null access Resettable;
+          Enable    :                 Boolean)
+         is null;
+   
+   end Sample_Reset_If;
+
+sample_xy_table_if.ads
+----------------------
+.. code-block:: ada
+   with Sample_Reset_If;
+   
+   package Sample_XY_Table_If is
+   
+      type XY_Table is limited interface
+         and Sample_Reset_If.Resettable;
+      type XY_Table_Iwa is access all XY_Table'Class;
+   
+      function Move_XY
+         (XY       : not null access XY_Table;
+          Position :                 Float_Point;
+          Scale    :                 Float := 1.0)
+         return Boolean
+         is abstract;
+   
+      function Wait_XY
+         (XY : not null access XY_Table)
+         return Boolean
+         is abstract;
+   
+      function XY_Position
+         (XY        : not null access XY_Table;
+          Generator :                 Boolean := True)
+         return Float_Point
+         is abstract;
+   
+   end Sample_XY_Table_If;
+
+sample_xy_table.ads
+-------------------
+.. code-block:: ada
+   with Sample_XY_Table_If;
+   
+   package Sample_XY_Table is
+   
+      --  This includes both the reset as the XY_Table interface
+      type XY_Table_Type is
+         new Sample_Xy_Table_If.XY_Table with private;
+      type XY_Table_Cwa  is access all XY_Table_Type'Class;
+   
+      function Create
+         return Sample_XY_Table_If.XY_Table_Iwa;
+   
+   private:
+   
+      --  Normally I now have to inherent all abstract functions
+      --  and the null procedures I need
+      --
+      --  From the reset interface
+      --
+      --  overriding
+      --     procedure Do_Reset
+      --       (I    : not null access XY_Table_Type);
+      --
+      --  overriding
+      --     function Is_Reset_In_Progress
+      --        (I    : not null access XY_Table_Type)
+      --        return Boolean;
+      --
+      --  overriding
+      --     procedure Set_Axes_Enabled
+      --        (I         : not null access XY_Table_Type;
+      --         Enable    :                 Boolean);
+      --
+      --  This reset interface (and a few other generic interfaces, like diagnostics)
+      --  I would like to implement in a separate package (and I was thinking of a child subpackage)
+      --  So therefor I propose:
+      overriding interface Resettable in sample_xy_table.reset;
+      --  This tells the compiler to look in sample_xy_table-reset.ads for the declaration of this interface
+      --  Like the 'separate' is defined to implement a function in a subpackage
+   
+      --  From the XY table interface
+      --  This one is actually implementing the interface for this component so I don't mind
+      --  to have it here
+   
+      overriding
+      function Move_XY
+         (XY       : not null access XY_Table_Type;
+          Position :                 Float_Point;
+          Scale    :                 Float := 1.0)
+         return Boolean;
+   
+      overriding
+       function Wait_XY
+          (XY : not null access XY_Table_Type)
+          return Boolean;
+   
+      overriding
+       function XY_Position
+          (XY        : not null access XY_Table_Type;
+           Generator :                 Boolean := True)
+          return Float_Point;
+   
+      type Pushup_XY_Type is
+         new Sample_XY_Table_If.XY_Table
+      with
+      record
+         X_Motor : Motion.Motor_Access;
+         Y_Motor : Motion.Motor_Access;
+      end record;
+   
+   end Sample_XY_Table;
+
+sample_xy_table.adb
+-------------------
+.. code-block:: ada
+   package body Sample_XY_Table is
+   
+      --  Normally I now have to implement all abstract functions
+      --  and the null procedures I need
+      --
+      --  From the reset interface
+      --
+      --  overriding
+      --     procedure Do_Reset
+      --       (I    : not null access XY_Table_Type);
+      --
+      --  overriding
+      --     function Is_Reset_In_Progress
+      --        (I    : not null access XY_Table_Type)
+      --        return Boolean;
+      --
+      --  overriding
+      --     procedure Set_Axes_Enabled
+      --        (I         : not null access XY_Table_Type;
+      --         Enable    :                 Boolean);
+      --
+   
+      --  But now they are in sample_xy_table-reset.adb
+      --  When adding several interface, this keeps this package maintainable
+   
+      --  From the XY table interface
+   
+      overriding
+      function Move_XY
+         (XY       : not null access XY_Table_Type;
+          Position :                 Float_Point;
+          Scale    :                 Float := 1.0)
+         return Boolean
+      is
+      begin
+         some code doing something
+      end Move_XY;
+   
+      overriding
+       function Wait_XY
+          (XY : not null access XY_Table_Type)
+          return Boolean
+      is
+      begin
+         some code doing something
+      end Wait_XY;
+   
+      overriding
+       function XY_Position
+          (XY        : not null access XY_Table_Type;
+           Generator :                 Boolean := True)
+          return Float_Point
+      is
+      begin
+         some code doing something
+      end XY_Position;
+   
+   end Sample_XY_Table;
+
+sample_xy_table-reset.ads
+-------------------------
+.. code-block:: ada
+   --  Declaring the inherited reset interface with XY_Table_Type
+   package Sample_XY_Table.Reset is
+   
+      --  From the reset interface
+   
+      overriding
+      procedure Do_Reset
+        (I    : not null access XY_Table_Type);
+   
+      overriding
+      function Is_Reset_In_Progress
+         (I    : not null access XY_Table_Type)
+         return Boolean;
+   
+      overriding
+      procedure Set_Axes_Enabled
+         (I         : not null access XY_Table_Type;
+          Enable    :                 Boolean);
+   
+   end Sample_XY_Table.Reset;
+
+sample_xy_table-reset.adb
+-------------------------
+.. code-block:: ada
+   --  Implementing the inherited reset interface with XY_Table_Type
+   package body Sample_XY_Table.Reset is
+   
+      --  From the reset interface
+   
+      overriding
+      procedure Do_Reset
+        (I    : not null access XY_Table_Type)
+      is
+      begin
+         Enable (I.X_Motor);
+         Enable (I.Y_Motor);
+         Home (I.X_Motor);
+         Home (I.Y_Motor);
+      end Do_Reset;
+   
+      overriding
+      function Is_Reset_In_Progress
+         (I    : not null access XY_Table_Type)
+         return Boolean
+      is
+      begin
+         return Is_Moving (I.X_Motor)
+            or Is_Moving (I.Y_Motor);
+      end Is_Reset_In_Progress;
+   
+      overriding
+      procedure Set_Axes_Enabled
+         (I         : not null access XY_Table_Type;
+          Enable    :                 Boolean)
+      begin
+         if Enable then
+            Enable (I.X_Motor);
+            Enable (I.Y_Motor);
+         else
+            Disable (I.X_Motor);
+            Disable (I.Y_Motor);
+         end if;
+      end Set_Axes_Enabled;
+   
+   end Sample_XY_Table.Reset;
+
