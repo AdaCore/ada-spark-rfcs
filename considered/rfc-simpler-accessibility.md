@@ -44,29 +44,9 @@ We propose to distinguish three different uses of anonymous access types.
 Standalone objects and parameters
 ---------------------------------
 
-Concerning _access parameters_, both of access-to-variable type and
-access-to-constant type:
-
 ```ada
 procedure P (V : access T; X : access constant T);
 ```
-
-We propose making the level that of its corresponding subprogram since otherwise
-safe conversions would be considered illegal. Namely, locally declared access
-types. The following example illustrates this complication.
-
-```ada
-package body Foo is
-   procedure Bar (Param : access Integer) is
-      type Local_Ptr is access all Integer;
-      Local_Obj : Local_Ptr;
-   begin
-      Local_Obj := Param; -- Would required “.all’Unchecked_Access”
-   end;
-end;
-```
-
-On the other hand, for standalone objects, whether constants or variables:
 
 ```ada
 Var        : access T := ...
@@ -75,38 +55,44 @@ Cst        : constant access T := ...
 Cst_To_Cst : constant access constant T := ...
 ```
 
-We propose to define their accessibility level to be that of their designated
-type (note: *not* the designated subtype). This allows to convert freely from a
-value of a such an anonymous type to a named access type since each named access
-type will also have to be at a level the same or deeper than the designated type.
-This has the feature of allowing many common use-cases without the employment of
-`.all'Unchecked_Access` while still removing the need for dynamic checks. The
-most major benefit, however, would be easy-of-understanding in the eyes of the
-user since the rules for anonymous access types would be identical to that of 
-named access types - in so far as they would behave as if they were named access
-types declared at the point of the type declaration.
+We propose to define the accessibility levels of standalone objects (whether
+constants or variables) and anonymous access parameters to be that of their
+designated type (note: *not* the designated subtype). This allows to convert
+freely from a value of a such an anonymous type to a named access type since
+each named access type will also have to be at a level the same or deeper
+than the designated type. This has the feature of allowing many common use-cases 
+ithout the employment of `Unchecked_Access` while still removing the need
+for dynamic checks. The most major benefit, however, would be
+easy-of-understanding in the eyes of the user since the rules for anonymous
+access types would be identical to that of named access types - in so far as
+they would behave as if they were named access types declared at the point of
+the type declaration.
 
 For example the following would be legal:
 
 ```ada
-type T is ...
-type T_Ptr is access T;
+type T is null record;
+type T_Ptr is access all T;
 Anon  : access T := ...
 Named : T_Ptr := Anon; -- Allowed
 ```
 
 However, the following would not be and the user would be forced to use
-`.all'Unchecked_Access`.
+`Unchecked_Access`.
 
 ```ada
-type T_Ptr is access T;
-Anon  : access T := ...
-Named : T_Ptr := Anon.all'Unchecked_Access; -- Notation is forced
+procedure Main is
+  function Foo (Param : access Integer) return Boolean is (...);
+  X   : aliased Integer;
+  Res : Boolean;
+begin
+  Res := Foo (X'Unchecked_Access); -- When the new restriction is active
+                                   -- 'Access cannot be taken
+end;
 ```
 
-This is somewhat incompatible with the [use of anonymous access types in
-SPARK] with regards to locally declared named access types, however, library
-level named access types would be compatible. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
+This is compatible with the [use of anonymous access types in
+SPARK]. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
 
 Components and function results
 -------------------------------
@@ -172,25 +158,6 @@ type Cell is record
 end record;
 ```
 
-An additional rule, however, must be made for discriminant-based anonymous
-access components which introduce discriminant-based subtypes. Making the level
-of such components that of their parent type.
-
-Consider the following:
-
-```ada
-package body Library_Level is
-   procedure Proc1 (N : Natural) is
-      type R is record
-         F : access String (1 .. N);
-      end record;
-   begin ... end;
-end Library_Level; 
-```
-
-Without the new mechanism, any access type declared outside Proc1 would be
-unable to evaluate the parameter N.
-
 Discriminants and allocators
 ----------------------------
 
@@ -202,13 +169,8 @@ abandon this complex kind of accessibility level and early form of ownership to
 provide a simpler basis on which to provide more complete ownership for Ada in
 the future.
 
-Uses of access discriminants can be replaced by corresponding components. In
-some cases where the Ada type system could check the absence of accessibility
-rule violations thanks to the use of access discriminants, the user may now
-have to use attribute `Unchecked_Access` [as mentioned
-above](#components-and-function-results).
-
-We also propose to forbid allocators of anonymous access types (the use of
+Any access discriminant will have the equivalent level of the discriminant's
+designated type - along with allocators of anonymous access types (the use of
 `new` within an expression of an anonymous access type), whose main use case is
 precisely to support access discriminants.
 
@@ -264,6 +226,10 @@ language allows and this new model does not, then the burden will be on the
 user to avoid dangling reference problems. We are moving away from (complex,
 hard-to-implement) safety guarantees that are provided by the language in favor
 of leaving the user on their own with respect to safety in some common cases.
+
+Also, the two models (the Ada model and the proposed model), will have to be
+able to co-exist since the proposed model is fundamentally incompatible on
+many levels.
 
 Prior art
 =========
