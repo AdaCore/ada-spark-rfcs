@@ -215,7 +215,7 @@ is used as a temporary between the two. E.g.:
     X : Foo_I := new Integer;
     Y : Bar_I := new Integer;
   begin
-    X.all := Foo_I (Y.all);
+    X.all := Y.all;
 
 conceptually becomes:
 
@@ -226,7 +226,7 @@ conceptually becomes:
     Y : Bar_I := new Integer;
   begin
     T := Y.all;
-    X.all := Foo_I (T);
+    X.all := T;
 
 System.Storage_Model.Native_Model
 ---------------------------------
@@ -348,13 +348,6 @@ As seen above, a section can be provided instead of a model to the
 Storage_Model attribute. In this case, the only change is that allocation is
 done through the My_Section_Allocate call instead of the default allocator. 
 Like before, this is resolved statically.
-
-Default_Storage_Model
----------------------
-
-Similar to the Ada pragma Default_Storage_Pool, a pragma 
-Default_Storage_Section is provided and specifies the Storage_Section to be 
-used for all types and subtypes explicitely declared in a given package.
 
 Legacy Storage Pools
 --------------------
