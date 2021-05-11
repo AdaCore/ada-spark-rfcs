@@ -32,7 +32,7 @@ A limitation of pools is that they doesn't allow to describe copy of data
 between different pools of memory, as would be necessary e.g. for distributed 
 systems such as CPU / GPU.
 
-Under this proposal, the current storage pool APIs should become specific use 
+Under this proposal, the current storage pool APIs should become a specific use 
 cases of the generic memory model proposed here.
 
 
@@ -231,8 +231,8 @@ conceptually becomes:
 System.Storage_Model.Native_Model
 ---------------------------------
 
-A new package is created, System.Storage_Model. It declares in particular a
-model "Native_Model" that refers to the default native memory. When applied
+A new package is created, System.Native_Storage_Model. It declares in particular 
+a model "Native_Model" that refers to the default native memory. When applied
 to storage models, the effect is a no-op. It can be used to explicitely declare
 usage of native global memory, which is convenient in some situations. It is
 also useful as a live reference of the profile for the various functions.
@@ -307,47 +307,6 @@ on a component of such object (e.g. for record and array types). For example:
       X : Integer := 98;
    begin
       V.B := X; -- Will call Copy_In with offset 4 assuming 32 bits integer.
-      
-Aspect Storage_Section_Type
----------------------------
-
-On top of Storage_Model, this proposal also introduces the concept of 
-Storage_Section. A storage section allows to introduce a specific section of
-a storage model that can be managed separately, and possibly deallocated at
-once. It is working at the same level (and replacing) Ada 2012 subpools.
-
-A Storage_Section_Type is declared using the name of the model it is a section
-of - by default the default native model, and an allocator that describes how
-to create memory in such section. E.g.:
-
-.. code-block:: Ada
-
-      type My_Model_Type is null record with Storage_Model_Type (...)
-
-      type My_Section_Type is null record 
-         with Storage_Section => (
-            Storage_Model => My_Model,
-            Allocate      => My_Section_Allocate
-         );
-
-      procedure My_Section_Allocate 
-        (Model           : in out My_Model_Type; 
-         Section         : in out My_Section_Type
-         Storage_Address : out CUDA_Address;
-         Size            : Storage_Count; 
-         Alignment       : Storage_Count);
-
-      My_Model   : My_Model_Type;
-      My_Section : My_Section_Type with Enclosing_Storage_Model => My_Model;
-
-      type Some_Type_Access is Integer with Storage_Model => My_Section;
-
-      V : Some_Type_Access;
-
-As seen above, a section can be provided instead of a model to the 
-Storage_Model attribute. In this case, the only change is that allocation is
-done through the My_Section_Allocate call instead of the default allocator. 
-Like before, this is resolved statically.
 
 Legacy Storage Pools
 --------------------
@@ -415,14 +374,6 @@ The legacy notation:
    type Acc is access all Integer_Array with Storage_Pool => My_Pool;
 
 can still be accepted as a shortcut for the previous expression.
-
-Legacy Subpools 
----------------
-
-Legacy subpools capabilities should be acheiveable through storage sections. 
-One aspect of subpools that is not carried over by storage sections is the
-fact that subpools are finalizing their contents when dealocatted, storage
-sections do not. If needed, finalization needs to be done at the object level.
 
 Reference-level explanation
 ===========================
