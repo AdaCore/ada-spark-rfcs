@@ -159,8 +159,8 @@ A new aspect, Storage_Model, allows to specify the memory model associated
 to an access type. Under this aspect, allocations and deallocations
 will come from the specified memory model instead of the standard ones. In 
 addition, if write operations are needed for initialization, or if there is a 
-copy of the target object from and to a standard memory area, the Read and 
-Write function will be called. When used in conjunction with access types,
+copy of the target object from and to a standard memory area, the Copy_In and 
+Copy_Out functions will be called. When used in conjunction with access types,
 it allows to encompass the capabilities of storage pools, e.g.:
 
 .. code-block:: Ada
@@ -181,17 +181,17 @@ it allows to encompass the capabilities of storage pools, e.g.:
 
       Device_Array : Device_Array_Access := new Host_Array (1 .. 10);
       --  Calls CUDA_Storage_Model.Allocate to allocate the fat pointers and
-      --  the bounds, then CUDA_Storage_Model.Write to copy the values of the
+      --  the bounds, then CUDA_Storage_Model.Copy_In to copy the values of the
       --  boundaries.
    begin
       Host_Array.all := (others => 0);
 
       Device_Array.all := Host_Array.all; 
-      --  Calls CUDA_Storage_Model.Write to write to the device array from the
+      --  Calls CUDA_Storage_Model.Copy_In to write to the device array from the
       --  native memory.
 
-      Host_Array.all := Device_Array.all; -- Calls CUDA_Storage_Model.Write.
-      --  Calls CUDA_Storage_Model.Read to read from the device array and 
+      Host_Array.all := Device_Array.all;
+      --  Calls CUDA_Storage_Model.Copy_Out to read from the device array and 
       --  write to native memory.
 
       Free (Host_Array);
