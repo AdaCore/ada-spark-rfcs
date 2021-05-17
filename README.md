@@ -2,8 +2,8 @@ Project
 =======
 
 This platform is a hub through which evolutions of the SPARK & Ada languages
-will be discussed, as implemented in AdaCore’s `GNAT toolchain
-<https://www.adacore.com/community>`_.
+will be discussed, as implemented in AdaCore’s [GNAT
+toolchain](https://www.adacore.com/community).
 
 The aims of this platform are:
 
@@ -20,17 +20,14 @@ improvements.
 It is recommended to refer to the following resources for the current
 definition of Ada and SPARK languages:
 
-- `currrent Ada Reference Manual (Ada 2012)
-  <http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-TOC.html>`_
-- `draft Ada Reference Manual for next version (Ada 202X)
-  <http://www.ada-auth.org/standards/2xrm/html/RM-TTL.html>`_
-- `current SPARK Reference Manual
-  <http://docs.adacore.com/spark2014-docs/html/lrm/>`_
+- [current Ada Reference Manual (Ada 2012)](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-TOC.html)
+- [draft Ada Reference Manual for next version (Ada 202X)](http://www.ada-auth.org/standards/2xrm/html/RM-TTL.html)
+- [current SPARK Reference Manual](http://docs.adacore.com/spark2014-docs/html/lrm/)
 
 There is no guarantee that changes discussed and eventually prototyped &
 implemented will ever make it into the Ada standard, even though AdaCore will
-do its best to collaborate with the `Ada Rapporteur Group (ARG)
-<http://www.ada-auth.org/arg.html>`_.
+do its best to collaborate with the [Ada Rapporteur Group
+(ARG)](http://www.ada-auth.org/arg.html).
 
 AdaCore will commit to discuss changes that it plans on this platform, so that
 users can give and get feedback on RFCs. It will also make it possible for
@@ -42,6 +39,19 @@ The process
 
 Before creating an RFC
 ----------------------
+
+### Creating an issue
+
+**All features ideas that are not very close to a finished state** should go
+through an issue first. It is expected that, in most cases, features ideas
+should go through an issue first, so that we can assess the interest there is
+around it.
+
+It follows that, in 99% of the cases, and when in doubt, you should start by
+creating an issue rather than a RFC. There are existing issue templates to help
+you in the process.
+
+### If you really think you should create a RFC
 
 Any language change can have potentially large effects on other parts of the
 language. There are several questions that need to be discussed for any new
@@ -72,15 +82,20 @@ Here is the process to get an RFC into alive state:
 
 - Fork this repository.
 
-- Copy ``rfc-template.rst`` to ``considered/rfc-my-feature.rst`` (where
-  ``my-feature`` is descriptive).
+- Copy `rfc-template.md` to `considered/rfc-my-feature.md` (where `my-feature`
+  is descriptive).
 
 - Fill in the RFC. This part of the process is the most important. RFCs that do
   not present convincing arguments, demonstrate impact of the design on the
   rest of the language, will have less chances of being considered. Don’t
   hesitate to get help from people sharing your mindset about a feature.
 
-- Submit a pull request, with the title: ``[RFC]: <name of your rfc>``.
+  For help on the GitHub-flavored Mardown syntax, see [this quick-start
+  guide](https://guides.github.com/features/mastering-markdown/) or this [more
+  advanced
+  guide](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
+
+- Submit a pull request, with the title: `[RFC]: <name of your rfc>`.
   As a pull request the RFC will receive design feedback from AdaCore’s
   language design team, and from the larger community, and the author
   should be prepared to revise it in response.
@@ -101,11 +116,11 @@ postpone.
 Supporting an RFC/providing feedback
 ------------------------------------
 
-As a community member, you are encouraged to provide support/feedback on 
+As a community member, you are encouraged to provide support/feedback on
 existing RFCs.
 
-If you have remarks/comments on an RFC, you can simply comment on the 
-RFC itself. You can sync with the RFC author to propose amendments to 
+If you have remarks/comments on an RFC, you can simply comment on the
+RFC itself. You can sync with the RFC author to propose amendments to
 the RFC if you think some are necessary.
 
 If you want simply to signal support for a proposal, you should add a +1
@@ -114,21 +129,21 @@ reaction ("thumb up") to the corresponding Pull Request's original message.
 What happens afterwards
 -----------------------
 
-- After an RFC has been merged in the ``considered`` folder, it will be
+- After an RFC has been merged in the `considered` folder, it will be
   considered for prototyping by relevant engineers at AdaCore.
 
   * Note that, if as a member of the community you want to try your hand at
-    implementing a feature in GNAT, you can propose a patch against `GNAT’s
-    FSF repository <https://www.gnu.org/software/gnat/>`_, which will then be
+    implementing a feature in GNAT, you can propose a patch against [GNAT’s FSF
+    repository](https://www.gnu.org/software/gnat/), which will then be
     considered for merging into AdaCore’s GNAT Pro compiler. For SPARK,
-    `AdaCore’s SPARK GitHub repository
-    <https://github.com/AdaCore/spark2014>`_ is the reference implementation.
+    [AdaCore’s SPARK GitHub repository](https://github.com/AdaCore/spark2014)
+    is the reference implementation.
 
 - When a prototype has been implemented by one means or another, the RFC will be
-  re-considered, and a pull request moving the RFC from the ``considered`` folder
-  to the ``prototyped`` folder. Any facts/drawbacks/additional work discovered
+  re-considered, and a pull request moving the RFC from the `considered` folder
+  to the `prototyped` folder. Any facts/drawbacks/additional work discovered
   during prototyping, as well as an evaluation of the feature will be conducted
-  on the PR. The feature will be made available through the ``-gnatX`` flag so
+  on the PR. The feature will be made available through the `-gnatX` flag so
   that people from the community can play with it and give feedback too.
 
 - Finally, a member of the AdaCore team will give a final decision about the
@@ -137,5 +152,5 @@ What happens afterwards
 Credits
 -------
 
-Most of the content of this document was inspired by the `RFC process from the
-Rust community <https://github.com/rust-lang/rfcs>`_.
+Most of the content of this document was inspired by the [RFC process from the
+Rust community](https://github.com/rust-lang/rfcs).
