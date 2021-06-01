@@ -92,8 +92,8 @@ The multi-line string literal ends upon encountering the sequence ""$, whether
 it happens at the beginning of a line, or somewhere in the middle of a line.
 In the latter case, the value of the string does not end with a newline character.
 
-Note that multi-line strings introduces the question of whether spaces at the 
-beginning of a line are significant.
+Note that multi-line string literals introduce the question of whether spaces at the 
+beginning of a line of such a literal are significant.
 
 Proposed approach:
 Ignore spaces that appear at the beginning of every line of the multi-line literal.
@@ -110,20 +110,22 @@ to start with one or more spaces.  So for example:
     but again this line is not indented.
     ""$);
 
-The above multi-line string literal has two spaces at the beginning of the first and fourth
+The above multi-line string literal represents a string that
+has two spaces at the beginning of the first and fourth
 lines, but no spaces at the beginning of the other three lines.  The last character of
 the string represented by the above literal is a newline, because the same rule about
 ignoring leading spaces applies to the terminating ""$.
 
-If we want to consider more formatting options, it would seem to allow them as additional parameters
-within $(...), such as $(X+Y, Width => 13), but they without changing the rules for the Put_Image
+If we want to consider more formatting options, it would seem we could allow additional parameters
+within $(...), such as $(X+Y, Width => 13), but without changing the rules for the Put_Image
 aspect, they would need to control simple "postprocessing" on the result of 'Image.  An alternative
-would be to allow 'Image to take multiple parameters.  That would essentially mean that
+would be to allow 'Image itself to take multiple parameters.  That would essentially mean that
 the Put_Image "aspect" could be provided by a procedure that had additional, defaulted parameters,
-which would become available for the 'Image attributes drived from Put_Image.
+which would become available for the 'Image attributes derived from Put_Image.
 
-One question how these new kinds of string literals would interact with the Ada 2022 String_Literal
-aspect, which allows a user-defined type to support the use of string literals.
+One question is how these new kinds of string literals would interact with the Ada 2022 String_Literal
+aspect, which allows a user-defined type to support the use of string literals for values
+of types other than a string type.
 Our proposal would be for all string interpolation and character escaping to occur first,
 to produce a Wide_Wide_String, which is then handed off to the user's String_Literal function,
 to be converted into a value of the user-defined type.
@@ -147,14 +149,14 @@ We have used '$' as both the indicator of the new string literal syntax, and
 as the character inside the string to indicate the interpolation of a run-time value.
 This seemed the most straightforward choice.
 
-We have allowed the use of $identifer directly, and only require parentheses when
+We have allowed the use of "$identifer" directly, and only require parentheses when
 the name is more complex than a single identifier, or when there is an expression
-to be displayed.  An alternative would be to allow $X.Y.Z but our concern is that
+to be displayed.  An alternative would be to allow "$X.Y.Z" but our concern is that
 the period is a common punctuation mark, and it would be better to avoid any
 possible confusion by requiring () for cases like $(X.Y.Z).
 
 We have proposed to ignore spaces at the beginning of multi-line string literals,
-so that the usual indentating convention of the language can be obeyed,
+so that the usual indentating conventions of the language can be obeyed,
 rather than forcing multi-line string literals to be crowded against the left
 margin.  Originally we had thought the first line of the multi-line literal
 would establish the number of spaces to ignore on each line, but it didn't seem
@@ -175,7 +177,7 @@ String interpolation has begun to show up in many languages.  Python has a numbe
 of string literal syntaxes, chosen by a prefix letter, but our sense is that
 the string interpolation syntax has emerged as the favorite.  We do not want
 to have lots of different syntaxes, so we have included the escape mechanism
-as part both of the new string literal syntaxes.  We have chosen '\' as the
+as part of both of the new string literal syntaxes.  We have chosen '\' as the
 escape character, which has been embraced as the standard escape character
 since C introduced it back in the early 70's.
 
