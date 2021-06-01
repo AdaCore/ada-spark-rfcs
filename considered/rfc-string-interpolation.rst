@@ -48,7 +48,9 @@ the first character is the backslash ('\'), and the next character or characters
 identifies the special character or character sequence of interest.
 
 A simple example of string interpolation would be:
+
 .. code-block:: ada
+
    $"The name is $Name and the sum is $(X + Y)."$
    
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
@@ -59,7 +61,9 @@ As exemplified, the value of simple identifiers can be inserted with $identifier
 while $(...) is used for expressions or more complex names.
 
 For example:
+
 .. code-block:: ada
+
   Put_Line
     ($"X = $X and Y = $Y and X+Y = $(X+Y);\n"$ &
      $" a dollar sign = \$ and"$ &
@@ -74,7 +78,9 @@ each newline separating two lines of the multi-line literal is included in the s
 by the multi-line string literal.
 
 For example:
+
 .. code-block:: ada
+
   Put_Line
     ($""
      X = $X and Y = $Y and X+Y = $(X+Y);
@@ -93,7 +99,9 @@ Proposed approach:
 Ignore spaces that appear at the beginning of every line of the multi-line literal.
 Use an escaped space on at least one of the lines if every line is supposed
 to start with one or more spaces.  So for example:
+
 .. code-block:: ada
+
   Put_Line ($""
       This is indented relative to
     this line.  These lines are at
