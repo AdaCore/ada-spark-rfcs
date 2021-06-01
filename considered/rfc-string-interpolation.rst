@@ -75,11 +75,11 @@ by the multi-line string literal.
 
 For example:
 
-Put_Line
-  ($""
-   X = $X and Y = $Y and X+Y = $(X+Y);
-    a dollar sign = \$ and quote is either "" or \" though \" would be preferred.
-  ""$)
+  Put_Line
+    ($""
+     X = $X and Y = $Y and X+Y = $(X+Y);
+      a dollar sign = \$ and quote is either "" or \" though \" would be preferred.
+     ""$)
 
 The multi-line string literal begins with a $"" at the end of a line.
 The multi-line string literal ends upon encountering the sequence ""$, whether
@@ -94,13 +94,13 @@ Ignore spaces that appear at the beginning of every line of the multi-line liter
 Use an escaped space on at least one of the lines if every line is supposed
 to start with one or more spaces.  So for example:
 
-Put_Line ($""
-    This is indented relative to
-  this line.  These lines are at
-  the same level of indentation.
-    And here we are indented again
-  but again this line is not indented.
-  ""$);
+  Put_Line ($""
+      This is indented relative to
+    this line.  These lines are at
+    the same level of indentation.
+      And here we are indented again
+    but again this line is not indented.
+    ""$);
 
 The above multi-line string literal has two spaces at the beginning of the first and fourth
 lines, but no spaces at the beginning of the other three lines.  The last character of
@@ -153,7 +153,6 @@ would establish the number of spaces to ignore on each line, but it didn't seem
 appropriate to treat the first line specially.  So it is easy enough to look
 at all of the lines of the string literal, and only ignore spaces that occur at
 the beginning of all of them.
-
 
 Drawbacks
 =========
