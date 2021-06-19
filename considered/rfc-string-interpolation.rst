@@ -178,7 +178,7 @@ String interpolation has begun to show up in many languages.  Python has a numbe
 of string literal syntaxes, chosen by a prefix letter, but our sense is that
 the string interpolation syntax has emerged as the favorite.  We do not want
 to have lots of different syntaxes, so we have included the escape mechanism
-as part of both of the new string literal syntaxes.  We have chosen '\' as the
+as part of both of the new string literal syntaxes.  We have chosen '\\' as the
 escape character, which has been embraced as the standard escape character
 since C introduced it back in the early 70's.
 
