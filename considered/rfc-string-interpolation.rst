@@ -11,7 +11,7 @@ of "string interpolation," where the names of variables or parenthesized
 expressions can be used directly within the string literal, such that
 the value of the variable or the expression is "interpolated" directly
 into the value of the enclosing string upon use at run-time.  In addition,
-an escape character ('\') is provided for inserting certain standard control
+an escape character ('\\') is provided for inserting certain standard control
 characters (such as newline) or unicode characters within
 the string literal.  The two string-literal syntaxes differ in that one is designed
 for creating a string literal all on one line, while the other is designed
@@ -55,7 +55,8 @@ A simple example of string interpolation would be:
    
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
 Expressions that are of type *_String or *_Character would be interpolated directly 
-into the resulting string, while anything else would have the '*_Image attribute applied.
+into the resulting string, while anything else would have the '*_Image attribute applied
+(with any leading and trailing white space trimmed).
 
 As exemplified, the value of simple identifiers can be inserted with $identifier,
 while $(...) is used for expressions or more complex names.
@@ -67,7 +68,7 @@ For example:
   Put_Line
     ($"X = $X and Y = $Y and X+Y = $(X+Y);\n"$ &
      $" a dollar sign = \$ and"$ &
-     $" quote is either "" or \" though \” would be preferred."$);
+     $" quote is either "" or \" though \" would be preferred."$);
 
 In some cases, the string will want to represent multiple lines of
 text.  The use of "\n" and explicit concatenation can become tedious
