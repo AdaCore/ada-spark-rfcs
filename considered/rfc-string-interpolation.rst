@@ -41,7 +41,7 @@ We propose two new string literal syntaxes:
 
 Within an interpolated string literal, the simple name of an object,
 or a parenthesized expression, when preceded by $, is expanded at run-time
-into the result of calling 'Image on the object or expression.
+into the result of calling 'Image on the object or expression (trimmed of any leading or trailing whitespace).
 In addition, control/special characters (or character sequences) such as newline or
 tab can be included in the string literal using an escape sequence, where
 the first character is the backslash ('\'), and the next character or characters
@@ -56,7 +56,7 @@ A simple example of string interpolation would be:
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
 Expressions that are of type *_String or *_Character would be interpolated directly 
 into the resulting string, while anything else would have the '*_Image attribute applied
-(with any leading and trailing white space trimmed).
+(with any leading and trailing whitespace trimmed).
 
 As exemplified, the value of simple identifiers can be inserted with $identifier,
 while $(...) is used for expressions or more complex names.
@@ -169,7 +169,9 @@ Drawbacks
 =========
 
 Hopefully the semantics will be fairly intuitive, but this is certainly
-adding complexity to string literals, and 
+adding complexity to string literals.  Programmers who get used to the features
+of this extended syntax may find themselves using the features in the "normal"
+string literal which could lead to surprises.
 
 Prior art
 =========
