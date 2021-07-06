@@ -44,7 +44,7 @@ or a parenthesized expression, when preceded by $, is expanded at run-time
 into the result of calling 'Image on the object or expression (trimmed of any leading or trailing whitespace).
 In addition, control/special characters (or character sequences) such as newline or
 tab can be included in the string literal using an escape sequence, where
-the first character is the backslash ('\'), and the next character or characters
+the first character is the backslash ('\\'), and the next character or characters
 identifies the special character or character sequence of interest.
 
 A simple example of string interpolation would be:
@@ -71,7 +71,7 @@ For example:
      $" quote is either "" or \" though \" would be preferred."$);
 
 In some cases, the string will want to represent multiple lines of
-text.  The use of "\n" and explicit concatenation can become tedious
+text.  The use of "\\n" and explicit concatenation can become tedious
 and less readable when creating such a multi-line string.  For
 such a situation, we propose the multi-line string literal notation,
 using $"" at the end of a line to start the string and ""$ to terminate.  Unless escaped,
