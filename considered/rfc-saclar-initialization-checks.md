@@ -34,7 +34,7 @@ Guide-level explanation
 The restriction "No_Uninitialized_Local_Scalars" can be used to instruct the
 compiler to check that every local variable of a scalar type (or of a private
 type whose completion is a scalar type) is initialized before it is read
-(copy-back of OUT parameters counts as a read).
+(copy-back of OUT parameters and function result counts as a read).
 
 A read variable is considered to be local if either, the variable
 is library level and the read occurs directly in the elaboration of one of
@@ -122,7 +122,7 @@ variables can be read, they are necessarily handled in the most pessimistic
 way. For example, in the following code, the check ensuring that `F` is
 initialized at the end of `Do_Something` will fail. Indeed, even if `F` is set
 before every explicit raise of the exception `A`, we cannot be sure statically
-that no other constructs in the body of `Do_Something` won't raise `A`, so
+that no other constructs in the body of `Do_Something` will raise `A`, so
 `F` needs to be initialized before the handled sequence of statements or
 in the exception handler.
 
@@ -144,11 +144,11 @@ end Do_Something;
 ```
 
 Note that only paths exiting a subprogram normally are considered when
-checking that a parameter of mode OUT is initialized on subprogram exit. In
-the example above, the fact that `F` is not initialized when exception `B` is
-raised is not a problem, since `B` is not handled in the subprogram. Calls
-to subprograms annotated with `No_Return` and pragma `Assert` with a statically
-false expression are handled in the same way.
+checking that a parameter of mode OUT or a function result is initialized on
+subprogram exit. In the example above, the fact that `F` is not initialized when
+exception `B` is raised is not a problem, since `B` is not handled in the
+subprogram. Calls to subprograms annotated with `No_Return` and pragma `Assert`
+with a statically false expression are handled in the same way.
 
 Reference-level explanation
 ===========================
