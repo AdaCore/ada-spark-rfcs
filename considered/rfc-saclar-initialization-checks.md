@@ -39,11 +39,11 @@ type whose completion is a scalar type) is initialized before it is read
 A read variable is considered to be local if either, the variable
 is library level and the read occurs directly in the elaboration of one of
 its enclosing packages or the variable is declared inside a subprogram, task, or
-entry and the expression is evaluated in the body or specification of the same
+entry and the expression is evaluated in the body or spec of the same
 unit.
 
 A variable is considered to be initialized if either it is a parameter of mode
-IN OUT, its type has a Default_Value aspect, an initial expression is supplied
+IN or IN OUT, its type has a Default_Value aspect, an initial expression is supplied
 for its declaration, or it can be statically determined that all program paths
 leading to the read contain at least an assignment (including copy-back on OUT
 parameters).
@@ -59,6 +59,8 @@ on copy-back. This one will fail as it is possible to return before the
 assignment into `F2`.
 
 ```
+procedure Init (X : out Integer);
+
 procedure Do_Something (F1 : in out Integer; F2 : out Integer) is
   X1 : Integer := 14;
   type My_Int is new Integer with Default_Value => 0;
@@ -80,9 +82,9 @@ end;
 Values of conditions, in conditional expressions or loops for example, are not
 tacken into account to decide whether a path is considered to be feasible,
 unless the condition is statically known. For example, in the following code,
-`X` will not be considered initialized after the first if statement. As a
-result, the initialization check in the second if statment will fail at
-compile time, even if the conditions on both loops match.
+`X` will not be considered initialized after the first if-statement. As a
+result, the initialization check in the second if-statment will fail at
+compile time, even if the conditions on both if-statements match.
 
 ```
 declare
@@ -98,7 +100,7 @@ begin
 end;
 ```
 
-The read of `X` at the end of the declare block in the follwoing snippet is
+The read of `X` at the end of the declare block in the following snippet is
 valid however, as it can be statically determined that the body of the loop is
 executed at least once.
 
@@ -170,7 +172,7 @@ piecewise array initialization.
 
 Swift ensures initialization at declaration through initializers (constructors).
 Failure during initialization makes the object nil. The compiler enforces that
-each variable was initialized before it is used; see here.
+each variable was initialized before it is used.
 
 Dart ensures initialization and non-nullity using flow analysis similar to Rust.
 
