@@ -43,7 +43,7 @@ entry and the expression is evaluated in the body or spec of the same
 unit.
 
 A variable is considered to be initialized if either it is a parameter of mode
-IN or IN OUT, its type has a Default_Value aspect, an initial expression is supplied
+IN OUT, its type has a Default_Value aspect, an initial expression is supplied
 for its declaration, or it can be statically determined that all program paths
 leading to the read contain at least an assignment (including copy-back on OUT
 parameters).
