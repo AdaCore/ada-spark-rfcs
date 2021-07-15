@@ -37,7 +37,7 @@ type whose completion is a scalar type) is initialized before it is read
 (copy-back of OUT parameters and function result counts as a read).
 
 A read variable is considered to be local if either, the variable
-is library level and the read occurs directly in the elaboration of one of
+is library-level and the read occurs directly in the elaboration of one of
 its enclosing packages or the variable is declared inside a subprogram, task, or
 entry and the expression is evaluated in the body or spec of the same
 unit.
@@ -80,7 +80,7 @@ end;
 ```
 
 Values of conditions, in conditional expressions or loops for example, are not
-tacken into account to decide whether a path is considered to be feasible,
+taken into account to decide whether a path is considered to be feasible,
 unless the condition is statically known. For example, in the following code,
 `X` will not be considered initialized after the first if-statement. As a
 result, the initialization check in the second if-statment will fail at
@@ -116,7 +116,7 @@ begin
 end;
 ```
 
-All classical control flow construsts are supported, including goto statements
+All classical control flow constructs are supported, including goto statements
 and exception handling. However, to ensure that no uninitialized scalar
 variables can be read, they are necessarily handled in the most pessimistic
 way. For example, in the following code, the check ensuring that `F` is
