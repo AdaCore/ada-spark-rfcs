@@ -84,7 +84,7 @@ Here is the process to get an RFC into alive state:
 
 - Edit this file, using the pen next to the `Raw` and `Blame` buttons.
 
-- On the edition page, rename rfc-template.md to something descriptive such
+- On the editing page, rename rfc-template.md to something descriptive such
   as `considered/<short-feature-description>.md. Make sure to put the
   resulting file in the directory `considered`.
 
@@ -98,10 +98,10 @@ Here is the process to get an RFC into alive state:
   advanced
   guide](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
 
-  If you feel like you cannot fill large parts of the RFC template, open an
+  If you feel like you cannot fill in large parts of the RFC template, open an
   issue instead.
 
-- Name you commit `[RFC]: <name of your rfc>`, and then validate the creation
+- Name your commit `[RFC]: <name of your rfc>`, and then validate the creation
   of the commit itself. We suggest you use a meaningful name for the branch,
   but this is optional.
 
