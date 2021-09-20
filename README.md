@@ -80,10 +80,13 @@ those that are considered for addition.
 
 Here is the process to get an RFC into alive state:
 
-- Fork this repository.
+- Browse the file [rfc-template.md](https://github.com/AdaCore/ada-spark-rfcs/blob/master/rfc-template.md)
 
-- Copy `rfc-template.md` to `considered/rfc-my-feature.md` (where `my-feature`
-  is descriptive).
+- Edit this file, using the pen next to the `Raw` and `Blame` buttons.
+
+- On the edition page, rename rfc-template.md to something descriptive such
+  as `considered/<short-feature-description>.md. Make sure to put the
+  resulting file in the directory `considered`.
 
 - Fill in the RFC. This part of the process is the most important. RFCs that do
   not present convincing arguments, demonstrate impact of the design on the
@@ -95,13 +98,20 @@ Here is the process to get an RFC into alive state:
   advanced
   guide](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
 
-- Submit a pull request, with the title: `[RFC]: <name of your rfc>`.
-  As a pull request the RFC will receive design feedback from AdaCore’s
-  language design team, and from the larger community, and the author
-  should be prepared to revise it in response.
+  If you feel like you cannot fill large parts of the RFC template, open an
+  issue instead.
 
-At this stage, expect several iterations between discussions, consensus
-building, and clarifications.
+- Name you commit `[RFC]: <name of your rfc>`, and then validate the creation
+  of the commit itself. We suggest you use a meaningful name for the branch,
+  but this is optional.
+
+- On the next page, GitHub will automate the creation of the Pull Request.
+  Just hit `Create pull request`.  
+
+As a pull request the RFC will receive design feedback from AdaCore’s
+language design team, and from the larger community, and the author
+should be prepared to revise it in response. Expect several iterations
+between discussions, consensus building, and clarifications.
 
 At some point, a member of the AdaCore language design team will make a
 decision about the future of the RFC, which can be either accept, reject, or
