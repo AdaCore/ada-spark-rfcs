@@ -84,8 +84,8 @@ Here is the process to get an RFC into alive state:
 
 - Edit this file, using the pen next to the `Raw` and `Blame` buttons.
 
-- On the editing page, rename rfc-template.md to something descriptive such
-  as `considered/<short-feature-description>.md. Make sure to put the
+- On the editing page, rename `rfc-template.md` to something descriptive such
+  as `considered/<short-feature-description>.md`. Make sure to put the
   resulting file in the directory `considered`.
 
 - Fill in the RFC. This part of the process is the most important. RFCs that do
