@@ -77,7 +77,7 @@ Named : T_Ptr := Anon; -- Allowed
 ```
 
 This is compatible with the [use of anonymous access types in
-SPARK]. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
+SPARK]. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types)
 
 Subprogram parameters
 ---------------------
@@ -103,9 +103,9 @@ begin
 end;
 ```
 
-From the callee's perspective, the level of parameters and local variables of the callee would
+From the callee's perspective, the level of local variables of the callee would
 be statically deeper than the level of anonymous access formal parameters - allowing locals of
-the subprogram to be assigned local parameters, but not vice versa.
+the subprogram to be assigned formal parameters, but not vice versa.
 
 ```ada
 procedure P (V : access T; X : access constant T) is
