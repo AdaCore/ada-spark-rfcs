@@ -34,6 +34,17 @@ users can give and get feedback on RFCs. It will also make it possible for
 people from the community to propose and discuss potential features and
 improvements.
 
+You can have a look at:
+
+- [all RFC (both open and closed)](https://github.com/AdaCore/ada-spark-rfcs/pulls?q=is%3Apr+)
+- [open RFC](https://github.com/AdaCore/ada-spark-rfcs/pulls)
+- [RFC being considered for prototyping](https://github.com/AdaCore/ada-spark-rfcs/tree/master/considered)
+- [RFC which have been prototyped](https://github.com/AdaCore/ada-spark-rfcs/tree/master/prototyped)
+
+If you're new to GitHub, you may want to have a look at [GitHub
+Guides](https://guides.github.com/), in particular to learn how to fork the
+project and submit RFC as Pull Requests.
+
 The process
 ===========
 
