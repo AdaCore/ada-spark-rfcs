@@ -13,7 +13,7 @@ Motivation
 
 Early users of delta aggregates, and users of the former 'Update feature of SPARK
 have noticed a periodic need to update an individual subcomponent (e.g. X.A.B) rather
-than an entire components (e.g. X.A).  This can be accomplished by a series of
+than an entire component (e.g. X.A).  This can be accomplished by a series of
 nested delta aggregates, but it seems more straightforward to support a syntax
 that allows the direct update of an individual subcomponent of an enclosing object.
 
@@ -110,11 +110,11 @@ is removed, and a new legality rule in RM 4.3.4 is added:
 
 In addition, the dynamic semantics of RM 4.3.4(15/5-21/5) are changed as follows:
 
->For a delta_aggregate, for each discrete_choice or each subcomponent associated with each record_ or array_subcomponent_association (in the order given in the enclosing discrete_choice_list and record_ or array_subcomponent_association_list, respectively): 
+>For a delta_aggregate, for each discrete_choice or each subcomponent associated with a record_ or array_subcomponent_association (in the order given in the enclosing discrete_choice_list or subcomponent_association_list, respectively): 
 > * if the associated subcomponent belongs to a variant, a check is made that the values of the governing discriminants are such that the anonymous object has this component. The exception Constraint_Error is raised if this check fails.
-> * if the associated subcomponent is a subcomponent of an array, the for each represented index value (in ascending order, if the discrete_choice represents a range): 
+> * if the associated subcomponent is a subcomponent of an array, then for each represented index value (in ascending order, if the discrete_choice represents a range): 
 >   * the index value is converted to the index type of the array type.
->   * a check is made that the index value belongs to the index range of the corresponding part of the anonymous object; Constraint_Error is raised if this check fails.
+>   * a check is made that the index value belongs to the index range of the corresponding array part of the anonymous object; Constraint_Error is raised if this check fails.
 > * the expression of the record_ or array_subcomponent_association is evaluated, converted to the nominal subtype of the associated subcomponent, and assigned to the corresponding subcomponent of the anonymous object.
 
 Rationale and alternatives
