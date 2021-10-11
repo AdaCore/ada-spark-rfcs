@@ -41,10 +41,6 @@ You can have a look at:
 - [RFC being considered for prototyping](https://github.com/AdaCore/ada-spark-rfcs/tree/master/considered)
 - [RFC which have been prototyped](https://github.com/AdaCore/ada-spark-rfcs/tree/master/prototyped)
 
-If you're new to GitHub, you may want to have a look at [GitHub
-Guides](https://guides.github.com/), in particular to learn how to fork the
-project and submit RFC as Pull Requests.
-
 The process
 ===========
 
