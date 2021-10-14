@@ -31,9 +31,10 @@ program is trying to accomplish.
 Guide-level explanation
 =======================
 
-We propose a new string literal syntax, for an "interpolated" string literal:
+We propose a new string literal syntax, for an "interpolated" string literal.  Two options are being considered:
 
 - F" ... "
+- {" ... "}
 
 Within an interpolated string literal, the simple name of an object,
 or a parenthesized expression, when enclosed in { ... }, is expanded at run-time
@@ -48,6 +49,7 @@ A simple example of string interpolation would be:
 .. code-block:: ada
 
    F"The name is {Name} and the sum is {X + Y}."
+   {"The name is {Name} and the sum is {X + Y}."}
    
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
 Expressions that are of type *_String or *_Character would be interpolated directly 
@@ -61,9 +63,9 @@ For example:
 .. code-block:: ada
 
   Put_Line
-    (F"X = {X} and Y = {Y} and X+Y = {X+Y};\n" &
-     F" an open brace = \{ and" &
-     F" quote is either "" or \" though \" would be preferred.");
+    ({"X = {X} and Y = {Y} and X+Y = {X+Y};\n"} &
+     {" an open brace = \{ and"} &
+     {" quote is either "" or \" though \" would be preferred."});
 
 If we want to consider more formatting options, it would seem we could allow additional parameters
 within {...}, such as {X+Y, Width => 13}, but without changing the rules for the Put_Image
@@ -90,18 +92,26 @@ Rationale and alternatives
 As indicated in the motivation section, the main goal is to provide a clearer,
 easier to read, less error-prone approach to creating strings for output.
 
-We have chosen to use F" as the way to start an interpolated string literal,
-and { ... } for each internal interpolation.
+We have considered using either F" ... " as the way to identify an interpolated string literal,
+or {" ... "}.  In both cases we propose using { ... } for each internal interpolation.
 Other alternatives considered were starting with $" and using $(...) as the interpolation indicator.  In this case we
 also considered using "$ to end an interpolated string literal, to maintain the
 normal mirroring of bracketing notations in Ada (such as << ... >> and ( ... )).
 
-An alternative to using F" might be to use {" ... "} as the syntax for an interpolated string literal.  This would preserve
+An advantage to using {" ... "} as the syntax for an interpolated string literal is that it would preserve
 the mirroring, and might make more sense if we agree generally that string literals appearing within a nested { ... } should be automatically
-considered to allow interpolation as well.
+considered to allow interpolation as well.  The F" ... " syntax is reminiscent of what some other languages do, but is a bit
+odd in its use of a delimiter starting with a normal letter.  It also begs the question of whether f" ... " and F" ... " would be equivalent, or only
+F" ... " would be legal, or they might have some subtle distinction in meaning.
 
 We originally included a multi-line string literal possibility.  We have dropped that for now.  One complexity with multi-line string literals
-is whether or not spaces at the beginning of the literal are included within the resulting string.
+is whether or not spaces at the beginning of the literal are included within the resulting string.  It might be that the {" ... "} syntax could provide
+a nice solution to this, where a multi-line string literal would simply have a single set of braces, but multiple quoted strings.  E.g.:
+
+   {"This is a multi-line"
+    "string literal"
+    "There is no ambiguity about how many"
+    "spaces are included in each line"}
 
 Drawbacks
 =========
@@ -126,7 +136,9 @@ since C introduced it back in the early 70's.
 Unresolved questions
 ====================
 
-TBD
+Whether to adopt F" ... " or {" ... "} syntax.
+
+Whether to support a multi-line syntax.  With the {" ... "} syntax there is a somewhat obvious generalization that would support multi-line strings, as proposed above.
 
 Future possibilities
 ====================
