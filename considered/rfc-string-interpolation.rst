@@ -108,6 +108,8 @@ We originally included a multi-line string literal possibility.  We have dropped
 is whether or not spaces at the beginning of the literal are included within the resulting string.  It might be that the {" ... "} syntax could provide
 a nice solution to this, where a multi-line string literal would simply have a single set of braces, but multiple quoted strings.  E.g.:
 
+.. code-block:: ada
+
    {"This is a multi-line"
     "string literal"
     "There is no ambiguity about how many"
