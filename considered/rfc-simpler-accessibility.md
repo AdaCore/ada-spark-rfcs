@@ -124,10 +124,7 @@ Function results
 function Get (X : Rec) return access T;
 ```
 
-We propose making anonymous access function result types have the level of the
-innermost "master" of their enclosing function call in order to support the "identity"
-function use-case while still allowing any actual parameter to be passed for an anonymous
-access type formal.
+We propose making function result types with anonymous access parts have the level of the deepest actual parameter with anonymous access parts or explicitly aliased actual in order to support the "identity" function use-case while still allowing any other kind of actual parameter to be passed for an anonymous access type formal.
 
 For example:
 
@@ -142,11 +139,37 @@ declare
    end;
    X : access Integer;
 begin
-   X := Identity (X); -- Illegal
-   X := Identity (X).all'Unchecked_Access; -- Legal
+   X := Identity (X); -- Legal
+   declare
+      Y : access Integer;
+   begin
+      X := Identity (Y); -- Illegal
+   end;
 end;
 ```
-  
+
+However, an additional restriction that falls out of the above logic is that tagged type extensions *cannot* allow additional anonymous access discriminants in order to prevent upward conversions making such anonymous access discriminants visible:
+
+```ada
+declare
+   type T is tagged null record;
+   type T2 (Disc : access Integer) is new T with null record; -- Illegal
+
+   function Identity (Param : aliased T'Class) return access Integer is
+   begin
+      return T2 (T'Class (Param)).Disc;
+   end;
+   X : access Integer;
+begin
+   declare
+      P : aliased Integer;
+      Y : T2 (P'Access);
+   begin
+      X := Identity (T'Class (Y));
+   end;
+end;
+```
+
 In order to prevent upward conversions of anonymous function results (like below), we
 also would need to assure that the level of such a result (from the callee's perspective)
 is statically deeper:
