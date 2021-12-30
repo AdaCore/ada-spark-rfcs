@@ -103,17 +103,26 @@ begin
 end;
 ```
 
-From the callee's perspective, the level of local variables of the callee would
-be statically deeper than the level of anonymous access formal parameters - allowing locals of
-the subprogram to be assigned formal parameters, but not vice versa.
+From the callee's perspective, the level of anonymous access formal parameters would be
+between the level of the subprogram and the level of the subprogram's locals. This has the effect
+of formal parameters being treated as a local except in the case of their use as a function
+result or as the value for an access discriminant.
+
+Note that with these more restricted rules we lose track of accessibility levels when assigned to
+local objects thus making (in the example below) the assignment to Node2.Link from Temp below
+compile-time illegal.
 
 ```ada
-procedure P (V : access T; X : access constant T) is
-   Local     : aliased T;
-   Local_Ptr : access T;
+type Node is record
+   Data : Integer;
+   Link : access Node;
+end record;
+
+procedure Swap_Links (Node1, Node2 : in out Node) is
+   Temp : constant access Integer := Node1.Link; -- We lose the "association" to Node1
 begin
-   V := Local'Access; -- Not allowed
-   Local_Ptr := V; -- Allowed
+   Node1.Link := Node2.Link; -- Allowed
+   Node2.Link := Temp; -- Not allowed
 end;
 ```
 
@@ -124,7 +133,10 @@ Function results
 function Get (X : Rec) return access T;
 ```
 
-We propose making function result types with anonymous access parts have the level of the deepest actual parameter with anonymous access parts or explicitly aliased actual in order to support the "identity" function use-case while still allowing any other kind of actual parameter to be passed for an anonymous access type formal.
+We propose making the accessibility level of the result of a call to a function that has an anonymous access result type defined to be as whatever is deepest out of the following:
+  a) The level of the subprogram
+  b) The level of any actual parameter corresponding to a formal parameter of an anonymous access type
+  c) The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
 
 For example:
 
@@ -143,30 +155,48 @@ begin
    declare
       Y : access Integer;
    begin
-      X := Identity (Y); -- Illegal
+      X := Identity (Y); -- Illegal since Y is too deep
    end;
 end;
 ```
 
-However, an additional restriction that falls out of the above logic is that tagged type extensions *cannot* allow additional anonymous access discriminants in order to prevent upward conversions making such anonymous access discriminants visible:
+However, an additional restriction that falls out of the above logic is that tagged type extensions *cannot* allow additional anonymous access discriminants in order to prevent upward conversions making such anonymous access discriminants visible which will present incompatibilities.
+
+Here is an example of one such case of an upward conversion which would lead to a memory leak:
 
 ```ada
 declare
    type T is tagged null record;
-   type T2 (Disc : access Integer) is new T with null record; -- Illegal
+   type T2 (Disc : access Integer) is new T with null record; -- Must be illegal
 
    function Identity (Param : aliased T'Class) return access Integer is
    begin
-      return T2 (T'Class (Param)).Disc;
+      return T2 (T'Class (Param)).Disc; -- Here P gets effectivily returned and set to X
    end;
+
    X : access Integer;
 begin
    declare
       P : aliased Integer;
       Y : T2 (P'Access);
    begin
-      X := Identity (T'Class (Y));
+      X := Identity (T'Class (Y)); -- Pass local variable P (via Y's discriminant),
+                                   -- leading to a memory leak.
    end;
+end;
+```
+
+Thus we need to make the following illegal to avoid such situations:
+
+```ada
+package Pkg1 is
+   type T1 is tagged null record;
+   function Func (X1 : T1) return access Integer is (null);
+end;
+
+package Pkg2 is
+   type T2 (Ptr1, Ptr2 : access Integer) is new Pkg1.T1 with null record; -- Illegal
+   ...
 end;
 ```
 
@@ -205,14 +235,31 @@ provide a simpler basis on which to provide more complete ownership for Ada in
 the future.
 
 Any access discriminant will have the equivalent level of the its corresponding
-discriminated typed - along with allocators of anonymous access types (the use of
-`new` within an expression of an anonymous access type), whose main use case is
-precisely to support access discriminants.
+discriminated type (similar to the way anonymous access components) - along with
+allocators of anonymous access types (the use of `new` within an expression of
+an anonymous access type), whose main use case is precisely to support access
+discriminants.
 
 This has the nice side-effect of eliminating the notion of coextensions (the
 use of an allocator of anonymous access type as the value of the discriminant
 in an object declaration), which was proposed in Ada 2005 and not implemented
 currently within GNAT.
+
+However, there are some side-effects of making the level of access discriminants
+have the level of their corresponding discriminanted type which can make certain
+use cases be forced into using 'Unchecked_Access. In particular local declarations
+at a level deeper than the declaration of the discriminated type:
+
+```ada
+type T (D : access Designated) is ... ;
+procedure Foo is
+   Local : aliased Designated := ...;
+   Obj : T (D => Local'Access); -- Not allowed
+   Obj : T (D => Local'Unchecked_Access); -- Allowed
+begin
+   ...
+end Foo;
+```
 
 This is also compatible with the [use of anonymous access types in
 SPARK](http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types),
