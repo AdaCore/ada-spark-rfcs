@@ -13,7 +13,9 @@ the value of the variable or the expression is "interpolated" directly
 into the value of the enclosing string upon use at run-time.  In addition,
 an escape character ('\\') is provided for inserting certain standard control
 characters (such as newline) or unicode characters within
-the string literal.
+the string literal.  Finally, a syntax is provided for creating multi-line
+string literals, without having to explicitly use an escape sequence such
+as '\\n'.
 
 Motivation
 ==========
@@ -50,10 +52,12 @@ A simple example of string interpolation would be:
    {"The name is {Name} and the sum is {X + Y}."}
    
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
-Expressions that are of a string type or a character type would be interpolated directly 
+Expressions that are of a string type or a character type without a user-specified Put_Image aspect
+would be interpolated directly 
 into the resulting string, while anything else would have the '*_Image attribute applied.
 Because Ada established the convention of putting a space in front of the 'Image of
-non-negative integers, we drop a leading blank if it is followed immediately by a digit.
+non-negative integers, we drop a leading blank if the type is numeric, or has an Integer_Literal or Real_Literal
+aspect.
 
 As exemplified, the value of simple identifiers, more complex names, or expressions can all be inserted with { ... }.
 
@@ -66,11 +70,23 @@ For example:
      {" an open brace = \{ and"} &
      {" quote is either "" or \" though \" would be preferred."});
 
+Rather than the user having to repeatedly insert "\\n" explicitly, and the associated
+readability loss, we also propose to allow a multi-line interpolated string syntax,
+as follows:
 
-One question is how these new kinds of string literals would interact with the Ada 2022 String_Literal
+.. code-block:: ada
+
+   {"This is a multi-line"
+    "string literal"
+    "There is no ambiguity about how many"
+    "spaces are included in each line"}
+
+with the ultimate string value being the strings on each line concatenated with a standard newline indicator between them.
+
+One issue is how these new kinds of string literals would interact with the Ada 2022 String_Literal
 aspect, which allows a user-defined type to support the use of string literals for values
 of types other than a string type.
-Our proposal would be for all string interpolation and character escaping to occur first,
+Our proposal would be for all string interpolation, line concatenation, and character escaping to occur first,
 to produce a Wide_Wide_String, which is then handed off to the user's String_Literal function,
 to be converted into a value of the user-defined type.
 
@@ -110,18 +126,11 @@ would be to allow 'Image itself to take multiple parameters.  That would essenti
 the Put_Image "aspect" could be provided by a procedure that had additional, defaulted parameters,
 which would become available for the 'Image attributes derived from Put_Image.
 
-We originally included a multi-line string literal possibility.  One complexity with multi-line string literals
-is whether or not spaces at the beginning of the literal are included within the resulting string.  The proposed {" ... "} syntax can provide
-a nice solution to this, where a multi-line string literal would simply have a single set of braces, but multiple quoted strings.  E.g.:
-
-.. code-block:: ada
-
-   {"This is a multi-line"
-    "string literal"
-    "There is no ambiguity about how many"
-    "spaces are included in each line"}
-
-with the ultimate string value being the strings on each line concatenated with a standard newline indicator between them.
+We debated whether to include a multi-line string literal possibility, and ultimately decided to include it,
+because the {"..."} syntax provided a natural mechanism for doing so.  We avoid one complexity associated with multi-line string literals
+where it is not always clear how many spaces at the beginning of each line of the literal are included within the resulting string.
+The {" ... "} syntax provides
+a nice solution to this, since a multi-line string literal would simply have a single set of braces, but multiple quoted strings.
 
 Drawbacks
 =========
@@ -148,13 +157,7 @@ in C and most C-inspired languages, and more widely in Unix and Unix-like system
 Unresolved questions
 ====================
 
-- It is still not completely resolved how to combine the Ada convention of preceding the 'Image of a nonnegative numeric literal with a space.  Here we propose to recognize the case of the result of 'Image starting with <blank><digit> and remove the <blank>.  We base it on the result of 'Image, because "big" numbers and other "private" types that are intended to be used as numbers (such as types that provide saturation semantics) might very well continue the tradition of inserting a space in the beginning of their 'Image when the value is nonnegative.
-
-- A somewhat simpler rule is to trim both leading and trailing spaces, with the argument that the extra spaces were probably included in 'Image for stand-alone formatting concerns, but are not helpful when the result of 'Image is being interpolated into a surrounding context.
-
-- Whether to use doubling rather than an escape character within these strings to allow the nested use of {, }, and ".  One argument in favor of backslash is that it supports common control characters such as tab and newline without reverting to the potentially more obscure and somewhat dated {ASCII.HT} or {ASCII.LF}. It also allows the user to not worry about which characters are supposed to be doubled and which are not -- e.g. should we double "}" -- not strictly necessary, and what about single quote.
-
-- Whether to support a multi-line syntax.  With the current {" ... "} syntax there is a somewhat obvious generalization that would support multi-line strings, as proposed above.
+None remaining at the moment.
 
 Future possibilities
 ====================
