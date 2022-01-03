@@ -7,35 +7,36 @@ Summary
 =======
 
 Local variables may be declared within a part of a compound statement without introducing a full declare block.
-The only requirement is that the declarations be separated from the statements with a "begin" reserved word.
+The declarations may, but need not, be separated from the statements with an "in" reserved word.  In the absence
+of the "in" separator, the declarations may be interspersed arbitrarily with the statements.
 
 Motivation
 ==========
 
 It is generally good practice to declare local variables (or constants) with as short a lifetime as possible.
 However, introducing a declare block to accomplish this is a relatively heavy syntactic load along with a traditional extra level of indentation
-This RFC is proposing to support local variable declarations without thie extra syntacti load, by eliminating the "declare" and "end" reserved words
-(and the extra level of indentation) but preserve the
-"begin" as a separator between the declarations and the statements.  We would expect that in a typical
-source-code format, the "begin" would be outdented to match the level of the enclosing compound statement,
-so the "begin" would line up with, say, the "if" and the "end if", while the local declarations and statements
+This RFC is proposing to support local variable declarations without this extra syntactic load, by eliminating the "declare" and "end" reserved words
+(and the extra level of indentation) and optionally use the reserved word "in" as a separator
+between the declarations and the statements.  We would expect that in a typical
+source-code format, the "in" would be outdented somewhat, but not necessarily all the way to the level of the enclosing compound statement,
+so the "in" would, say, line up with, or be close to the indentation of, the "if" and the "end if", while the local declarations and statements
 would be indented just one level relative to the "if" and "end if."
 
 Guide-level explanation
 =======================
 
 In any arm of a compound statement, such an if/then/elsif statement, or a case/when statement, or a for/loop statement
-one or more local declarations may be introduced, followed by "begin" followed by the sequence of statements.
+one or more local declarations may be introduced, followed by "in" followed by the sequence of statements.
 
 For example:
 
     if X > 5 then
        Squared : constant Integer := X**2;
-    begin
+     in
        X := X + Squared;
     else
        Cubed : constant Integer := X**3;
-    begin
+     in
        X := X + Cubed;
     end if;
        
@@ -52,7 +53,7 @@ Syntax:
 Replace "sequence_of_statements" with:
 
       [local_declarative_part
-    begin]
+    in]
        sequence_of_statements
       
 in the following constructs:
@@ -73,7 +74,7 @@ in the following constructs:
 Replace "handled_sequence_of_statements" with
 
       [local_declarative_part
-    begin]
+    in]
        handled_sequence_of_statements
        
 in accept_statement 9.5.2
@@ -99,7 +100,7 @@ The main goal is to allow variables and constants to be declared with as short o
 as possible, to minimize the amount of code that needs to be considered when analyzing whether
 a given variable is used properly.
 
-We have chosen to require a "begin" as a separator between declarations and statements.
+We have chosen to allow an "in" reserved word as a separator between declarations and statements.
 That is not strictly necessary from a syntax point of view, but we felt it was useful from
 a readability point of view.
 
