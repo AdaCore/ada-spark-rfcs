@@ -7,8 +7,8 @@ Summary
 =======
 
 Local variables may be declared within a part of a compound statement without introducing a full declare block.
-The declarations may, but need not, be separated from the statements with an "in" reserved word.  In the absence
-of the "in" separator, the declarations may be interspersed arbitrarily with the statements.
+The declarations may, but need not, be separated from the statements with an "in" reserved word.  Only declarations
+may precede the optional "in" separator, but after the "in" (if any), declarations may be interspersed arbitrarily.
 
 Motivation
 ==========
@@ -26,7 +26,7 @@ Guide-level explanation
 =======================
 
 In any arm of a compound statement, such an if/then/elsif statement, or a case/when statement, or a for/loop statement
-one or more local declarations may be introduced, followed by "in" followed by the sequence of statements.
+one or more local declarations may be introduced, followed optionally by "in" followed by the sequence of statements.
 
 For example:
 
@@ -41,9 +41,14 @@ For example:
     end if;
        
 Syntactically, this would mean that most places where the language currently allows a sequence_of_statements,
-we would now allow an optional non-empty list of basic_declarative_item followed by "begin", followed by the
+we would now allow an optional non-empty list of basic_declarative_items followed by "in", followed by the
 (non-optional) sequence_of_statements.  This option would not be provided in constructs where the sequence_of_statements
 is already preceded by "begin", such as the sequence_of_statements of a subprogram body or a declare block.
+
+To go beyond this, we would also allow any basic_declarative_item to appear at the place of any statement.  When this feature
+is used, there would be no demarcation between declarations and statements.  Furthermore, if the construct allows a handler
+(such as an accept body or a subprogram body), declarations that appear at the place of a statement are *not* visible within
+the handler.  Only declarations that precede the "begin" or "in" for such constructs would be visible in the exception handler.
 
 Reference-level explanation
 ===========================
@@ -82,6 +87,11 @@ in accept_statement 9.5.2
 local_declarative_part would be defined as follows:
 
     local_declarative_part ::= basic_declarative_item {basic_declarative_item}
+    
+Furthermore, to allow arbitrary interspersing, include basic_declarative_item as an additional case for a simple_statement in
+5.1(4/2):
+
+    simple_statement ::= ... | basic_declarative_item
 
 Semantics:
 
@@ -89,9 +99,22 @@ From a static semantics point of view, the scope of an entity declared in a loca
 extends from the beginning of its declaration to the end of the associated sequence_of_statements
 (or handled_sequence_of_statements in the accept_statement case).
 
+On the other hand, the scope of an entity declared by a basic_declarative_item that is in the place of
+a statement extends to the end of the associated sequence_of_statements, but does *not* include the handler
+part of a handled_sequence_of_statements.  From a legality point of view, a goto statement may not go
+to a label that is within the scope of such a variable, if the goto statement itself is not also within the
+scope of the varaible.
+
 From a dynamic semantics point of view, providing a local_declarative_part is entirely equivalent to introducing a
 declare block as the only statement in the original (handled_)sequence_of_statements,
 with a corresponding declarative_part and (handled_)sequence_of_statements.
+
+Similarly, declarations that are in the place of a statement are equivalent to transforming the remainder of
+the sequence_of_statements starting at the basic_declarative_item into a declare block, with the declarative_item and any
+declarative_items that
+follow it immediately as the declarative_part, and the remainder of the sequence_of_statements (not including the
+handler, if any) as the sequence_of_statements of the declare block.  The handler, if any, remains part of the enclosing
+construct in this case.
 
 Rationale and alternatives
 ==========================
@@ -101,8 +124,10 @@ as possible, to minimize the amount of code that needs to be considered when ana
 a given variable is used properly.
 
 We have chosen to allow an "in" reserved word as a separator between declarations and statements.
-That is not strictly necessary from a syntax point of view, but we felt it was useful from
-a readability point of view.
+That is not strictly necessary from a syntax point of view, but we felt it was useful to allow it from
+a readability point of view.  Also, it is useful for cases where the declarations are followed
+by a handled_sequence_of_statements, as it would separate declarations that are visible in
+the handlers, from those that are only visible within the statements.
 
 Drawbacks
 =========
@@ -112,6 +137,9 @@ point of view, as they tend to lead to overly
 indented source code, or perhaps even worse, to local variables being declared with a longer
 lifetime than they need, making it harder to understand the role the variable might be playing
 in the large amount of code where it is visible.
+
+A project could presumably choose to control use of this feature, either by disallowing its use
+altogether, or limiting usage to cases where there is an explicit "in" separator.
 
 Prior art
 =========
