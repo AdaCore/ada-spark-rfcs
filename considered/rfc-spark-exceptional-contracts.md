@@ -7,7 +7,7 @@ Summary
 =======
 
 Regular postconditions are only verified on normal exit of a subprogram. We
-want to allow users to write `exceptional contracts`, which should describe in
+want to allow users to write *exceptional contracts*, which should describe in
 which cases an exception will be raised, and optionally supply a
 postcondition that shall be verified in this case. 
 
@@ -43,7 +43,7 @@ procedure P (...) with
 ```
 
 If a subprogram is allowed to raise an exception in the domain of its
-precondition, it is possible to add `exceptional cases` to a pragma
+precondition, it is possible to add *exceptional cases* to a pragma
 ``Contract_Cases`` to describe in which cases an exception is expected.
 Exceptional cases typically have a postcondition made of a single raise
 expression, providing the expected exception. For example, in the following
@@ -170,6 +170,7 @@ procedure Q (...) with
     (Exp_1 => True,
      Exp_2 => Post_4,
      ...);
+```
 
 As opposed to the proposal above, it does not allow/require supplying a
 precondition, stating in which cases the exception is raised. This
@@ -200,11 +201,37 @@ procedure P (...) with
     (Exp_1 => Pre_3'Old,
      Exp_2 => Pre_4'Old and then Post_4,
      ...);
+```
 
 Note that in the above, the cases from the contract case and the exceptional
 case are not disjoint anymore. The contract cases should cover the whole
 precondition, but the associated postconditions will only be checked on mormal
 exits.
+
+The compiler support of the above is probably even simpler than for our
+proposal. The expansion of an ``Exceptional_Cases`` pragma would be a simple
+handler:
+
+```ada
+procedure Q (...) is
+begin
+   --  normal body of of Q
+   declare
+   ...
+   end;
+
+exception
+   when Exp1 =>
+      pragma Assert (True);
+      raise;
+   when Exp2 =>
+      pragma Assert (Post_4);
+      raise;
+   when others =>
+      pragma Assert (False);
+      raise;
+end Q;
+```
 
 Drawbacks
 =========
