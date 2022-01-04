@@ -39,11 +39,14 @@ We propose a new string literal syntax, for an "interpolated" string literal, us
 
 Within an interpolated string literal, the simple name of an object,
 or an expression, when enclosed in { ... }, is expanded at run-time
-into the result of calling 'Image on the object or expression (trimmed of a leading space if the second character is a digit).
+into the result of calling 'Image on the object or expression (trimmed of a leading space if the type is numeric-ish -- see below), unless it is
+already a string or a single character.
 In addition, control/special characters (or character sequences) such as newline or
 tab can be included in the string literal using an escape sequence, where
 the first character is the backslash ('\\'), and the next character or characters
 identifies the special character or character sequence of interest.
+Note that unlike normal string literals, doubled characters have no special significance.  So to include
+a double-quote or a brace character in an interpolated string, they must be preceded by a '\\'.
 
 A simple example of string interpolation would be:
 
@@ -52,7 +55,8 @@ A simple example of string interpolation would be:
    {"The name is {Name} and the sum is {X + Y}."}
    
 Now that Ada 2022 will have a general 'Image function, this becomes much more straightforward.
-Expressions that are of a string type or a character type without a user-specified Put_Image aspect
+
+Expressions that are of a string type or a character type, but without a user-specified Put_Image aspect,
 would be interpolated directly 
 into the resulting string, while anything else would have the '*_Image attribute applied.
 Because Ada established the convention of putting a space in front of the 'Image of
@@ -67,10 +71,10 @@ For example:
 
   Put_Line
     ({"X = {X} and Y = {Y} and X+Y = {X+Y};\n"} &
-     {" an open brace = \{ and"} &
-     {" quote is either "" or \" though \" would be preferred."});
+     {" a double quote is \" and"} &
+     {" an open brace is \{"});
 
-Rather than the user having to repeatedly insert "\\n" explicitly, and the associated
+Rather than the user having to repeatedly insert '\\n' explicitly, with the associated
 readability loss, we also propose to allow a multi-line interpolated string syntax,
 as follows:
 
@@ -93,7 +97,81 @@ to be converted into a value of the user-defined type.
 Reference-level explanation
 ===========================
 
-TBD
+Syntax:
+
+.. code-block:: ada
+
+     interpolated_string_literal ::=
+        '{' "{interpolated_string_element}" {
+            "{interpolated_string_element}" } '}'
+   
+     interpolated_string_element ::=
+         escaped_character | interpolated_expression
+       | non_quotation_mark_non_left_brace-graphic_character
+    
+     escaped_character ::= '\graphic_character'
+    
+     interpolated_expression ::= '{' expression '}'
+    
+Name resolution:
+
+The expected type for an interpolated_string_literal shall be a single string type or a type with a specified String_Literal aspect (see 4.2.1).
+In either case, the interpolated_string_literal is interpreted to be of its expected type. 
+The expression of an interpolated_expression can be of any type.
+
+Static semantics
+
+An escaped_character represents the given graphic_character, except in the following cases where it represents a control character
+determined by the graphic_character:
+
+=================   =================
+escaped_character   control character
+-----------------   -----------------
+'\\a'                ALERT
+'\\b'                BACKSPACE
+'\\f'                FORM FEED
+'\\n'                LINE FEED
+'\\r'                CARRIAGE RETURN
+'\\t'                CHARACTER TABULATION
+'\\v'                LINE TABULATION
+'\\0'                NUL
+=================   =================
+
+Legality Rules
+
+If the expected type is a single string type, then each of the graphic_characters, 
+other than escaped characters that are interpreted as control characters, shall correspond to character literals of the component type of the string type.  If any escaped
+characters interpreted as control characters appear in the string, then the expected type shall be a type with a specified String_Literal aspect,
+or have a component type that is descended from one of the character types declared in package Standard (since these are the only character types that permit control characters).
+
+Dynamic semantics:
+
+The evaluation of an interpolated_string_literal begins with the creation of a text buffer of a type descended from Strings.Text_Buffers.Root_Buffer_Type (see A.4.12), followed by a sequence of procedure invocations
+as determined by the sequence of interpolated_string_elements appearing in the interpolated_string_literal, as follows:
+
+- When one or more elements that are not interpolated_expressions are encountered in the sequence:
+   - A Wide_Wide_String formed from the 
+     corresponding Wide_Wide_Characters is added to the text buffer using Wide_Wide_Put;  
+- When an interpolated_expression is encountered:
+   - If the 
+     type of the expression has a user-specified Put_Image aspect, or if the type is not itself a string or character type none of whose
+     enumeration literals are identifiers, then the Put_Image attribute procedure of the type is invoked, with actual parameters being the buffer created earlier 
+     and the result of evaluating the expression;
+   - If the type is numeric or has a specified Integer_Literal or Real_Literal aspect, then prior to
+     invoking Put_Image, the Trim_White_Space flag (see below) is set on the text buffer:
+   - If the type of the expression is a string or character type none of whose enumeration literals are identifiers, then the individual characters
+     are converted to the corresponding Wide_Wide_Character, and added to the text buffer using Wide_Wide_Put;
+- Finally, the Wide_Wide_Get function of the text buffer is invoked which returns a Wide_Wide_String, which is used as follows:
+   - If the expected type is Wide_Wide_String, then this is the result.  
+   - If the expected type has a String_Literal aspect, then this result is passed to the 
+     function identified by the String_Literal aspect, to produce the value of the expected type.
+   - Otherwise, the result of calling the Wide_Wide_Get function is mapped
+     character by character to a value of the expected string type, checking that each mapped character belongs to the component subtype of the string type,
+     with the low bound of the resulting string being the low bound of the index subtype of the string type, and checking that the high bound of the result is
+     within the index subtype of the string type. 
+     
+Universal Text Buffers are updated to include a "Trim_White_Space" flag which can be set prior to calling any of the Put operations, which will cause
+white space characters to be discarded by any Put operation until a non-white-space character is encountered, at which point the flag will be reset.
 
 Rationale and alternatives
 ==========================
