@@ -25,9 +25,9 @@ in subprogram contracts.
 Guide-level explanation
 =======================
 
-Exceptional contracts in SPARK reuse the pragma ``Contract_Cases``, introduced
+Exceptional contracts in SPARK reuse the aspect ``Contract_Cases``, introduced
 to specify the behavior of a subprogram as a conjunction of disjunct cases.
-In regular usage, a pragma ``Contract_Cases`` provides a sequence of individual
+In regular usage, an aspect ``Contract_Cases`` provides a sequence of individual
 contracts, each made of a precondition, evaluated before the call, and a
 postcondition. For each call, exactly one of these preconditions should
 evaluate to True. It is the asscociated postcondition which is verified at the
@@ -43,7 +43,7 @@ procedure P (...) with
 ```
 
 If a subprogram is allowed to raise an exception in the domain of its
-precondition, it is possible to add *exceptional cases* to a pragma
+precondition, it is possible to add *exceptional cases* to an aspect
 ``Contract_Cases`` to describe in which cases an exception is expected.
 Exceptional cases typically have a postcondition made of a single raise
 expression, providing the expected exception. For example, in the following
@@ -62,7 +62,7 @@ procedure P (...) with
 
 When the precondition associated to such a case evaluates to True, a check is
 made that the subprogram exits by raising the correct exception. In addition,
-if a pragma ``Contract_Cases`` contains at least an exceptional case, a check is
+if a aspect ``Contract_Cases`` contains at least an exceptional case, a check is
 made that the subprogram exits normally in non-exceptional cases. For example,
 if ``Pre_3`` evaluates to True at the beginning of ``P`` above, a check is made
 that ``P`` exits while raising ``Exp_1``. If ``Pre_1`` evaluates to True, then a
@@ -102,9 +102,8 @@ begin
    --  Check that the contract cases are disjoint. If there is no OTHERS
    --  choice, it is also necessary to check that at least one is True.
    pragma Assert
-     (if C_1 then not (C_2 or C_3 or C_4)
-      elsif C_2 then not (C_3 or C_4)
-      elsif C_3 then not C_4);
+     (Boolean'Pos (C_1) + Boolean'Pos (C_2) + Boolean'Pos (C_3) +
+      Boolean'Pos (C_4) <= 1);
 
    --  normal body of of P
    declare
@@ -148,7 +147,7 @@ exception
 end P;
 ```
 
-To make it easier to see at first glance whether a case in a pragma
+To make it easier to see at first glance whether a case in an aspect
 ``Contract_Cases`` is exceptional or not, occurrences of a raise expression in
 a contract case which are not in one of the two forms above are not allowed.
 
@@ -160,7 +159,7 @@ TBD
 Rationale and alternatives
 ==========================
 
-We could consider adding a new pragma ``Exceptional_Cases`` supplying
+We could consider adding a new aspect ``Exceptional_Cases`` supplying
 exceptional postconditions for all the exceptions that can be raised in the
 subprogram:
 
@@ -195,7 +194,7 @@ procedure P (...) with
   --  Additional post to state that P does not exit normally on exceptional
   --  cases.
   Post => not Pre_3'Old and then not Pre_4'Old,
-  --  Contract on exceptional passes with additional checks that the exceptions
+  --  Contract on exceptional paths with additional checks that the exceptions
   --  are only raised when expected
   Exceptional_Cases =>
     (Exp_1 => Pre_3'Old,
@@ -209,7 +208,7 @@ precondition, but the associated postconditions will only be checked on mormal
 exits.
 
 The compiler support of the above is probably even simpler than for our
-proposal. The expansion of an ``Exceptional_Cases`` pragma would be a simple
+proposal. The expansion of an ``Exceptional_Cases`` aspect would be a simple
 handler:
 
 ```ada
