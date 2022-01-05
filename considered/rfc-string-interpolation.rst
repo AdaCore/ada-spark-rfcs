@@ -12,8 +12,8 @@ expressions can be used directly within the string literal, such that
 the value of the variable or the expression is "interpolated" directly
 into the value of the enclosing string upon use at run-time.  In addition,
 an escape character ('\\') is provided for inserting certain standard control
-characters (such as newline) or unicode characters within
-the string literal.  Finally, a syntax is provided for creating multi-line
+characters (such as newline) or to escape characters with special significance
+to the interpolated string syntax, namely '"','{', '}',and '\\' itself.  Finally, a syntax is provided for creating multi-line
 string literals, without having to explicitly use an escape sequence such
 as '\\n'.
 
@@ -37,9 +37,8 @@ We propose a new string literal syntax, for an "interpolated" string literal, us
 
 - {" ... "}
 
-Within an interpolated string literal, the simple name of an object,
-or an expression, when enclosed in { ... }, is expanded at run-time
-into the result of calling 'Image on the object or expression (trimmed of a leading space if the type is numeric-ish -- see below), unless it is
+Within an interpolated string literal, an arbitrary expression, when enclosed in { ... }, is expanded at run-time
+into the result of calling 'Image on the result of evaluating the expression (trimmed of a leading space if the type is numeric-ish -- see below), unless it is
 already a string or a single character.
 In addition, control/special characters (or character sequences) such as newline or
 tab can be included in the string literal using an escape sequence, where
@@ -63,7 +62,7 @@ Because Ada established the convention of putting a space in front of the 'Image
 non-negative integers, we drop a leading blank if the type is numeric, or has an Integer_Literal or Real_Literal
 aspect.
 
-As exemplified, the value of simple identifiers, more complex names, or expressions can all be inserted with { ... }.
+As exemplified, values defined by simple identifiers, more complex names, or expressions can all be inserted with { ... }.
 
 For example:
 
@@ -74,7 +73,7 @@ For example:
      {" a double quote is \" and"} &
      {" an open brace is \{"});
 
-Rather than the user having to repeatedly insert '\\n' explicitly, with the associated
+Rather than the user having to repeatedly insert '\\n' (or perhaps "\\r\\n") explicitly, with the associated
 readability loss, we also propose to allow a multi-line interpolated string syntax,
 as follows:
 
@@ -85,12 +84,12 @@ as follows:
     "There is no ambiguity about how many"
     "spaces are included in each line"}
 
-with the ultimate string value being the strings on each line concatenated with a standard newline indicator between them.
+with the ultimate string value being the strings on each line concatenated with the implementation-defined newline character sequence between them.
 
 One issue is how these new kinds of string literals would interact with the Ada 2022 String_Literal
 aspect, which allows a user-defined type to support the use of string literals for values
 of types other than a string type.
-Our proposal would be for all string interpolation, line concatenation, and character escaping to occur first,
+Our proposal is that all string interpolation, line concatenation, and character escaping occurs first,
 to produce a Wide_Wide_String, which is then handed off to the user's String_Literal function,
 to be converted into a value of the user-defined type.
 
@@ -119,13 +118,19 @@ The expected type for an interpolated_string_literal shall be a single string ty
 In either case, the interpolated_string_literal is interpreted to be of its expected type. 
 The expression of an interpolated_expression can be of any type.
 
+Legality rules:
+
+The graphic character of an escaped_character shall be one of the following characters:
+
+      'a', 'b', 'f', 'n', 'r', 't', 'v', '0', '\\', '"', '{', '}'
+
 Static semantics
 
-An escaped_character represents the given graphic_character, except in the following cases where it represents a control character
+An escaped_character either represents the given graphic_character, or, in the following cases, it represents a control character
 determined by the graphic_character:
 
 =================   =================
-escaped_character   control character
+escaped_character   meaning
 -----------------   -----------------
 '\\a'                ALERT
 '\\b'                BACKSPACE
@@ -135,6 +140,11 @@ escaped_character   control character
 '\\t'                CHARACTER TABULATION
 '\\v'                LINE TABULATION
 '\\0'                NUL
+-----------------   -----------------
+'\\\\'               '\\'
+'\\"'                '"'
+'\\{'                '{'
+'\\}'                '}'
 =================   =================
 
 Legality Rules
@@ -147,21 +157,33 @@ or have a component type that is descended from one of the character types decla
 Dynamic semantics:
 
 The evaluation of an interpolated_string_literal begins with the creation of a text buffer of a type descended from Strings.Text_Buffers.Root_Buffer_Type (see A.4.12), followed by a sequence of procedure invocations
-as determined by the sequence of interpolated_string_elements appearing in the interpolated_string_literal, as follows:
+as determined by the sequence of interpolated_string_elements appearing in the interpolated_string_literal, as follows: 
 
-- When one or more elements that are not interpolated_expressions are encountered in the sequence:
+- When one or more elements that are not interpolated_expressions are encountered in the sequence: 
+
    - A Wide_Wide_String formed from the 
-     corresponding Wide_Wide_Characters is added to the text buffer using Wide_Wide_Put;  
-- When an interpolated_expression is encountered:
+     corresponding Wide_Wide_Characters is added to the text buffer using Wide_Wide_Put;
+     
+- When an interpolated_expression is encountered, the expression is evaluated, and then: 
+
    - If the 
      type of the expression has a user-specified Put_Image aspect, or if the type is not itself a string or character type none of whose
-     enumeration literals are identifiers, then the Put_Image attribute procedure of the type is invoked, with actual parameters being the buffer created earlier 
-     and the result of evaluating the expression;
-   - If the type is numeric or has a specified Integer_Literal or Real_Literal aspect, then prior to
-     invoking Put_Image, the Trim_White_Space flag (see below) is set on the text buffer:
+     enumeration literals are identifiers, then the Put_Image attribute procedure of the type is invoked, 
+     with actual parameters being the buffer created earlier and the result of evaluating the expression; 
+     
+      - If the type is numeric or has a specified Integer_Literal or Real_Literal aspect, 
+        then prior to invoking Put_Image, the Trim_White_Space flag (see below) is set on the text buffer;
+      
    - If the type of the expression is a string or character type none of whose enumeration literals are identifiers, then the individual characters
-     are converted to the corresponding Wide_Wide_Character, and added to the text buffer using Wide_Wide_Put;
-- Finally, the Wide_Wide_Get function of the text buffer is invoked which returns a Wide_Wide_String, which is used as follows:
+     of the result of evaluating the expression are converted to the corresponding Wide_Wide_Character, and added to the text buffer using Wide_Wide_Put;
+     
+- When an additional quoted string is encountered: 
+
+   - The New_Line procedure of the text buffer is invoked before processing the next quoted string;
+   
+- Once all quoted strings have been processed, the Wide_Wide_Get function of the text buffer is invoked which 
+  returns a Wide_Wide_String, which is used as follows: 
+
    - If the expected type is Wide_Wide_String, then this is the result.  
    - If the expected type has a String_Literal aspect, then this result is passed to the 
      function identified by the String_Literal aspect, to produce the value of the expected type.
@@ -186,7 +208,7 @@ also considered using "$ to end an interpolated string literal, to maintain the
 normal mirroring of bracketing notations in Ada (such as << ... >> and ( ... )).
 
 We ultimately chose the {" ... "} as the syntax for an interpolated string literal is that it would preserve
-the mirroring, and means that { ... } become the general indicators of the use of string interpolation.
+the mirroring, and means that the brace characters '{' and '}' become the general indicators of the use of string interpolation.
 
 The alternative F" ... " syntax is the same as or similar to what some other languages do, but is a bit
 unusual for Ada in its use of a delimiter starting with a normal letter.  This syntax probably originated
@@ -235,9 +257,10 @@ in C and most C-inspired languages, and more widely in Unix and Unix-like system
 Unresolved questions
 ====================
 
-None remaining at the moment.
+We have not discussed how best to represent arbitrary unicode characters.
 
 Future possibilities
 ====================
 
-TBD
+The '\\' escape character might also be used to introduce arbitrary unicode characters.  In C, '\\u####' is used
+for characters in the 16-bit unicode BMP, and '\\U########' is used for arbitrary unicode characters.
