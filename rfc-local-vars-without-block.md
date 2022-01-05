@@ -6,115 +6,67 @@
 Summary
 =======
 
-Local variables may be declared within a part of a compound statement without introducing a full declare block.
-The declarations may, but need not, be separated from the statements with an "in" reserved word.  Only declarations
-may precede the optional "in" separator, but after the "in" (if any), declarations may be interspersed arbitrarily.
+A basic_declarative_item may appear at the place of any statement.  Such declarations are not visible within any exception handler associated
+with the enclosing construct.  A goto may not jump into the scope of such a declaration from outside its scope.
 
 Motivation
 ==========
 
 It is generally good practice to declare local variables (or constants) with as short a lifetime as possible.
 However, introducing a declare block to accomplish this is a relatively heavy syntactic load along with a traditional extra level of indentation
-This RFC is proposing to support local variable declarations without this extra syntactic load, by eliminating the "declare" and "end" reserved words
-(and the extra level of indentation) and optionally use the reserved word "in" as a separator
-between the declarations and the statements.  We would expect that in a typical
-source-code format, the "in" would be outdented somewhat, but not necessarily all the way to the level of the enclosing compound statement,
-so the "in" would, say, line up with, or be close to the indentation of, the "if" and the "end if", while the local declarations and statements
-would be indented just one level relative to the "if" and "end if."
+This RFC is proposing to support interspersing basic_declarative_items within sequences of statements.  We considered a more limited
+mechanism where declarations could only appear at the beginning of a sequence of statements, separated from the statements by a reserved
+word such as "in", but we have chosen to go to the more flexible approach.
 
 Guide-level explanation
 =======================
 
-In any arm of a compound statement, such an if/then/elsif statement, or a case/when statement, or a for/loop statement
-one or more local declarations may be introduced, followed optionally by "in" followed by the sequence of statements.
+We propose to allow any basic_declarative_item to appear at the place of any statement. 
 
 For example:
 
     if X > 5 then
+       X := X + 1;
+       
        Squared : constant Integer := X**2;
-     in
+       
        X := X + Squared;
     else
+       X := X - 1;
+       
        Cubed : constant Integer := X**3;
-     in
+
        X := X + Cubed;
     end if;
        
-Syntactically, this would mean that most places where the language currently allows a sequence_of_statements,
-we would now allow an optional non-empty list of basic_declarative_items followed by "in", followed by the
-(non-optional) sequence_of_statements.  This option would not be provided in constructs where the sequence_of_statements
-is already preceded by "begin", such as the sequence_of_statements of a subprogram body or a declare block.
-
-To go beyond this, we would also allow any basic_declarative_item to appear at the place of any statement.  When this feature
-is used, there would be no demarcation between declarations and statements.  Furthermore, if the construct allows a handler
-(such as an accept body or a subprogram body), declarations that appear at the place of a statement are *not* visible within
-the handler.  Only declarations that precede the "begin" or "in" for such constructs would be visible in the exception handler.
+If the enclosing construct allows a handler
+(such as an accept statement or a subprogram body), declarations that appear at the place of a statement are *not* visible within
+the handler.  Only declarations that precede a "begin" would be visible in the corresponding exception handler.
 
 Reference-level explanation
 ===========================
 
 Syntax:
 
-Replace "sequence_of_statements" with:
-
-      [local_declarative_part
-    in]
-       sequence_of_statements
-      
-in the following constructs:
-
-     abortable_part 9.7.4
-     accept_alternative 9.7.1
-     case_statement_alternative 5.4
-     conditional_entry_call 9.7.3
-     delay_alternative 9.7.1
-     entry_call_alternative 9.7.2
-     exception_handler 11.2
-     if_statement 5.3
-     loop_statement 5.5
-     parallel_block_statement 5.6.1
-     selective_accept 9.7.1
-     triggering_alternative 9.7.4
-
-Replace "handled_sequence_of_statements" with
-
-      [local_declarative_part
-    in]
-       handled_sequence_of_statements
-       
-in accept_statement 9.5.2
-
-local_declarative_part would be defined as follows:
-
-    local_declarative_part ::= basic_declarative_item {basic_declarative_item}
-    
-Furthermore, to allow arbitrary interspersing, include basic_declarative_item as an additional case for a simple_statement in
+Include basic_declarative_item as an additional case for a simple_statement in
 5.1(4/2):
 
     simple_statement ::= ... | basic_declarative_item
 
 Semantics:
 
-From a static semantics point of view, the scope of an entity declared in a local_declarative_part
-extends from the beginning of its declaration to the end of the associated sequence_of_statements
-(or handled_sequence_of_statements in the accept_statement case).
-
-On the other hand, the scope of an entity declared by a basic_declarative_item that is in the place of
+The scope of an entity declared by a basic_declarative_item that is in the place of
 a statement extends to the end of the associated sequence_of_statements, but does *not* include the handler
 part of a handled_sequence_of_statements.  From a legality point of view, a goto statement may not go
 to a label that is within the scope of such a variable, if the goto statement itself is not also within the
 scope of the varaible.
 
-From a dynamic semantics point of view, providing a local_declarative_part is entirely equivalent to introducing a
-declare block as the only statement in the original (handled_)sequence_of_statements,
-with a corresponding declarative_part and (handled_)sequence_of_statements.
-
-Similarly, declarations that are in the place of a statement are equivalent to transforming the remainder of
+Declarations that are in the place of a statement are equivalent to transforming the remainder of
 the sequence_of_statements starting at the basic_declarative_item into a declare block, with the declarative_item and any
 declarative_items that
 follow it immediately as the declarative_part, and the remainder of the sequence_of_statements (not including the
 handler, if any) as the sequence_of_statements of the declare block.  The handler, if any, remains part of the enclosing
-construct in this case.
+construct in this transformation.
 
 Rationale and alternatives
 ==========================
@@ -123,10 +75,10 @@ The main goal is to allow variables and constants to be declared with as short o
 as possible, to minimize the amount of code that needs to be considered when analyzing whether
 a given variable is used properly.
 
-We have chosen to allow an "in" reserved word as a separator between declarations and statements.
-That is not strictly necessary from a syntax point of view, but we felt it was useful to allow it from
-a readability point of view.  Also, it is useful for cases where the declarations are followed
-by a handled_sequence_of_statements, as it would separate declarations that are visible in
+We considered allowing (or requiring) a reserved word such as "in" to act as a separator between declarations and statements.
+But since this is not strictly necessary from a syntax point of view, we chose to go with the simpler and more flexible approach.
+Note that having such a separator would be useful for cases where the declarations are part of
+a handled_sequence_of_statements, as it would separate declarations that are visible in
 the handlers, from those that are only visible within the statements.
 
 Drawbacks
@@ -139,7 +91,8 @@ lifetime than they need, making it harder to understand the role the variable mi
 in the large amount of code where it is visible.
 
 A project could presumably choose to control use of this feature, either by disallowing its use
-altogether, or limiting usage to cases where there is an explicit "in" separator.
+altogether, or limiting usage to cases where the declarations appear only at the beginning of the
+sequence of statements.
 
 Prior art
 =========
@@ -171,4 +124,6 @@ Future possibilities
 Obvious extensions would be to allow exception handlers in all these contexts, and to allow arbitrary
 declarations.  We discuss the issue of arbitrary declarations above.  As far as exception handlers,
 there seems no particular reason to disallow them, and they should perhaps be considered as part of
-this RFC, or an immediate follow-on RFC.
+a follow-on RFC, though at that time it might be worth allowing the use of a separator such as the
+"in" reserved word to demarcate which declarations are visible within the handlers, from the statements
+and declarations whose exceptions are being handled.
