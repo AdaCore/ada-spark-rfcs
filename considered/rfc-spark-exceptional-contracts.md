@@ -62,7 +62,7 @@ procedure P (...) with
 
 When the precondition associated to such a case evaluates to True, a check is
 made that the subprogram exits by raising the correct exception. In addition,
-if a aspect ``Contract_Cases`` contains at least an exceptional case, a check is
+if an aspect ``Contract_Cases`` contains at least an exceptional case, a check is
 made that the subprogram exits normally in non-exceptional cases. For example,
 if ``Pre_3`` evaluates to True at the beginning of ``P`` above, a check is made
 that ``P`` exits while raising ``Exp_1``. If ``Pre_1`` evaluates to True, then a
