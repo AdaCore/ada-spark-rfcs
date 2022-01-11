@@ -25,7 +25,136 @@ in subprogram contracts.
 Guide-level explanation
 =======================
 
-Exceptional contracts in SPARK reuse the aspect ``Contract_Cases``, introduced
+It is possible to annotate a subprogram with an aspect ``Exceptional_Cases``.
+It supplies postconditions which should hold for all the exceptions that can be
+raised in the subprogram. Basically, it is a sequence of exception choices like
+those that can be used in a regular exception block:
+
+```ada
+procedure P (...) with
+  Exceptional_Cases =>
+    (Exp_1 => True,
+     E : Exp_2 => Post_4);
+```
+
+When the body of subprogram annotated with this aspect returns by raising
+an exception, a check is made that the postcondition of the first case in
+the ``Exceptional_Cases`` that matches the exception holds. If this
+postcondition fails or if there is no such case in the ``Exceptional_Cases``,
+``Assert_Failure`` is raised.
+This is equivalent to the following expansion, using an exception handler:
+
+```ada
+procedure P (...) is
+begin
+   --  normal body of of P
+   declare
+   ...
+   end;
+
+exception
+   when Exp1 =>
+      pragma Assert (True);
+      raise;
+   when E : Exp2 =>
+      pragma Assert (Post_4);
+      raise;
+   when others =>
+      pragma Assert (False);
+      raise;
+end P;
+```
+
+Potential exceptions raised inside the specification (Pre/postconditions,
+Contract_Cases...) of the subprogram are not handled by this mechanism.
+
+It is possible to use an ``Exceptional_Cases`` aspect to ensure that no
+exception is raised by the body of a subprogram:
+
+```ada
+procedure Do_Not_Raise_Exception (...) with
+  Exceptional_Cases =>
+    (others => False);
+```
+
+Note that it is the default for formal analysis using SPARK. It needs only
+be stated if a dynamic verification is expected.
+
+Reference-level explanation
+===========================
+
+The pragma ``Exceptional_Contracts`` expects as an argument an
+*exceptional_contract_list* defined below.
+
+```
+ exceptional_contract_list ::= ( exceptional_contract   {,  exceptional_contract  })
+ exceptional_contract      ::= [choice_parameter_specification:] exception_choice {'|' exception_choice} => consequence
+```
+
+where
+
+```
+ consequence ::= Boolean_expression
+```
+
+The boolean expression in the consequences should be resolved as regular
+postconditions. In particular, the ``'Old`` attribute is allowed to appear
+in them. However, parameters of modes OUT or IN OUT of the subprogram
+shall not occur in the consequences of an exceptional contract
+unless they either are of a by-reference type or occur
+in the prefix of a reference to the ``'Old`` attribute. All prefixes of
+references to the ``'Old`` attribute in exceptional cases are expected to
+be evaluated in the at the beginning of the call regardless of whether or
+not the particular exception is raised. This allows to introduce constants for
+these prefixes at the beginning of the subprogram together with the ones
+introduced for the regular postcondition.
+
+A call to a subprogram:
+
+```ada
+procedure P (...) with
+  Pre  => Normal_Pre,
+  Post => Normal_Post,
+  Exceptional_Cases =>
+    (Exp_1 => Exp_Post,
+     ...);
+```
+
+should be equivalent to:
+
+```ada
+--  Check the precondition
+pragma Assert (Normal_Pre);
+
+--  Block with the exception handler
+declare
+   --  Insert internal constants for references of 'Old in the postcondition
+   ...
+   --  Insert internal constants for references of 'Old in the exceptional cases
+   ...
+
+begin
+   --  Evaluation of the body of P
+   declare
+      ...
+   end;
+
+--  Handler for the exceptional cases
+exception
+   when Exp_1 =>
+      pragma Assert (Exp_Post);
+      raise;
+   ...
+end;
+
+--  Check the postcondition
+pragma Assert (Normal_Post);
+```
+
+Rationale and alternatives
+==========================
+
+We could consider reusing the aspect ``Contract_Cases``, introduced
 to specify the behavior of a subprogram as a conjunction of disjunct cases.
 In regular usage, an aspect ``Contract_Cases`` provides a sequence of individual
 contracts, each made of a precondition, evaluated before the call, and a
@@ -43,38 +172,11 @@ procedure P (...) with
 ```
 
 If a subprogram is allowed to raise an exception in the domain of its
-precondition, it is possible to add *exceptional cases* to an aspect
+precondition, we could allow adding *exceptional cases* to an aspect
 ``Contract_Cases`` to describe in which cases an exception is expected.
-Exceptional cases typically have a postcondition made of a single raise
+Exceptional cases would typically have a postcondition made of a single raise
 expression, providing the expected exception. For example, in the following
 snippet, ``Pre_3`` and ``Pre_4`` are exceptional cases:
-
-```ada
-procedure P (...) with
-  Contract_Cases =>
-    (Pre_1  => Post_1,
-     Pre_2  => Post_2,
-     Pre_3  => raise Exp_1,
-     Pre_4  => raise Exp_2,
-     ...
-     others => Post_others);
-```
-
-When the precondition associated to such a case evaluates to True, a check is
-made that the subprogram exits by raising the correct exception. In addition,
-if an aspect ``Contract_Cases`` contains at least an exceptional case, a check is
-made that the subprogram exits normally in non-exceptional cases. For example,
-if ``Pre_3`` evaluates to True at the beginning of ``P`` above, a check is made
-that ``P`` exits while raising ``Exp_1``. If ``Pre_1`` evaluates to True, then a
-check is made that the subprogram exits normally and that ``Post_1`` holds at
-the end of the call.
-
-It is possible when necessary, to add a postcondition to an exceptional case. It
-should be added to the raise expression using an AND THEN boolean operator. If
-such a postcondition is supplied, it should hold on the exceptional exit of the
-subprogram. To minimize surprises if parameters are passed by copy, such a
-postcondition shall not reference OUT or IN OUT parameters of the subprogram
-unless they are of a by-reference type.
 
 ```ada
 procedure P (...) with
@@ -87,7 +189,7 @@ procedure P (...) with
      others => Post_others);
 ```
 
-The checks corresponding to the contract cases of ``P`` above are
+The checks corresponding to the contract cases of ``P`` above would be
 equivalent to the following assertions:
 
 ```ada
@@ -146,105 +248,25 @@ exception
       raise;
 end P;
 ```
-
-To make it easier to see at first glance whether a case in an aspect
-``Contract_Cases`` is exceptional or not, occurrences of a raise expression in
-a contract case which are not in one of the two forms above are not allowed.
-
-Reference-level explanation
-===========================
-
-TBD
-
-Rationale and alternatives
-==========================
-
-We could consider adding a new aspect ``Exceptional_Cases`` supplying
-exceptional postconditions for all the exceptions that can be raised in the
-subprogram:
-
-```ada
-procedure Q (...) with
-  Exceptional_Cases =>
-    (Exp_1 => True,
-     Exp_2 => Post_4,
-     ...);
-```
-
-As opposed to the proposal above, it does not allow/require supplying a
+As opposed to the main proposal, this alternative requires users to supply a
 precondition, stating in which cases the exception is raised. This
-alternative is more expressive than what we propose, as it allows stating
+alternative is less expressive than what we propose, as it does not allow stating
 that a subprogram raises an exception without stating in which cases it does.
-However, the contract case approach seems easier to write and more readable in
-the common case where we want to precisely define when the exceptions are
-raised.
-
-For example, if we wanted to write a contract equivalent to the contract of
-``P`` using an ``Exceptional_Cases`` contract, we would have to write
-something like:
-
-```ada
-procedure P (...) with
-  --  Contract case for normal exit 
-  Contract_Cases =>
-    (Pre_1  => Post_1,
-     Pre_2  => Post_2,
-     ...
-     others => Post_others),
-  --  Additional post to state that P does not exit normally on exceptional
-  --  cases.
-  Post => not Pre_3'Old and then not Pre_4'Old,
-  --  Contract on exceptional paths with additional checks that the exceptions
-  --  are only raised when expected
-  Exceptional_Cases =>
-    (Exp_1 => Pre_3'Old,
-     Exp_2 => Pre_4'Old and then Post_4,
-     ...);
-```
+We believe that such a capability is important to represent subprograms which
+might depend on some external information. As an example, consider ``Open``
+from ``Text_IO`` which might raise exceptions depending on the file system.
 
 Note that in the above, the cases from the contract case and the exceptional
-case are not disjoint anymore. The contract cases should cover the whole
-precondition, but the associated postconditions will only be checked on mormal
-exits.
-
-The compiler support of the above is probably even simpler than for our
-proposal. The expansion of an ``Exceptional_Cases`` aspect would be a simple
-handler:
-
-```ada
-procedure Q (...) is
-begin
-   --  normal body of of Q
-   declare
-   ...
-   end;
-
-exception
-   when Exp1 =>
-      pragma Assert (True);
-      raise;
-   when Exp2 =>
-      pragma Assert (Post_4);
-      raise;
-   when others =>
-      pragma Assert (False);
-      raise;
-end Q;
-```
+case are checked to be disjoint which is not the case in the main proposal.
 
 Drawbacks
 =========
-
-It is not possible to speak about the message of an exception in exceptional
-cases. We also cannot state that a subprogram might raise an exception without
-stating which one and exactly in which case the exception will be raised. Both
-issues are solved by the alternative proposal above.
 
 Prior art
 =========
 
 In Why3, it is possible to supply exceptional postconditions similarly to what
-is described in the alternative section above.
+is described in the main proposal.
 
 Unresolved questions
 ====================
