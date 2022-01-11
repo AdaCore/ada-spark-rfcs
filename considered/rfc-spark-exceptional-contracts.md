@@ -262,6 +262,37 @@ case are checked to be disjoint which is not the case in the main proposal.
 Drawbacks
 =========
 
+We might worry that the main proposal would be harder to read in the
+arguably most common case where we can precisely describe where the exception
+is raised. Here are some examples in the 2 syntaxes:
+
+```ada
+   function Find (A : Int_Array; E : Integer) return Integer with
+     Post => Find'Result in A'Range and then A (Find'Result) = E,
+     Exceptional_Cases =>
+       (Not_Found => (for all F of A => F /= E));
+
+   function Parse_Integer (Str : String) return Integer with
+     Post => Is_Valid_Integer (Str)
+     and then Parse_Integer'Result = To_Integer_Ghost (Str),
+     Exceptional_Cases =>
+       (Parse_Error => not Is_Valid_Integer (Str));
+
+   function Find (A : Int_Array; E : Integer) return Integer with
+     Contract_Cases =>
+       ((for all F of A => F /= E) => raise Not_Found,
+        others                     =>
+          Find'Result in A'Range and then A (Find'Result) = E);
+
+   function Parse_Integer (Str : String) return Integer with
+     Contract_Cases =>
+       (Is_Valid_Integer (Str) => Parse_Integer'Result = To_Integer_Ghost (Str),
+        others                 => raise Parse_Error);
+```
+
+Both versions specify precisely when the exception will be raised. We
+believe that the one using ``Exceptional_Cases`` stays readable.
+
 Prior art
 =========
 
