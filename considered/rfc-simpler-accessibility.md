@@ -20,7 +20,8 @@ Motivation
 
 We'd like to restore a common understanding of accessibility rules for
 implementers and users alike. The new rules should both be effective at
-preventing errors and feel natural and compatible in an Ada environment.
+preventing errors and feel natural and compatible in an Ada environment while
+removing dynamic accessibility checking.
 
 Guide-level explanation
 =======================
