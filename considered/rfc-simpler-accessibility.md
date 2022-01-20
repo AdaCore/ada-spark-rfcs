@@ -8,15 +8,19 @@ Summary
 
 Over the years, the rules that govern accessibility in Ada, that is, what
 operations on pointers are allowed, have grown to a point where they are
-understood neither by implementers nor by users. We propose a simpler set of
-rules that are mostly compatible with the current rules.
+understood neither by implementers nor by users. In particular, the presence
+of dynamic accessibility checks often are difficult to debug and diagnose.
+
+We propose a simpler set of rules that are mostly compatible with the current
+rules which eliminate dynamic accessibility checks at expense of flexibility
+in the use of so-called "anonymous access types."
 
 Motivation
 ==========
 
 We'd like to restore a common understanding of accessibility rules for
 implementers and users alike. The new rules should both be effective at
-preventing errors and feel natural in Ada.
+preventing errors and feel natural and compatible in an Ada environment.
 
 Guide-level explanation
 =======================
@@ -105,8 +109,10 @@ end;
 
 From the callee's perspective, the level of anonymous access formal parameters would be
 between the level of the subprogram and the level of the subprogram's locals. This has the effect
-of formal parameters being treated as a local except in the case of their use as a function
-result or as the value for an access discriminant.
+of formal parameters being treated as local to the callee except in:
+  a) Use as a function result
+  b) Use as a value for an access discriminant in result object
+  c) Use as an assignments between formal parameters
 
 Note that with these more restricted rules we lose track of accessibility levels when assigned to
 local objects thus making (in the example below) the assignment to Node2.Link from Temp below
@@ -124,6 +130,16 @@ begin
    Node1.Link := Node2.Link; -- Allowed
    Node2.Link := Temp; -- Not allowed
 end;
+
+function Identity (N : access Node) return access Node is
+   Local : constant access Node := N;
+begin
+   if True then
+      return N; -- Allowed
+   else
+      return Local; -- Not allowed
+   end if;
+end;
 ```
 
 Function results
@@ -137,6 +153,7 @@ We propose making the accessibility level of the result of a call to a function 
   a) The level of the subprogram
   b) The level of any actual parameter corresponding to a formal parameter of an anonymous access type
   c) The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
+  d) The level of any actual parameter corresponding to a formal parameter which is explicitly aliased
 
 For example:
 
@@ -145,17 +162,26 @@ declare
    type T is record
       Comp : aliased Integer;
    end record;
+
    function Identity (Param : access Integer) return access Integer is
    begin
       return Param; -- Legal
    end;
+
+   function Identity_2 (Param : aliased Integer) return access Integer is
+   begin
+      return Param'Access; -- Legal
+   end;
+
    X : access Integer;
 begin
    X := Identity (X); -- Legal
    declare
       Y : access Integer;
+      Z : aliased Integer;
    begin
       X := Identity (Y); -- Illegal since Y is too deep
+      X := Identity_2 (Z); -- Illegal since Z is too deep
    end;
 end;
 ```
@@ -211,7 +237,7 @@ declare
    function Foo (Param : access Integer) return access Integer is
    begin
        return Result : access Integer := Param; do
-          Ptr := Ref (Result); -- Illegal
+          Ptr := Ref (Result); -- Not allowed
        end return;
    end;
 begin
@@ -234,31 +260,21 @@ abandon this complex kind of accessibility level and early form of ownership to
 provide a simpler basis on which to provide more complete ownership for Ada in
 the future.
 
-Any access discriminant will have the equivalent level of the its corresponding
-discriminated type (similar to the way anonymous access components) - along with
-allocators of anonymous access types (the use of `new` within an expression of
-an anonymous access type), whose main use case is precisely to support access
-discriminants.
-
-This has the nice side-effect of eliminating the notion of coextensions (the
-use of an allocator of anonymous access type as the value of the discriminant
-in an object declaration), which was proposed in Ada 2005 and not implemented
-currently within GNAT.
-
-However, there are some side-effects of making the level of access discriminants
-have the level of their corresponding discriminanted type which can make certain
-use cases be forced into using 'Unchecked_Access. In particular local declarations
-at a level deeper than the declaration of the discriminated type:
+Any access discriminant will have the equivalent level of the its enclosing
+object identical to the standard Ada model therefore ensuring maximum
+compatibility. However, such access discriminants shall not be able to be set via
+with an allocator - eliminating the notion of coextensions which are not
+implemented currently within GNAT.
 
 ```ada
-type T (D : access Designated) is ... ;
-procedure Foo is
-   Local : aliased Designated := ...;
-   Obj : T (D => Local'Access); -- Not allowed
-   Obj : T (D => Local'Unchecked_Access); -- Allowed
+procedure M is
+  type T (X : access Integer) is null record;
+  Disc  : access Integer := new Integer'(1);
+  Obj_1 : T (new Integer'(1)); -- Illegal
+  Obj_2 : T (Disc); -- Legal
 begin
-   ...
-end Foo;
+   null;
+end;
 ```
 
 This is also compatible with the [use of anonymous access types in
