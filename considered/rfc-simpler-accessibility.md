@@ -154,6 +154,9 @@ We propose making the accessibility level of the result of a call to a function 
   b) The level of any actual parameter corresponding to a formal parameter of an anonymous access type
   c) The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
   d) The level of any actual parameter corresponding to a formal parameter which is explicitly aliased
+  
+NOTE: We would need to include an additional item in the list if we were not to enforce the below restriction on tagged types:
+  e) The level of any actual parameter corresponding to a formal parameter of a tagged type
 
 For example:
 
@@ -186,7 +189,7 @@ begin
 end;
 ```
 
-However, an additional restriction that falls out of the above logic is that tagged type extensions *cannot* allow additional anonymous access discriminants in order to prevent upward conversions making such anonymous access discriminants visible which will present incompatibilities.
+However, an additional restriction that falls out of the above logic is that tagged type extensions *cannot* allow additional anonymous access discriminants in order to prevent upward conversions potentially making such "hidden" anonymous access discriminants visible and prone to memory leaks.
 
 Here is an example of one such case of an upward conversion which would lead to a memory leak:
 
