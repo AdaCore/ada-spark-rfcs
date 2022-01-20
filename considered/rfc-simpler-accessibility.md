@@ -37,10 +37,8 @@ seemingly unexplainable accessibility check failures.
 
 We propose to avoid completely the need for run-time accessibility checks,
 which are:
-
-1. difficult to implement, leading to subtle bugs in the compiler; and
-
-2. difficult to understand, leading users to refrain from using anonymous
+- Difficult to implement, leading to subtle bugs in the compiler; and
+- Difficult to understand, leading users to refrain from using anonymous
    access types for fear of possible rule violations.
 
 We propose to distinguish three different uses of anonymous access types.
@@ -110,9 +108,9 @@ end;
 From the callee's perspective, the level of anonymous access formal parameters would be
 between the level of the subprogram and the level of the subprogram's locals. This has the effect
 of formal parameters being treated as local to the callee except in:
-  a) Use as a function result
-  b) Use as a value for an access discriminant in result object
-  c) Use as an assignments between formal parameters
+  - Use as a function result
+  - Use as a value for an access discriminant in result object
+  - Use as an assignments between formal parameters
 
 Note that with these more restricted rules we lose track of accessibility levels when assigned to
 local objects thus making (in the example below) the assignment to Node2.Link from Temp below
@@ -150,15 +148,15 @@ function Get (X : Rec) return access T;
 ```
 
 We propose making the accessibility level of the result of a call to a function that has an anonymous access result type defined to be as whatever is deepest out of the following:
-  a) The level of the subprogram
-  b) The level of any actual parameter corresponding to a formal parameter of an anonymous access type
-  c) The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
-  d) The level of any actual parameter corresponding to a formal parameter which is explicitly aliased
+  - The level of the subprogram
+  - The level of any actual parameter corresponding to a formal parameter of an anonymous access type
+  - The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
+  - The level of any actual parameter corresponding to a formal parameter which is explicitly aliased
   
 NOTE: We would need to include an additional item in the list if we were not to enforce the below restriction on tagged types:
-  e) The level of any actual parameter corresponding to a formal parameter of a tagged type
+  - The level of any actual parameter corresponding to a formal parameter of a tagged type
 
-For example:
+Function result example:
 
 ```ada
 declare
