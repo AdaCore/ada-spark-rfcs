@@ -64,7 +64,7 @@ Cst_To_Cst : constant access constant T := ...
 
 We propose to define the accessibility levels of standalone objects of anonymous
 access type (whether constants or variables) to be that of the level of their
-object declaration. This has the feature of allowing many common use-cases 
+object declaration. This has the feature of allowing many common use-cases
 without the employment of `Unchecked_Access` while still removing the need
 for dynamic checks.
 
@@ -80,7 +80,7 @@ Named : T_Ptr := Anon; -- Allowed
 ```
 
 This is compatible with the [use of anonymous access types in
-SPARK]. (http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types)
+SPARK](http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html#access-types).
 
 Subprogram parameters
 ---------------------
@@ -153,7 +153,7 @@ We propose making the accessibility level of the result of a call to a function 
   - The level of any actual parameter corresponding to a formal parameter of an anonymous access type
   - The level of each parameter that has a part with both one or more access discriminants and an unconstrained subtype
   - The level of any actual parameter corresponding to a formal parameter which is explicitly aliased
-  
+
 NOTE: We would need to include an additional item in the list if we were not to enforce the below restriction on tagged types:
   - The level of any actual parameter corresponding to a formal parameter of a tagged type
 
