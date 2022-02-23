@@ -92,6 +92,20 @@ Reference-level explanation
 
 The changes are located in section 6.9 of the SPARK Reference Manual.
 
+Change:
+> if one were to take a valid SPARK program and remove all ghost entity
+> declarations from it and all "innermost" statements, declarations, and
+> pragmas which refer to those declarations (replacing removed statements with
+> null statements when syntactically required), then the resulting program
+> might no longer be a valid SPARK program
+into
+> if one were to take a valid SPARK program and remove all ghost entity
+> declarations from it and all "innermost" statements, declarations,
+> pragmas and record_component_associations which refer to those declarations
+> (replacing removed statements with null statements when syntactically required),
+> with padding inserted in record types to replace ghost components,
+> then the resulting program might no longer be a valid SPARK program
+
 Static Semantics
 
 Rule 3 should replace:
@@ -166,6 +180,14 @@ components are deactivated. The big drawback is that computations that involve
 type representation values (like the type's size) are different when ghost
 components are activated or not.
 
+Yet another alternative would be to have executable ghost components, but store
+them in a special data structure (e.g. a map from object addresses to the
+corresponding ghost component values, for each ghost component), so that they do
+not impact the representation of objects. The drawback of that approach is that
+it is more complex, and that it causes some issues with the activation of ghost
+components changing the decision to pass objects of that type by reference or
+by copy, when finalization of controlled objects is required.
+
 Drawbacks
 =========
 
@@ -195,3 +217,8 @@ It could be interesting in some cases to reduce the size of types when ghost
 components are deactivated, by checking that this has no effect on the behavior
 of the program, possibly through restrictions on how type representation values
 are used.
+
+It could also be possible to support the case of ghost components with null size,
+which would not be executable (leading to a compilation error if Ghost policy is
+Check at the point of declaration of the ghost component). The benefit would be
+that such ghost components would not impact the size of the enclosing record type.
