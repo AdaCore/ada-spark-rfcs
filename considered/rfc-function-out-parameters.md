@@ -61,6 +61,12 @@ Calls to such functions are only allowed as the expression of an assignment
 statement. This ensures that there cannot be different side-effects resulting
 from the choice of order of evaluation of expressions.
 
+Regarding possible interactions with other special cases, it is possible for a
+function to be both a procedural function and a volatile function (with both
+sets of restrictions that apply), but procedural functions should not be either
+expression functions (used for specifications) or traversal functions (used for
+borrowing/observing).
+
 In terms of implementation in GNATprove, calls to such functions should be
 treated like procedure calls.
 
@@ -137,6 +143,10 @@ entry calls in 6.4.2(4):
 
 Add a legality rule in 6.8 regarding expression functions:
 > An expression function should not be also a procedural function. [An expression
+> function should not have parameters of mode out or in out.]
+
+Add a legality rule in 3.10 regarding traversal functions:
+> A traversal function should not be also a procedural function. [A traversal
 > function should not have parameters of mode out or in out.]
 
 Rationale and alternatives
