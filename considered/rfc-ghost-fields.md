@@ -99,12 +99,28 @@ package P
   with SPARK_Mode
 is
 
-   type T is private;
+   package Model
+     with Ghost
+   is
+      type T is private;
 
-   function Get (P : T) return Integer
-   with
-     Ghost,
-     Import;
+      function Get (P : T) return Integer
+      with
+        Import;
+
+      procedure Set (A : out T; Val : T)
+      with
+        Import,
+        Post => A = Val;
+
+   private
+      pragma SPARK_Mode (Off);
+
+      type T is null record with Size => 0;
+
+   end Model;
+
+   use Model;
 
    type Pair is record
       X, Y : Integer;
@@ -117,25 +133,14 @@ is
        and then Create'Result.Y = Y
        and then Get (Create'Result.Area) = X * Y;
 
-   procedure Set (A : out T; Val : T)
-   with
-     Ghost,
-     Import,
-     Post => A = Val;
-
-private
-   pragma SPARK_Mode (Off);
-
-   type T is null record with Size => 0;
-
 end P;
 ```
 
 In the above code example (which is currently valid except for the ``with
-Ghost`` aspect on component ``Area``), ghost component ``Area`` is of type
-``T`` which has null size. GNATprove treats it as an abstract type thanks to
-the use of ``SPARK_Mode (Off)`` in the private part. The API for ``Pair`` must
-be suitably annotated with contracts which specify how the value of ``Area`` is
+Ghost`` aspects), ghost component ``Area`` is of type ``T`` which has null
+size. GNATprove treats it as an abstract type thanks to the use of ``SPARK_Mode
+(Off)`` in the private part of package ``Model``. The API for ``Pair`` must be
+suitably annotated with contracts which specify how the value of ``Area`` is
 impacted by changes to values of type ``Pair``. In particular here, a getter
 function ``Get`` gives an integer value associated with a value of type ``T``,
 which can be used in all such contracts, like the postcondition of
