@@ -87,6 +87,63 @@ Note that subtype predicates cannot refer to ghost entities, including ghost
 components, as they are evaluated in type membership tests. Type invariants can
 refer to ghost entities, including ghost components.
 
+For cases where it is important that ghost components take no space, e.g. in
+embedded applications where memory is scarse, or objects are mapped or
+converted so the layout cannot be modified for ghost components, it is possible
+to specify that they take a null size by using a private type of null size (a
+null record) whose completion is in a private part with ``SPARK_Mode (Off)`` as
+follows:
+
+```ada
+package P
+  with SPARK_Mode
+is
+
+   type T is private;
+
+   function Get (P : T) return Integer
+   with
+     Ghost,
+     Import;
+
+   type Pair is record
+      X, Y : Integer;
+      Area : T with Ghost;  --  ghost component
+   end record;
+
+   function Create (X, Y : Integer) return Pair
+   with
+     Post => Create'Result.X = X
+       and then Create'Result.Y = Y
+       and then Get (Create'Result.Area) = X * Y;
+
+   procedure Set (A : out T; Val : T)
+   with
+     Ghost,
+     Import,
+     Post => A = Val;
+
+private
+   pragma SPARK_Mode (Off);
+
+   type T is null record with Size => 0;
+
+end P;
+```
+
+In the above code example (which is currently valid except for the ``with
+Ghost`` aspect on component ``Area``), ghost component ``Area`` is of type
+``T`` which has null size. GNATprove treats it as an abstract type thanks to
+the use of ``SPARK_Mode (Off)`` in the private part. The API for ``Pair`` must
+be suitably annotated with contracts which specify how the value of ``Area`` is
+impacted by changes to values of type ``Pair``. In particular here, a getter
+function ``Get`` gives an integer value associated with a value of type ``T``,
+which can be used in all such contracts, like the postcondition of
+``Create``. The setter procedure ``Set`` can also be used directly to modify
+the value of ghost component ``Area``. Note that all subprograms that deal only
+with the ghost component are marked as imported, so the code must be compiled
+with deactivated ghost code.
+
 Reference-level explanation
 ===========================
 
@@ -151,7 +208,8 @@ Dynamic Semantics
 
 Add a rule:
 > Ghost components are ignored when defining the behavior of the predefined
-> equality operators for a record type with ghost components.
+> equality operators and predefined stream-oriented attributes for a record
+> type with ghost components.
 
 Rationale and alternatives
 ==========================
