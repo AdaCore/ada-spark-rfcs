@@ -244,12 +244,18 @@ type representation values (like the type's size) are different when ghost
 components are activated or not.
 
 Yet another alternative would be to have executable ghost components, but store
-them in a special data structure (e.g. a map from object addresses to the
-corresponding ghost component values, for each ghost component), so that they do
-not impact the representation of objects. The drawback of that approach is that
-it is more complex, and that it causes some issues with the activation of ghost
-components changing the decision to pass objects of that type by reference or
-by copy, when finalization of controlled objects is required.
+them in a special data structure (e.g. a map from the "main" record's address
+to a "ghost" record of one or more ghost components associated with it), so
+that they do not impact the representation of objects. Even if one of the ghost
+components requires pass by reference (e.g. because it is tagged or
+controlled), there is no need to change the parameter passing mechanism for the
+"main" record. If the main record is already passed by reference, then nothing
+needs to be done as part of parameter passing, since the address is not
+changing. If the main record is passed by copy, the address of the copy can be
+added to the mapping, associated with the same ghost record. In other words,
+the ghost record would always be effectively passed by reference. The main
+advantage is that you get full executable semantics with no representation
+change; the main drawback is complexity.
 
 Drawbacks
 =========
