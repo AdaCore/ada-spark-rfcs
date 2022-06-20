@@ -389,7 +389,7 @@ could have:
 .. code-block:: Ada
 
       type Arr is array (Integer range <>) of Integer;
-      subtype CUDA_Array is Arr with Storage_Model => Arr;
+      subtype CUDA_Array is Arr with Storage_Model => CUDA_Memory;
 
       type Arr_Ptr is access all CUDA_Array;
 
