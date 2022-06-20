@@ -52,11 +52,12 @@ A Storage model is a type which is associated with an aspect
 
 Storage_Model_Type itself allow for 6 parameters:
 
-- Address_Type, the type of the address managed by this model.
+- Address_Type, the type of the address managed by this model. This has to be
+  a scalar type or derived from System.Address.
 - Allocate, a procedure used for allocating memory in this model
 - Deallocate, a procedure used for deallocating memory in this model
-- Copy_In, a procedure used to copy memory from native memory to this model
-- Copy_Out, a procedure used to copy memory from this model to native memory
+- Copy_To, a procedure used to copy memory from native memory to this model
+- Copy_From, a procedure used to copy memory from this model to native memory
 - Storage_Size, a function returning the amount of memory left
 
 By default, Address_Type is System.Address, and all other 5 procedures are 
@@ -81,18 +82,16 @@ The profile of these procedures are as follow:
       Size            : Storage_Count;   
       Alignment       : Storage_Count);    
 
-   procedure Copy_In 
+   procedure Copy_To
      (Model   : in out Storage_Data_Model; 
-      From    : System.Address;
-      To      : Address_Type; 
-      Offset  : Storage_Count;
+      Source  : System.Address;
+      Target  : Address_Type; 
       Size    : Storage_Count);
 
-   procedure Copy_Out
+   procedure Copy_From
      (Model  : in out Storage_Data_Model; 
-      From   : Address_Type; 
-      Offset : Storage_Count;
-      To     : System.Address; 
+      Source : Address_Type; 
+      Target : System.Address; 
       Size   : Storage_Count);
 
    function Storage_Size
@@ -110,8 +109,8 @@ Here's an example of how this could be instantiated in the context of CUDA:
             Address_Type => CUDA_Address,
             Allocate     => CUDA_Allocate,
             Deallocate   => CUDA_Deallocate,
-            Copy_In      => CUDA_Copy_In,
-            Copy_Out     => CUDA_Copy_Out,
+            Copy_To      => CUDA_Copy_To,
+            Copy_From    => CUDA_Copy_From,
             Storage_Size => CUDA_Storage_Size
          );
 
@@ -130,21 +129,19 @@ Here's an example of how this could be instantiated in the context of CUDA:
          Size            : Storage_Count;   
          Alignment       : Storage_Count);    
 
-      procedure CUDA_Copy_In 
+      procedure CUDA_Copy_To
         (Model  : in out CUDA_Storage_Data_Model; 
-         From   : System.Address; 
-         To     : CUDA_Address; 
-         Offset : Storage_Count;
+         Source : System.Address; 
+         Target : CUDA_Address;          
          Size   : Storage_Count);
 
-      procedure CUDA_Copy_Out
+      procedure CUDA_Copy_From
         (Model   : in out CUDA_Storage_Data_Model; 
-         From    : CUDA_Address; 
-         Offset  : Storage_Count;
-         To      : System.Address; 
+         Source  : CUDA_Address; 
+         Target  : System.Address; 
          Size    : Storage_Count);
 
-      with function CUDA_Storage_Size
+      function CUDA_Storage_Size
         (Pool : CUDA_Storage_Data_Model)
          return Storage_Count return Storage_Count'Last;
 
@@ -155,13 +152,13 @@ Here's an example of how this could be instantiated in the context of CUDA:
 Aspect Storage_Model
 --------------------
 
-A new aspect, Storage_Model, allows to specify the memory model associated 
-to an access type. Under this aspect, allocations and deallocations
-will come from the specified memory model instead of the standard ones. In 
-addition, if write operations are needed for initialization, or if there is a 
-copy of the target object from and to a standard memory area, the Copy_In and 
-Copy_Out functions will be called. When used in conjunction with access types,
-it allows to encompass the capabilities of storage pools, e.g.:
+A new aspect, Designated_Storage_Model, allows to specify the memory model 
+associated to the objects pointed by an access type. Under this aspect, 
+allocations and deallocations will come from the specified memory model instead 
+of the standard ones. In addition, if write operations are needed for
+initialization, or if there is a copy of the target object from and to a 
+standard memory area, the Copy_To and Copy_From functions will be called. 
+It allows to encompass the capabilities of storage pools, e.g.:
 
 .. code-block:: Ada
 
@@ -170,7 +167,7 @@ it allows to encompass the capabilities of storage pools, e.g.:
 
       type Host_Array_Access is access all Integer_Array;
       type Device_Array_Access is access all Integer_Array
-         with Storage_Model => CUDA_Memory;;
+         with Designated_Storage_Model => CUDA_Memory;
       
       procedure Free is new Unchecked_Deallocation 
          (Host_Array_Type, Host_Array_Access);
@@ -187,11 +184,11 @@ it allows to encompass the capabilities of storage pools, e.g.:
       Host_Array.all := (others => 0);
 
       Device_Array.all := Host_Array.all; 
-      --  Calls CUDA_Storage_Model.Copy_In to write to the device array from the
+      --  Calls CUDA_Storage_Model.Copy_To to write to the device array from the
       --  native memory.
 
       Host_Array.all := Device_Array.all;
-      --  Calls CUDA_Storage_Model.Copy_Out to read from the device array and 
+      --  Calls CUDA_Storage_Model.Copy_From to read from the device array and 
       --  write to native memory.
 
       Free (Host_Array);
@@ -209,8 +206,8 @@ is used as a temporary between the two. E.g.:
 
 .. code-block:: Ada
 
-  type Foo_I is access Integer with Storage_Model => Foo;
-  type Bar_I is access Integer with Storage_Model => Bar;
+  type Foo_I is access Integer with Designated_Storage_Model => Foo;
+  type Bar_I is access Integer with Designated_Storage_Model => Bar;
 
     X : Foo_I := new Integer;
     Y : Bar_I := new Integer;
@@ -228,86 +225,6 @@ conceptually becomes:
     T := Y.all;
     X.all := T;
 
-System.Storage_Model.Native_Model
----------------------------------
-
-A new package is created, System.Native_Storage_Model. It declares in particular 
-a model "Native_Model" that refers to the default native memory. When applied
-to storage models, the effect is a no-op. It can be used to explicitely declare
-usage of native global memory, which is convenient in some situations. It is
-also useful as a live reference of the profile for the various functions.
-
-.. code-block:: Ada
-
-   package System.Storage_Model is
-
-      subtype Native_Address is System.Address;
-
-      type Native_Storage_Model_Type is limited private 
-         with Storage_Model_Type => (
-            Address_Type => Native_Address,
-            Allocate     => Native_Allocate,
-            Deallocate   => Native_Deallocate,
-            Copy_In      => Native_Copy_In,
-            Copy_Out     => Native_Copy_Out,
-            Storage_Size => Native_Storage_Size'Last
-         );
-
-      procedure Native_Allocate 
-        (Model           : in out Native_Storage_Model_Type; 
-         Storage_Address : out Native_Address;
-         Size            : Storage_Count; 
-         Alignment       : Storage_Count);
-
-      procedure Native_Deallocate 
-        (Model           : in out Native_Storage_Model_Type; 
-         Storage_Address : out Native_Address;
-         Size            : Storage_Count;   
-         Alignment       : Storage_Count);    
-
-      procedure Native_Copy_In 
-        (Model  : in out Native_Storage_Model_Type; 
-         From   : System.Address; 
-         To     : Native_Address; 
-         Offset : Storage_Count;
-         Size   : Storage_Count);
-
-      procedure Native_Copy_Out
-        (Model   : in out Native_Storage_Model_Type; 
-         From    : Native_Address; 
-         Offset  : Storage_Count;
-         To      : System.Address; 
-         Size    : Storage_Count);
-
-      with function Native_Storage_Size
-        (Pool : Native_Storage_Data_Model)
-         return Storage_Count return Storage_Count'Last;
-
-      Native_Memory : Native_Storage_Model_Type;
-   
-   private
-      
-   end System.Storage_Model;
-
-Offset in Storage_Model
------------------------
-
-In some situations, copies in and out are not done on the object itself, but
-on a component of such object (e.g. for record and array types). For example:
-
-.. code-block:: Ada
-
-      type R is record
-         A, B : Integer;
-      end record;
-
-      type R_A is access all R with Storage_Model => Some_Model;;
-
-      V : R_A := new R;
-      X : Integer := 98;
-   begin
-      V.B := X; -- Will call Copy_In with offset 4 assuming 32 bits integer.
-
 Legacy Storage Pools
 --------------------
 
@@ -319,9 +236,7 @@ Legacy Storage Pools are now a Storage_Model. They are implemented as follows:
      new Ada.Finalization.Limited_Controlled with private
    with Storage_Model_Type => (      
       Allocate     => Allocate,
-      Deallocate   => Deallocate,
-      Copy_In      => Copy_In,
-      Copy_Out     => Copy_Out,
+      Deallocate   => Deallocate,      
       Storage_Size => Storage_Size
    );
    pragma Preelaborable_Initialization (Root_Storage_Pool);
@@ -344,23 +259,6 @@ Legacy Storage Pools are now a Storage_Model. They are implemented as follows:
      (Pool : Root_Storage_Pool)
       return System.Storage_Elements.Storage_Count
    is abstract;
-
-   procedure Copy_In 
-     (Model  : in out Root_Storage_Pool; 
-      From   : System.Address;
-      To     : System.Address; 
-      Offset : Storage_Count;
-      Size   : Storage_Count);
-
-   procedure Copy_Out
-     (Model  : in out Root_Storage_Pool; 
-      From   : System.Address; 
-      Offset : Storage_Count;
-      To     : System.Address;       
-      Size   : Storage_Count);
-
-As an extra capability, they are augmented with the Copy_In / Copy_Out
-capabilities.
 
 The legacy notation:
 
@@ -461,25 +359,45 @@ out not to be a trivial task. The above model also makes a number of things
 difficult to express, such as aggregate initializations. 
 
 Another alternative would be to avoid introducing Storage_Models altogether, 
-and only look at legacy storage pools with the added Copy_In and Copy_Out
+and only look at legacy storage pools with the added Copy_To and Copy_From
 primitives. The rest of the design could then stay untouched.
 
 Drawbacks
 =========
 
-TBD
+Nothing specific has been identified yet.
 
 Prior art
 =========
 
-TBD
+Nothing specific has been identified yet.
 
 Unresolved questions
 ====================
 
-TBD
+Nothing specific has been identified yet.
 
 Future possibilities
 ====================
 
-TBD
+Dereferencing a pointer with a designated storage model always leads to a 
+Copy_From operation. It may be nice to be also able to designate a subtype
+as being implemented for a specific memory model. This would be particularly
+helpful in allowing to use references instead of pointers. For example, one
+could have:
+
+.. code-block:: Ada
+
+      type Arr is array (Integer range <>) of Integer;
+      subtype CUDA_Array is Arr with Storage_Model => Arr;
+
+      type Arr_Ptr is access all CUDA_Array;
+
+      V : Arr_Ptr := new Arr (1 .. 10);
+
+      procedure Some_Procedure (Param : CUDA_Array);
+
+   begin
+
+      Some_Procedure (V.all); -- dereference the pointer, but stays in CUDA 
+      storage memory.
