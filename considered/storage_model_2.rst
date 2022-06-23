@@ -59,6 +59,7 @@ Storage_Model_Type itself allow for 6 parameters:
 - Copy_To, a procedure used to copy memory from native memory to this model
 - Copy_From, a procedure used to copy memory from this model to native memory
 - Storage_Size, a function returning the amount of memory left
+- Null_Address, a value for the null address value
 
 By default, Address_Type is System.Address, and all other 5 procedures are 
 performing native operations (e.g. the allocator is the native new allocator).
@@ -111,7 +112,8 @@ Here's an example of how this could be instantiated in the context of CUDA:
             Deallocate   => CUDA_Deallocate,
             Copy_To      => CUDA_Copy_To,
             Copy_From    => CUDA_Copy_From,
-            Storage_Size => CUDA_Storage_Size
+            Storage_Size => CUDA_Storage_Size,
+            Null_Address => CUDA_Null_Address
          );
 
       type CUDA_Address is new System.Address;
@@ -144,6 +146,9 @@ Here's an example of how this could be instantiated in the context of CUDA:
       function CUDA_Storage_Size
         (Pool : CUDA_Storage_Data_Model)
          return Storage_Count return Storage_Count'Last;
+
+      CUDA_Null_Address : constant CUDA_Address :=
+         CUDA_Address (System.Null_Address);
 
       CUDA_Memory : CUDA_Storage_Model;
 
