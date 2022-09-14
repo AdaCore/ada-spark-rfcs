@@ -49,7 +49,6 @@ package Stacks is
    ...
 
 However, if we use this generic to store access based structure, it may not do
-what we expect:
 what we expect. For example, in the code below, the aliasing between X and the
 pointer stored in the stack means that the top of the stack is modified by
 assigning to X.all, and so "21" is printed instead of "12":
