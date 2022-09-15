@@ -154,8 +154,8 @@ Here's an example of how this could be instantiated in the context of CUDA:
 
    end CUDA_Memory;
 
-Aspect Storage_Model
---------------------
+Aspect Designated_Storage_Model
+-------------------------------
 
 A new aspect, Designated_Storage_Model, allows to specify the memory model
 associated to the objects pointed by an access type. Under this aspect,
