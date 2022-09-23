@@ -85,14 +85,14 @@ The profile of these procedures are as follow:
 
    procedure Copy_To
      (Model   : in out A_Model;
-      Source  : System.Address;
       Target  : Address_Type;
+      Source  : System.Address;
       Size    : Storage_Count);
 
    procedure Copy_From
      (Model  : in out A_Model;
-      Source : Address_Type;
       Target : System.Address;
+      Source : Address_Type;
       Size   : Storage_Count);
 
    function Storage_Size
@@ -133,14 +133,14 @@ Here's an example of how this could be instantiated in the context of CUDA:
 
       procedure CUDA_Copy_To
         (Model  : in out CUDA_Storage_Model;
-         Source : System.Address;
          Target : CUDA_Address;
+         Source : System.Address;
          Size   : Storage_Count);
 
       procedure CUDA_Copy_From
         (Model   : in out CUDA_Storage_Model;
-         Source  : CUDA_Address;
          Target  : System.Address;
+         Source  : CUDA_Address;
          Size    : Storage_Count);
 
       function CUDA_Storage_Size
@@ -171,7 +171,7 @@ It allows to encompass the capabilities of storage pools, e.g.:
       type Integer_Array is array (Integer range <>) of Integer;
 
       type Host_Array_Access is access all Integer_Array;
-      type Device_Array_Access is access all Integer_Array
+      type Device_Array_Access is access Integer_Array
          with Designated_Storage_Model => CUDA_Memory;
 
       procedure Free is new Unchecked_Deallocation
@@ -274,7 +274,7 @@ The legacy notation:
    My_Pool_Instance : Storage_Model_Pool.Storage_Model :=
       My_Pools'(others => <>);
 
-   type Acc is access all Integer_Array with Storage_Pool => My_Pool;
+   type Acc is access Integer_Array with Storage_Pool => My_Pool;
 
 can still be accepted as a shortcut for the previous expression.
 
