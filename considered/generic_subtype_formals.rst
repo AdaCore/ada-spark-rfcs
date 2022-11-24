@@ -15,31 +15,36 @@ Motivation
 I want to write a generic function to convert an image to a string.
 I would declare:
 
-package Gen is
-   generic
-      type Index_Type is (<>);
-      type Item_Type is private;
-      type Array_Type is array (Index_Type range <>) of Item_Type;
-      with function Index_Image (Value : Index_Type) return String;
-      with function Item_Image (Value : Item_Type) return String;
-   function Array_Image_1 (Value : Array_Type) return String;
-end Gen;
+.. code-block:: ada
+
+   package Gen is
+      generic
+         type Index_Type is (<>);
+         type Item_Type is private;
+         type Array_Type is array (Index_Type range <>) of Item_Type;
+         with function Index_Image (Value : Index_Type) return String;
+         with function Item_Image (Value : Item_Type) return String;
+      function Array_Image_1 (Value : Array_Type) return String;
+   end Gen;
 
 Say our code declares an array type, and a function to convert an integer
 to a string.
 
-with Gen;
-package P is
-   type My_Array is array (Natural range <>) of Positive;
-   function Integer_Image (Value : Integer) return String
-      is (Integer'Image (Value));
-end P;
+.. code-block:: ada
 
+   with Gen;
+   package P is
+      type My_Array is array (Natural range <>) of Positive;
+      function Integer_Image (Value : Integer) return String
+         is (Integer'Image (Value));
+   end P;
 
 When I want to instantiate Array_Image, I need to set Index_Type to precisely
 Natural, and Item_Type to precisely Positive, so that the definition of the
 array matches.  I can even pass Integer_Image for Index_Image and Item_Image,
 even though the parameter's type is not exactly the same.
+
+.. code-block:: ada
 
    function My_Array_Image_1 is new Gen.Array_Image_1
       (Natural, Positive, My_Array, Integer_Image, Integer_Image);
@@ -47,6 +52,8 @@ even though the parameter's type is not exactly the same.
 
 If I pass Integer for either the index or the item type, the compiler complains
 that the array definition does not match the actual.
+
+.. code-block:: ada
 
    function My_Array_Image_2 is new Gen.Array_Image_1
       (Integer, Positive, My_Array, Integer_Image, Integer_Image);
@@ -56,39 +63,43 @@ that the array definition does not match the actual.
 Let's say that I now generalize things a bit with a signature package, and
 I adapt the signature of Array_Image to use these:
 
-package Gen is
-   generic
-      type T (<>) is limited private;
-      with function T_Image (Value : T) return String;
-   package Displayable is
-   end Displayable;
+.. code-block:: ada
 
-   generic
-      type Index_Type is (<>);
-      type Item_Type is private;
-      type Array_Type is array (Index_Type range <>) of Item_Type;
-      with package Display_Index is new Displayable
-         (T => Index_Type, others => <>);
-      with package Display_Item is new Displayable
-         (T => Item_Type, others => <>);
-   function Array_Image_Signature (Value : Array_Type) return String;
-end Gen;
+   package Gen is
+      generic
+         type T (<>) is limited private;
+         with function T_Image (Value : T) return String;
+      package Displayable is
+      end Displayable;
+
+      generic
+         type Index_Type is (<>);
+         type Item_Type is private;
+         type Array_Type is array (Index_Type range <>) of Item_Type;
+         with package Display_Index is new Displayable
+            (T => Index_Type, others => <>);
+         with package Display_Item is new Displayable
+            (T => Item_Type, others => <>);
+      function Array_Image_Signature (Value : Array_Type) return String;
+   end Gen;
 
 In my package, I will instantiate the signature for integer:
 
-package P is
-   --  [...] same as before, plus:
+.. code-block:: ada
 
-   package Integer_Displayable is new Displayable (Integer, Integer_Image);
-end P;
+   package P is
+      --  [...] same as before, plus:
 
+      package Integer_Displayable is new Displayable (Integer, Integer_Image);
+   end P;
 
 I can however not instantiate my Array_Image using Integer_Displayable:
+
+.. code-block:: ada
 
    function My_Array_Image is new Array_Image_Signature
       (Natural, Positive, My_Array, Integer_Displayable, Integer_Displayable);
    --  ERROR: actual for "T" in actual instance does not match formal
-
 
 So with subprograms, subtypes are allows, but not with packages. This is
 certainly a rule that makes sense in a lot of cases, but is inflexible here.
@@ -105,6 +116,8 @@ on Index_Type or a subtype of it then it would work.
 One solution is to duplicate the types used for index and item. This is
 somewhat unfriendly, since in a large number of cases users will simply pass
 the same type twice (for instance for an array indexed on Integer).
+
+.. code-block:: ada
 
    generic
       type Base_Index_Type is (<>);
@@ -123,6 +136,8 @@ Another possible approach would be to say the package accepts index_type or
 its parent type. Using the 'Base attribute did not work here since it has a
 different meaning.
 
+.. code-block:: ada
+
    generic
       type Index_Type is (<>);
       type Item_Type is private;
@@ -136,6 +151,8 @@ different meaning.
 
 A third approach would possible involve other extensions to the generic
 contract model, via introspection:
+
+.. code-block:: ada
 
    generic
       type Array_Type is array (<>) of <>;
