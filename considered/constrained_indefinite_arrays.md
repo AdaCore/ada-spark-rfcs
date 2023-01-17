@@ -80,6 +80,12 @@ as they do for indefinite arrays.
   an array with that aspect and the index type `Long_Integer` would be
   2 ***** 64 * element size bytes large.
 * Whether `Constrained` is a good name for that aspect.
+* Whether the behaviour of arrays with this aspect is different from regular arrays.
+  Assignments to regular arrays must have the same size as the current contents
+  of that array. As contrained arrays have their maximum possible size allocated
+  in memory it is possible to assign them values of different lengths or append
+  additional elements with the `&` operator. Both operations must not exceed the
+  maximum size of the array type.
 
 ## Alternatives
 
