@@ -159,7 +159,7 @@ When being used in a function the conditional part comes after the return value:
 
 In a similar way to the `exit when` a `goto ... when` can be employed:
 
-.. code-blocks:: ada
+.. code-block:: ada
 
    procedure Low_Level_Optimized is
       Flags : Bitmapping;
@@ -180,7 +180,7 @@ In a similar way to the `exit when` a `goto ... when` can be employed:
 
 To use a conditional raise construct:
 
-.. code-blocks:: ada
+.. code-block:: ada
 
    procedure Foo is
    begin
@@ -189,7 +189,7 @@ To use a conditional raise construct:
 
 An exception message can also be added:
 
-.. code-blocks:: ada
+.. code-block:: ada
 
    procedure Foo is
    begin
