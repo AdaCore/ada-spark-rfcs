@@ -1,13 +1,13 @@
-# Max_Size aspect for tagged types
+# Class'Size aspect for tagged types
 
 ## Summary
 
-The idea is to be able to annotate a tagged type declaration with a `Max_Size`
+The idea is to be able to annotate a tagged type declaration with a `Class'Size`
 aspect like so:
 
 ```ada
-type Foo is tagged abstract null record 
-with Max_Size => 16; --  I imagine the size would be in bytes
+type Foo is tagged abstract null record
+with Class'Size => 16 * 8; --  Size is in bits
 ```
 
 Then, any time a descendent would be declared, the compiler would verify that
@@ -28,27 +28,6 @@ Inst : Foo'Class;
 type Foo_Array is array (Positive range <>) of Foo'Class;
 ```
 
-NOTE: Manually computing the size is tedious, so the idea would be to leverage
-the "final" feature explained here https://hackmd.io/6Au5wQ5HQ0G10wGGVii_nw to
-allow people that are OK with making the type final to let the compiler
-auto-compute the size.
-
-```ada
-type Foo is final tagged abstract null record
-with Max_Size => Auto;
---  This type can only be derived inside the package it has been declared in.
-
-type Bar is new Foo with record
-    A, B : Integer;
-end record;
-
-type Baz is new Foo with record
-    S : String (1 .. 128)
-end record;
-
--- Size of Foo'Class automatically infered to be Max (Bar'Size, Baz'Size, ...)
-```
-
 ## Motivation
 
 * Being able to use classwide types where definite types are required in Ada,
@@ -61,7 +40,7 @@ end record;
 
 ## Reference level explanation
 
-A new aspect, `Max_Size` is added.
+A new aspect, `Class'Size` is added.
 
 ### Syntax
 
@@ -69,13 +48,13 @@ No custom syntax
 
 ### Static legality rules
 
-* `Max_Size` can be specified only on tagged type definitions. Any use on other
+* `Class'Size` can be specified only on tagged type definitions. Any use on other
   entities will raise an error.
 
-* `Max_Size` can only be specified on the rootmost type of a tagged type
+* `Class'Size` can only be specified on the rootmost type of a tagged type
   hierarchy (excluding interfaces).
 
-* Given a tagged type `A` which has a `Max_Size` aspect, the classwide type
+* Given a tagged type `A` which has a `Class'Size` aspect, the classwide type
   `A'Class` is a definite constrained type, as well as any classwide type for
   any of the types derived from `A`.
 
@@ -85,15 +64,39 @@ No custom syntax
 
 ### Operational semantics
 
-Objects with a `Max_Size` aspect are stored by value in a memory zone that is
-the size of `Max_Size`.
+Objects with a `Class'Size` aspect are stored by value in a memory zone that is
+the size of `Class'Size`.
 
 ## Unresolved questions
 
-* Whether you can use `Max_Size` on interfaces. In this first iteration of the
+* Whether you can use `Class'Size` on interfaces. In this first iteration of the
   feature, I would say no. Quentin has some arguments for why it should be
   allowed, and I have some arguments as to why it should be disallowed.
 
-* Can you redefine `Max_Size` on subclasses to specify a smaller size ?
+* Can you redefine `Class'Size` on subclasses to specify a smaller size ?
 
-* Can you define `Max_Size` on intermediate classes?
+* Can you define `Class'Size` on intermediate classes?
+
+## Future possibilities
+
+Manually computing the size is tedious, so the idea would be to leverage
+the "final" feature explained here
+https://github.com/AdaCore/ada-spark-rfcs/blob/topic/final/considered/final_modifier.md
+to allow people that are OK with making the type final to let the compiler
+auto-compute the size.
+
+```ada
+type Foo is final tagged abstract null record
+with Class'Size => Auto;
+--  This type can only be derived inside the package it has been declared in.
+
+type Bar is new Foo with record
+    A, B : Integer;
+end record;
+
+type Baz is new Foo with record
+    S : String (1 .. 128)
+end record;
+
+-- Size of Foo'Class automatically infered to be Max (Bar'Size, Baz'Size, ...)
+```
