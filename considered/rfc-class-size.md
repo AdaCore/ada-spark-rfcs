@@ -1,13 +1,13 @@
-# Class'Size aspect for tagged types
+# Size'Class aspect for tagged types
 
 ## Summary
 
-The idea is to be able to annotate a tagged type declaration with a `Class'Size`
+The idea is to be able to annotate a tagged type declaration with a `Size'Class`
 aspect like so:
 
 ```ada
 type Foo is tagged abstract null record
-with Class'Size => 16 * 8; --  Size is in bits
+with Size'Class => 16 * 8; --  Size is in bits
 ```
 
 Then, any time a descendent would be declared, the compiler would verify that
@@ -40,44 +40,113 @@ type Foo_Array is array (Positive range <>) of Foo'Class;
 
 ## Reference level explanation
 
-A new aspect, `Class'Size` is added.
+A new aspect, Size'Class, is defined.
 
-### Syntax
+The Size'Class representation aspect may be specified for a
+non-derived non-interface specific tagged type T.
+The expected type for the Aspect_Definition is Universal_Integer; the
+specified value shall be static.
 
-No custom syntax
+If the Size'Class aspect is specified for a type T, then every
+specific descendant of T [redundant: (including T)]
 
-### Static legality rules
+- shall have a Size that does not exceed the specified value; and
 
-* `Class'Size` can be specified only on tagged type definitions. Any use on other
-  entities will raise an error.
+- shall be undiscriminated; and
 
-* `Class'Size` can only be specified on the rootmost type of a tagged type
-  hierarchy (excluding interfaces).
+- shall have no composite subcomponent whose subtype is subject to a
+  dynamic constraint; and
 
-* Given a tagged type `A` which has a `Class'Size` aspect, the classwide type
-  `A'Class` is a definite constrained type, as well as any classwide type for
-  any of the types derived from `A`.
+- shall have no interface progenitors; and
 
-* When defining a type that is derived directly or indirectly from `A`, its
-  computed size will be matched against the max-size. If it is bigger than the
-  max size, an error will be raised.
+- shall not have a tagged partial view other than a private extension; and
 
-### Operational semantics
+- shall not have a statically deeper accessibility level than that of T.
 
-Objects with a `Class'Size` aspect are stored by value in a memory zone that is
-the size of `Class'Size`.
+In addition to the places where Legality Rules normally apply (see 12.3),
+these legality rules apply also in the private part and in the body of an
+instance of a generic unit.
 
-## Unresolved questions
+For any subtype S that is a subtype of a descendant of T, S'Class'Size is
+defined to yield the specified value [redundant:,  although S'Class'Size is
+not a static expression].
 
-* Whether you can use `Class'Size` on interfaces. In this first iteration of the
-  feature, I would say no. Quentin has some arguments for why it should be
-  allowed, and I have some arguments as to why it should be disallowed.
+A class-wide descendant of a type with a specified Size'Class aspect
+is defined to be a "mutably tagged" type. Any subtype of a mutably tagged
+type is, by definition, a definite subtype (RM 3.3 notwithstanding). Default
+initialization of an object of such a definite subtype proceeds as for the
+corresponding specific type, except that Program_Error is raised if the
+specific type is abstract. [In particular, the initial tag of the object
+is that of the corresponding specific type.]
 
-* Can you redefine `Class'Size` on subclasses to specify a smaller size ?
+An object of a tagged type is defined to be "tag-constrained" if it is
 
-* Can you define `Class'Size` on intermediate classes?
+- an object whose type is not mutably tagged; or
+
+- a constant object; or
+
+- a view conversion of a tag-constrained object; or
+
+- a formal "in out" or "out" parameter whose corresponding
+  actual parameter is tag-constrained.
+
+[Redundant: A variable of a specific type is always tag-constrained. An
+allocator of an access-to-mutably-tagged-variable type never creates a
+tag-constrained object; the object designated by a value of such an
+access type is not tag-constrained.]
+
+In the case of an assignment to a tagged variable that
+is not tag-constrained, no check is performed that the tag of the value of
+the expression is the same as that of the target (RM 5.2 notwithstanding).
+Instead, the tag of the target object becomes that of the source object of
+the assignment. [Redundant: The tag of an object of a mutably-tagged
+type MT will always be the tag of some specific type that is covered by MT.]
+An assignment to a composite object similarly copies the tags of any
+subcomponents of the source object that have a mutably-tagged type.
+
+The Constrained attribute is defined for any name denoting an object of a
+mutably tagged type (RM 3.7.2 notwithstanding). In this case, the Constrained
+attribute yields the value True if the object is tag-constrained and False
+otherwise.
+
+Renaming is not allowed (see 8.5.1) for a type conversion having an operand
+of a mutably tagged type MT and a target type TT such that TT'Class does not
+cover MT [redundant: (sometimes called a "downward" conversion)], nor for
+any part of such an object, nor for any slice of such an object. This
+rule also applies in any context where a name is required to be one for
+which "renaming is allowed" (for example, see RM 12.4).
+
+A name denoting a view of a variable of a mutably tagged type shall not
+occur as an operative constituent of the prefix of a name denoting a
+prefixed view of a callable entity, except as the callee name in a call to
+the callable entity. [Redundant: This disallows, for example, renaming
+such a prefixed view, passing the prefixed view name as a generic actual
+parameter, or using the prefixed view name as the prefix of an attribute.]
+
+For a type conversion between two general access types, either both
+or neither of the designated types shall be mutably tagged. For an
+Access (or Unchecked_Access) attribute reference, the designated type
+of the type of the attribute reference and the type of the prefix of
+the attribute shall either both or neither be mutably tagged.
+
+The execution of a construct is erroneous if the construct has a constituent
+that is a name denoting a subcomponent of a tagged object and the object's
+tag is changed by this execution between evaluating the name and the last use
+(within this execution) of the subcomponent denoted by the name.
+
+If the type of a formal parameter is a specific tagged type then the
+execution of the call is erroneous if the tag of the actual is changed
+while the formal parameter exists (that is, before leaving the
+corresponding callable construct).
 
 ## Future possibilities
+
+It may be possible to relax some of the restrictions regarding interface types and derived types.
+The erroneous execution rules (which are patterned after existing RM rules for discriminated types)
+might also be made more permissive.
+It would be possible to have a compile-time check instead of a run-time check to prevent
+"X : Some_Abstract_Type'Class;".
+These have all been deferred in order to simplify the initial version of this feature.
 
 Manually computing the size is tedious, so the idea would be to leverage
 the "final" feature explained here
@@ -87,7 +156,7 @@ auto-compute the size.
 
 ```ada
 type Foo is final tagged abstract null record
-with Class'Size => Auto;
+with Size'Class => Auto;
 --  This type can only be derived inside the package it has been declared in.
 
 type Bar is new Foo with record
