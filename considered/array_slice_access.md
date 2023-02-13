@@ -135,11 +135,16 @@ the array.
 Unresolved questions
 ====================
 
-Do the elements have to be aliased?
+This features requires a new kind of fat pointers. One open question is whether
+or not the slice access feature (and therefore the use of different fat
+pointers) will be enabled by default or only if the programmers request it with
+a pragma/aspect.
+
+
+Second open question: do the elements have to be aliased?
 ```ada
 type Arr_Type is array (Natural range <>) of aliased UInt8;
 ```
-
 Since this is not needed for an access to the full array so we expect to keep
 it the same for access to slices.
 
