@@ -1,4 +1,4 @@
-# Constrained Indefinite Arrays RFC
+# Definite Unconstrained Arrays RFC
 
 ## Summary
 
@@ -7,15 +7,32 @@ with a static maximum size but still use them as if they were unconstrained.
 
 An array defined with
 ```Ada
-type Index is range 0 .. 32;
+type Index is range 0 .. 7;
 
-type Static_Array is array (Index range <>) of Element with
-   Constrained;
+type Static_Array is array (Index range <>) of Natural with
+   Definite;
 ```
 
-Adding the aspect `Constrained` will force the compiler to always reserve
-enough space to fit every possible range of an object of this type without
-changing the high level behaviour of the type.
+Adding the aspect `Definite` will force the compiler to always reserve
+enough space to fit every possible range of an object of this type. As the
+possible range for this array is preallocated objects of that type can be
+resized.
+
+```Ada
+declare
+   subtype Static_Subtype is Static_Array (1 .. 3);
+   A : Static_Array := (1, 2, 3, 4);
+   B : Static_Array := (2, 3);
+   S : Static_Subtype := (1, 2, 3);
+begin
+   A := B;
+   A := A & S;
+   A := A & (8, 9);
+   pragma Assert (A'Capcity = 8);
+   A := (0, 1, 2, 3, 4, 5, 6, 7, 8); -- forbidden as it exceeds the array capacity
+   S := (1, 2); -- forbidden as Static_Subtype is a constrained array
+end;
+```
 
 ## Motivation
 
@@ -49,7 +66,12 @@ cannot use the `&` operator and slices easily.
 
 ## Reference Level Explanation
 
-A new aspect `Constrained` is added.
+A new aspect `Definite` is added. An array declared with this aspect is
+resizable within its index type boundaries. Assignments of slices that do not
+fit the original length of that array are allowed.
+
+Additionally objects of that type have the `'Capacity` attribute that returns
+the maximum number of elements the object can hold.
 
 ## Syntax
 
@@ -57,17 +79,17 @@ No custom Syntax.
 
 ## Static Legality Rules
 
-`Constrained` can only be added to array declarations that would create an
-indefinite array. It can be used on both types and subtypes.
+`Definite` can only be added to array declarations that would create an
+unconstrained array. It can be used on both types and subtypes.
 
 A subtype of a constrained array has the same behaviour as a subtype to a
-regular array. If defined as indefinite, it will keep the `Constrained`
+regular array. If defined as unconstrained, it will keep the `Definite`
 modifier but with a reduced static size. If defined with a specific constrained
 range it will behave the same way it does without that aspect.
 
 ## Operational Semantics
 
-Objects of an array type declared with `Constrained` will always be stored in a
+Objects of an array type declared with `Definite` will always be stored in a
 memory zone that has the maximum size of that array type.
 When returned from a function they behave as constrained types and do not
 require the secondary stack.
@@ -79,13 +101,7 @@ as they do for indefinite arrays.
 * Whether there is a hard limit on the size of these arrays. Theoretically
   an array with that aspect and the index type `Long_Integer` would be
   2 ***** 64 * element size bytes large.
-* Whether `Constrained` is a good name for that aspect.
-* Whether the behaviour of arrays with this aspect is different from regular arrays.
-  Assignments to regular arrays must have the same size as the current contents
-  of that array. As contrained arrays have their maximum possible size allocated
-  in memory it is possible to assign them values of different lengths or append
-  additional elements with the `&` operator. Both operations must not exceed the
-  maximum size of the array type.
+* Whether `Definite` is a good name for that aspect.
 
 ## Alternatives
 
