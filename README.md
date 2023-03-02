@@ -34,12 +34,28 @@ users can give and get feedback on RFCs. It will also make it possible for
 people from the community to propose and discuss potential features and
 improvements.
 
-You can have a look at:
+Organisation
+------------
 
-- [all RFC (both open and closed)](https://github.com/AdaCore/ada-spark-rfcs/pulls?q=is%3Apr+)
-- [open RFC](https://github.com/AdaCore/ada-spark-rfcs/pulls)
+RFCs are submitted to review as pull request. There are two kind of RFCs:
+
+* High-level RFCs: Those RFCs concern a high level area where we want to make
+  changes, and how. They should include at least two regular RFCs.
+
+* Regular RFCs: Those RFCs explain how a single change to the language will be
+  made. They might (or might not) be part of a high level RFC.
+
+Once a RFC is reviewed, it will be either abandoned or merged. When it's
+merged, high-level RFCs will go in the `meta` folder, and regular ones will
+first go in `considered`, and then, eventually, when prototyped in GNAT, in the
+`prototyped` folder.
+
+- [High level RFCs](https://github.com/AdaCore/ada-spark-rfcs/tree/master/meta)
 - [RFC being considered for prototyping](https://github.com/AdaCore/ada-spark-rfcs/tree/master/considered)
 - [RFC which have been prototyped](https://github.com/AdaCore/ada-spark-rfcs/tree/master/prototyped)
+
+- [all RFCs pull requests (both open and closed)](https://github.com/AdaCore/ada-spark-rfcs/pulls?q=is%3Apr+)
+- [RFCs that are still in review](https://github.com/AdaCore/ada-spark-rfcs/pulls)
 
 The process
 ===========
@@ -113,7 +129,7 @@ Here is the process to get an RFC into alive state:
   but this is optional.
 
 - On the next page, GitHub will automate the creation of the Pull Request.
-  Just hit `Create pull request`.  
+  Just hit `Create pull request`.
 
 As a pull request the RFC will receive design feedback from AdaCore’s
 language design team, and from the larger community, and the author
