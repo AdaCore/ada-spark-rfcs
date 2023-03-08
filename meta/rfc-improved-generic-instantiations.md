@@ -115,7 +115,7 @@ features.
 
 ### First step: Inference of dependent types in generic instantiations
 
-Using the feature described in [this rfc (TODO)](https://todoaddlink),
+Using the feature described in [this rfc](../considered/rfc-inference-of-dependent-types.md),
 we could then simplify the above code's Reduce instantiation:
 
 ```ada
@@ -270,3 +270,13 @@ Many (most) languages with generics have implicit/structural instantiations of
 generics. It's on the other hand hard to find languages with explicit
 instantiations like Ada. All mainstream languages today use implicit/structural
 generics (Java/C++/C#/Rust/Go/etc).
+
+Future possibilities
+--------------------
+
+An idea that was pointed out was that we might want to be able to annotate
+generics to explicitly forbid structural references to instantiations, for
+cases where generics have state that you might not want to implicitly share
+between references. One example that comes to mind is GNAT's HTable package.
+
+
