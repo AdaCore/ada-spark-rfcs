@@ -136,11 +136,12 @@ little, but is not a big step up from the last version. We will understand the
 true edge this feature gives us in the last step. Let's go to the next
 iteration
 
-### Second step: Implicit instantiation of generics
+### Second step: Structural instantiation of generics
 
 This one is the big step up, that will allow us to get one step closer to the
-initial intent. Using implicit instantiation of generic functions [(see RFC
-here (TODO))](https://TODO), we would be able to write the following:
+initial intent. Using structural instantiation of generics [(see RFC
+here)](../considered/rfc-structural-generic-instantiation.md), we would be able
+to write the following:
 
 ```ada
 function Sum (X: Float_Array) return Float is
