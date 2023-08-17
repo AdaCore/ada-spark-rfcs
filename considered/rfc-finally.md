@@ -62,6 +62,24 @@ elaborated, then the `finally` block won't be executed. This in turns allows
 the finally block to have access to the declarations declared in the attached
 declarative region.
 
+## Rationale & alternatives
+
+Other designs such as something similar to Go's `defer` were considered
+https://github.com/AdaCore/ada-spark-rfcs/pull/29.
+
+In the end we're going with this design both because of its cognitive
+simplicity, because it's easy to implement in GNAT, and because it's familiar
+to programmers and thus harder to fall into a trap.
+
+We think that in many cases, type based finalization is a better fit, and
+something like Ada's controlled object, or a simple mechanism akin to what is
+described in https://github.com/AdaCore/ada-spark-rfcs/pull/65 is the best fit,
+with `finally` complementing this feature when needed.
+
+Feel free to read from
+[here](https://github.com/AdaCore/ada-spark-rfcs/pull/29#issuecomment-539025062)
+for more discussion about the `defer`-like proposal.
+
 ## Unresolved questions
 
 ### Finalizing in case of exceptions
