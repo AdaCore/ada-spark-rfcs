@@ -17,7 +17,22 @@ and are not the most expressive way in some situations.
 We propose to add a common construct in languages with exceptions, which is the
 `finally` block. Every statement in the `finally` block of statements will be
 executed, regardless of whether an exception has been caught by the `exception`
-block or not.
+block or not, allowing to run finalization actions.
+
+```ada
+procedure Example is
+   F         : File_Type;
+   File_Name : constant String := "simple.txt";
+   Bar : Integer := Function_That_Might_Raise;
+begin
+   Create (F, Out_File, File_Name);
+   Put_Line (F, "Hello World #1");
+   Put_Line (F, "Hello World #2");
+   Put_Line (F, "Hello World #3");
+finally
+   Close (F);
+end Example;
+```
 
 ## Reference level explanation
 
@@ -41,6 +56,52 @@ Every statement in the optional `sequence_of_statements` contained in the
 The finally block is considered as being outside of the
 `handled_sequence_of_statements`, so that if an exception is raised while
 executing it, `exception_handlers` will *not* be considered.
+
+Please note that if the attached declarative region was not properly
+elaborated, then the `finally` block won't be executed. This in turns allows
+the finally block to have access to the declarations declared in the attached
+declarative region.
+
+## Unresolved questions
+
+### Finalizing in case of exceptions
+
+We decided in this RFC to make the declarations declared in the attached
+declarative region available to the finally block, and to only execute the
+finally block if the declarative region has been properly executed, in line
+with the design of exception handlers. 
+
+This has the drawback of not allowing finalization in the case where the
+elaboration of the declarative region was not done. There is no obvious fix to
+this.
+
+### New keyword vs. existing keywords
+
+So far, the ARG has been very careful in not introducing new keywords
+gratuitously, if an existing keyword, or combination thereof, could be deemed
+"good enough". We've decided to break precedent here, evaluating that this
+strategy is not as useful today as it once was:
+
+1. We have a very low migration cost, in this particular case, because naming a
+   variable `Finally` is very unlikely, unlike, for example, `Interface` back
+   when Ada 95 was designed (We didn't find an occurence in any codebase we
+   have access to).
+
+2. If we deem it necessary we can probably parse it as a reserved word,
+   allowing its use as an entity name.
+
+2. `finally` being the keyword used in virtually every other language makes it
+   very easy to discover/recognize, and is also one less thing to
+   learn/remember for every multi-lingual programmer. That in itself was an
+   important argument in the choice done in this RFC.
+
+3. A proposed alternative was `end with`, but `end ...` is generally used to
+   finish a block defining an entity in Ada, which makes it confusing.
+
+4. We don't have a lot of people migrating language versions, by virtue of our
+   market, and those who migrate are OK to dedicate some resources to
+   migrating, so we already decided a while back that we're not completely
+   against breaking things, if it makes sense.
 
 ## Prior art
 
