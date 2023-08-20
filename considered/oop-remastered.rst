@@ -169,6 +169,30 @@ as for tagged types.
 
 Visibilty rules are the same as for types today. In particular, a class instance as access to private components of other instances of the same class.
 
+Class-private components
+------------------------
+
+Similarly to a nested package, it is possible to introduce "class private" fields
+in the completion of a class type. These fields will only be visible to the
+operations declared in the scope of the class. For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class private;
+   private
+      type T1 is class record
+         F2 : Integer;
+
+         procedure P2 (Self : in out T1; V : Integer);
+
+       private
+         F3 : Integer; -- only accessible from operation of T1
+       end T1;
+   end P;
+
+Entities outside of the T1 scope or children of T1 won't have access to this field.
+
 Overriding and extensions
 -------------------------
 
@@ -367,6 +391,20 @@ can be called through the usual prefix notation, but they cannot be overriden an
   begin
      V.P; -- Legal, P is an operation of T1
      V2.P; -- Legal P is also an operation of T2, statically called
+
+Note that while it's illegal to declare dispatching operations in the body of
+the implementation of a class, it's still possible to declare non-dispatching
+specific operations:
+
+.. code-block:: ada
+
+  package body P is
+     type T1 is class record
+         procedure P2 (Self : in out T1'Specific); -- Legal
+
+         procedure P2 (Self : in out T1); -- Compilation Error
+      end T1;
+  end P;
 
 Global object hierarchy
 -----------------------
