@@ -793,3 +793,6 @@ nested package in the private part of its enclosing package.
 
 The scoped primitive notation is currently specific to record types. It could be extended to all types (which would have the effect
 or re-enabling the possibility to complete a simple private type by a record).
+
+Move semantics as defined by C++ would be a very useful extension of the current
+model, but has broader applicability and should be discussed separately.
