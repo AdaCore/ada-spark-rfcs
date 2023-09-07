@@ -497,8 +497,8 @@ Copy constructor and assignment overload
 
 Copy constructors and assignment overload are available to both class records and simple records.
 
-A special constructor, a copy constructor, can be identified with the "Copy" aspect. It's called when an object
-is initialized from a copy. It needs to be a constructor with two values of the same type. For example:
+A special constructor, a copy constructor, has two parameters: self, and a reference to an instance of the class.
+It's called when an object is initialized from a copy. For example:
 
 .. code-block:: ada
 
