@@ -29,6 +29,21 @@ Guide-level explanation
 Reference-level explanation
 ===========================
 
+The proposal is split between the following parts:
+
+- `New structure <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-structure.rst>`_
+- `Component declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-fields.rst>`_
+- `Primitives declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-primitives.rst>`_
+- `Dispatching <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-dispatching.rst>`_
+- `Constructors and destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
+- `Super cast <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-super.rst>`_
+- `New access types <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-access.rst>`_
+- `Assignment overriding <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-assignment.rst>`_
+- `Final classes and primitives <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-final.rst>`_
+- `Body restriction lift <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-body.rst>`_
+- `Tagged record compatibilty <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-tagged.rst>`_
+- `Obsolete features <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-obsolete.rst>`_
+
 
 Rationale and alternatives
 ==========================
