@@ -143,6 +143,17 @@ specific operations:
       end T1;
   end P;
 
+Membership and downcast
+-----------------------
+
+Membership and downcast work similarily to tagged types. For a class record C:
+
+- `V in C` checks that V is in the class of C
+- `V in C'Specific` checks that V is specifically of type C1
+- `C (V)` is a dispatching cast of V to C
+- `C'Specific (V)` is casting to a non-dispatching view of C
+
+
 Reference-level explanation
 ===========================
 

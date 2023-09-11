@@ -26,39 +26,6 @@ does not require inheritance or dispatching.
 Guide-level explanation
 =======================
 
-The new design retains the difference between "regular" types and "classes". For consistency, both will be altered and consider that
-https://github.com/AdaCore/ada-spark-rfcs/pull/13 is implemented.
-
-
-Body-only classes
------------------
-
-One limitation of the tagged type to lift under this system is the ability to declare a class only in the body of a package. This
-should be legal under this new system.
-
-.. code-block:: ada
-
-   package body P is
-      type T2 is class record
-         F : Integer;
-         procedure P (Self : in out T2; V : Integer);
-      end T2;
-
-      type body T2 is class record
-         procedure P (Self : in out T2; V : Integer) is
-         begin
-            Self.F := V;
-         end P;
-      end T2;
-   end P;
-
-Tagged types
-------------
-
-Under this proposal, tagged records and class record can co-exist, as they live in completely distinct hierarchies. Howeer, tagged
-types should only be considered for a comptability and migration standpoint. Most tagged record use cases should be relatively easy
-to move to class records.
-
 Reference-level explanation
 ===========================
 
