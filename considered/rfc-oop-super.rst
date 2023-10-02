@@ -12,6 +12,9 @@ Motivation
 Guide-level explanation
 =======================
 
+'Super attribute
+----------------
+
 A new attribute `'Super` is introduced, and can be applied to a class type, a
 tagged type, or an object of these types.
 
@@ -79,6 +82,34 @@ not be directly visible in the code. For example:
 
    package I1 is new G (Root); -- T'Super is Root
    package I1 is new G (Child); -- T'Super is Child
+
+Anonymous Root type
+-------------------
+
+Note that there are situations where T'Super need to exist even if there is no
+actual type, for example:
+
+.. code-block:: ada
+
+      type T is tagged private
+   private
+      type T is tagged null record;
+
+and:
+
+.. code-block:: ada
+
+   generic
+      type T is tagged private;
+   package P
+
+In both these cases, T may or may not derive from an actual type - ie it may be
+a root type. As a consequence, T'Super needs to be defined, but will return
+a default anonymous root type in case where T is actually a root type itself.
+
+No further properties are defined for this anonymous root type in the context
+of this proposal. In particular, we don't propose to create an equivalent to
+the Java java.lang.Object.
 
 Reference-level explanation
 ===========================
