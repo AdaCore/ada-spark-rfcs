@@ -68,11 +68,17 @@ not be directly visible in the code. For example:
      type B is new C with private;
    end P;
 
+   type Root is tagged null record;
+   type Child is new Root with null record;
+
    generic
-      type T is new R with private;
+      type T is new Root with private;
    package G is
       -- T'Super is only known at instantiation time
    end G;
+
+   package I1 is new G (Root); -- T'Super is Root
+   package I1 is new G (Child); -- T'Super is Child
 
 Reference-level explanation
 ===========================
