@@ -83,33 +83,27 @@ not be directly visible in the code. For example:
    package I1 is new G (Root); -- T'Super is Root
    package I1 is new G (Child); -- T'Super is Child
 
-Anonymous Root type
--------------------
+Generic Formal
+--------------
 
-Note that there are situations where T'Super need to exist even if there is no
-actual type, for example:
+A generic formal can be either a root type or a derived type. As a consequence,
+calling 'Super on such a type or an object of such a type may not refer to any
+concrete entity. At this stage, it is illegal to call 'Super on such a type.
 
-.. code-block:: ada
+Note that there could be cases where 'Super could make semantic sense, e.g.:
 
-      type T is tagged private
-   private
-      type T is tagged null record;
+type Root is tagged record;
 
-and:
+type Child is new Root with null record;
 
-.. code-block:: ada
+generic
+   type X is new Child with null record;
+package P
+   V : X'Super; -- this could refer to Child or to X parent types
+end P;
 
-   generic
-      type T is tagged private;
-   package P
-
-In both these cases, T may or may not derive from an actual type - ie it may be
-a root type. As a consequence, T'Super needs to be defined, but will return
-a default anonymous root type in case where T is actually a root type itself.
-
-No further properties are defined for this anonymous root type in the context
-of this proposal. In particular, we don't propose to create an equivalent to
-the Java java.lang.Object.
+At this stage, it's not clear if such a case is useful to support and it's
+clearer not to support it.
 
 Reference-level explanation
 ===========================
