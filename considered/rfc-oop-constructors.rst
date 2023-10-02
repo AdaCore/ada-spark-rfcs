@@ -217,7 +217,7 @@ a constructor, still as a shortcut to field by field assignment:
       type T1 is class record
          procedure T1 (Self : in out T1);
 
-	 A, B, C : Integer;
+	      A, B, C : Integer;
       end T1;
    end P;
 
@@ -232,6 +232,71 @@ a constructor, still as a shortcut to field by field assignment:
       V : T1 := (A => 99, others => <>); -- V.A = 99, V.B = 2, V.C = 3.
    end P;
 
+Constructors presence guarantees
+--------------------------------
+
+Constructors are not inherited. This means that a constructor for a given class
+may not exist for its child.
+
+By default, a class provide a parameterless constructor, on top of the copy
+constructor. This parameterless constructor is removed as soon as explicit
+constructors are provided. For example:
+
+.. code-block:: ada
+
+   type T1 is class record
+
+   end T1;
+
+   type T2 is class record
+      procedure T2 (Self : in out T1, X : Integer);
+   end T2;
+
+   type T3 is new T2 with record
+      procedure T3 (Self : in out T1, X : Integer, Y : Integer);
+   end T3;
+
+   V1 : T1;        -- OK
+   V2a : T2;       -- Compilation error, no parameterless constructor is present
+   V2b : T2 (5);   -- OK
+   V3 : T3 (5);    -- Compilation error, no more constructor with 1 parameter for T3
+   V3 : T3 (5, 6); -- OK
+
+Note that as a consequence, it's not possible to know what constructors will be
+available when using a class record as a formal parameter of a generic. As
+a consequence, expected constructors needs to be mentionned explicitely when
+declaring such parameters:
+
+.. code-block:: ada
+
+   generic
+      type Some_T is new T2 with
+         procedure Some_T (Self : in out Some_T; X, Y : Integer);
+      end Some_T;
+   package G
+      X : Some_T (5, 6); -- OK, we expect a 2 parameters con
+   end G;
+
+   package I1 is new G (T2); -- Compilation error, constructor missing
+   package I1 is new G (T3); -- OK
+
+Finally, a special syntax is provided to remove the default constructor from
+the public view, without providing any other constructor. The full view of a
+type is then responsible to provide constructor (with or without parameters).
+Such object can only be instanciated by code that has visibility over the
+private section of the package:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is class record
+         procedure T1 (Self : in out T1) is abstract;
+      end T1;
+   private
+      type T1 is class record
+         procedure T1 (Self : in out T1);
+      end T1;
+   end P;
 
 Reference-level explanation
 ===========================
