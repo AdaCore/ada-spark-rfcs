@@ -92,15 +92,17 @@ concrete entity. At this stage, it is illegal to call 'Super on such a type.
 
 Note that there could be cases where 'Super could make semantic sense, e.g.:
 
-type Root is tagged record;
+.. code-block:: ada
 
-type Child is new Root with null record;
+   type Root is tagged record;
 
-generic
-   type X is new Child with null record;
-package P
-   V : X'Super; -- this could refer to Child or to X parent types
-end P;
+   type Child is new Root with null record;
+
+   generic
+      type X is new Child with null record;
+   package P
+      V : X'Super; -- this could refer to Child or to X parent types
+   end P;
 
 At this stage, it's not clear if such a case is useful to support and it's
 clearer not to support it.
