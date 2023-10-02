@@ -80,6 +80,9 @@ constructor, for example:
       end T2;
    end P;
 
+In the case of objects containing other objects, innermost objects constructors
+are called first, before their containing object.
+
 Copy constructor overload
 -------------------------
 
