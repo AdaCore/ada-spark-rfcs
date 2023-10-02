@@ -12,11 +12,14 @@ Motivation
 Guide-level explanation
 =======================
 
+Constructors
+------------
+
 Constructors are available to both class record and simple records.
 
-Record and class record can declare constructors and one destructor. The
+Record and class record can declare constructors. The
 constructor needs to be a procedure of the name of the object, taking an in out
-or access reference to the object. Destructors are named "final".
+or access reference to the object.
 
 .. code-block:: ada
 
@@ -24,17 +27,12 @@ or access reference to the object. Destructors are named "final".
       type T1 is class record
          procedure T1 (Self : in out T1);
          procedure T1 (Self : in out T1; Some_Value : Integer);
-
-         procedure final (Self : in out T1);
       end T1;
 
-      type T2 is class record
+      type T2 is record
          procedure T2 (Self : in out T2; Some_Value : Integer);
       end T2;
    end P;
-
-This specific proposals is linked to an overal finalization proposal.
-It may alter the actual syntax / reserved word for destructors.
 
 As soon as a constructor exist, and object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
@@ -81,9 +79,6 @@ constructor, for example:
 	      end T2;
       end T2;
    end P;
-
-Destructors are implicitely called in sequence - the parent destructor is always
-called after its child.
 
 Copy constructor overload
 -------------------------

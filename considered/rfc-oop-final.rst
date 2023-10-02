@@ -122,38 +122,8 @@ Drawbacks
 Prior art
 =========
 
-This proposal is heavily influence by C++, C# and Java (which arguably have influenced one another quite a lot).
-
 Unresolved questions
 ====================
 
-This proposal relies on the unified record syntax proposal, and will need to be updated in light of potential
-revamped access model and finalization models.
-
-A number of the capabilities of the standard run-time library rely today on tagged type. A thorough review should be made to
-identify which should be removed (e.g. controlled type), which should be migrated, and which can actually be implemented without
-relying on classes altogether (things such as streams or pools come to mind). The removal of coextensions types also supposes a
-different model for general iteration, as it currently relies on user-defined references (implemented through coextensions).
-
 Future possibilities
 ====================
-
-One important aspect of Ada is to allow data to be as static as possible. OOP typically requires the use of pointer. The Max_Size
-proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow
-polymorphic object residing in automatic memory section such as fields or stack.
-
-Some of the notations introduced could be extended to other types, such as protected or tasks type.
-
-The "with private;" notation should also be extended to nested packages, allowing to differenciate to nest the private part of a
-nested package in the private part of its enclosing package.
-
-The scoped primitive notation is currently specific to record types. It could be extended to all types (which would have the effect
-or re-enabling the possibility to complete a simple private type by a record).
-
-Move semantics as defined by C++ would be a very useful extension of the current
-model, but has broader applicability and should be discussed separately.
-
-Given the fact that a class is now a syntactical scope, we could also consider
-to allow classes to be their own compilation units. This would fit a number
-of architectures inherited from other programming languages, which require in
-Ada to create an package for a single type.

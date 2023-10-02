@@ -35,7 +35,8 @@ The proposal is split between the following parts:
 - `Component declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-fields.rst>`_
 - `Primitives declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-primitives.rst>`_
 - `Dispatching <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-dispatching.rst>`_
-- `Constructors and destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
+- `Constructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
+- `Destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-destructors.rst>`_
 - `Super cast <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-super.rst>`_
 - `New access types <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-access.rst>`_
 - `Assignment overriding <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-assignment.rst>`_
