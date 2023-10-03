@@ -83,35 +83,59 @@ not be directly visible in the code. For example:
    package I1 is new G (Root); -- T'Super is Root
    package I1 is new G (Child); -- T'Super is Child
 
-Generic Formal
---------------
+'Super is only visible from sections of the code that have full visibility on
+the type.
 
-A generic formal can be either a root type or a derived type. As a consequence,
-calling 'Super on such a type or an object of such a type may not refer to any
-concrete entity. At this stage, it is illegal to call 'Super on such a type.
-
-Note that there could be cases where 'Super could make semantic sense, e.g.:
-
-.. code-block:: ada
-
-   type Root is tagged record;
-
-   type Child is new Root with null record;
-
-   generic
-      type X is new Child with null record;
-   package P
-      V : X'Super; -- this could refer to Child or to X parent types
-   end P;
-
-At this stage, it's not clear if such a case is useful to support and it's
-clearer not to support it.
+Note that 'Super only designate the parent record. It does not designate
+interfaces.
 
 Reference-level explanation
 ===========================
 
 Rationale and alternatives
 ==========================
+
+We consider making 'Super visible for sections that have only partial visibilty
+of the type. This causes problems however as you don't know if you parent
+is an abstract type. Take for example:
+
+.. code-block:: ada
+
+   package P is
+
+      type Root is private;
+
+      procedure Prim (V : Root);
+
+      type Child is new Root with private;
+
+      procedure Prim (V : Child);
+
+   private
+
+      type Root is private;
+
+      procedure Prim (V : Root);
+
+      type A_Root is abstract Root with private;
+
+      procedure Prim (V : A_Root) is abstract;
+
+      type Child is new A_Root with private;
+
+      procedure Prim (V : Child);
+
+   end P;
+
+in the above example, you can't allocate Child'Super, nor can you call
+Child'Super.Prim. However, this is not known by the user.
+
+We could have enforced restrictions on the above (e.g. you can't introduce an
+abstract type in a private derivation chain). However, the main use case for
+'Super is to help implementing the primitive of the types and its descendants,
+not for users themselves, so restricting 'Super to fully visible types is
+a reasonable restriction. It's also consistent with other languages that
+provide such feature.
 
 Drawbacks
 =========
