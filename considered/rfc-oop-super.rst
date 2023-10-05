@@ -49,12 +49,12 @@ object. For example:
 
   procedure Call (V : T2'Class) is
   begin
-     V'Super (V).P; -- static call to T1.V
+     V'Super.P; -- static call to T1.V
   end Call;
 
   procedure Call (V : C2) is
   begin
-     V'Super (V).P; -- static call to C1.V
+     V'Super.P; -- static call to C1.V
   end Call;
 
 Note that while the value of `'Super` is always statically known, it may
@@ -91,6 +91,27 @@ interfaces.
 
 Reference-level explanation
 ===========================
+
+'Super references more specifically the first name parent subtype
+(formerly called a "first named subtype"; see RM 3.2.1 (6)).
+
+As a consequence, T'Super may be unconstrained, e.g. in:
+
+.. code-block:: ada
+
+    type T1 (D1 : Integer) is tagged null record;
+    type T2 (D2 : Integer) is new T1 (D1 => D2) with null record;
+    subtype S is T2'Super;
+
+Note that this also means that the parent type is viewed as unconstrained, even
+if the derivation poses a constrain, e.g. in:
+
+.. code-block:: ada
+
+    type Aaa (Discrim : Boolean) is tagged null record;
+    type Bbb  is new Aaa (Discrim => False);
+
+Bbb'Super is unconstrained.
 
 Rationale and alternatives
 ==========================
