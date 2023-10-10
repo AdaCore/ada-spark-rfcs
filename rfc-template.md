@@ -21,6 +21,7 @@ Explain the proposal as if it was already included in the language and you were
 teaching it to another Ada/SPARK programmer. That generally means:
 
 - Introducing new named concepts.
+
 - Explaining the feature largely in terms of examples.
 
 - Explaining how Ada/SPARK programmers should *think* about the feature, and
@@ -62,8 +63,7 @@ Rationale and alternatives
 Drawbacks
 =========
 
-- Why should we *not* do this?
-
+Why should we *not* do this?
 
 Prior art
 =========
