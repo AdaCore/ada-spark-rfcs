@@ -26,7 +26,7 @@ In the case of a type, it refers to its direct parent. E.g.:
 
    procedure P (V : T1);
 
-   type T2 is tagged null record;
+   type T2 is new T1 with null record;
 
    procedure P (V : T2);
 
@@ -49,12 +49,12 @@ object. For example:
 
   procedure Call (V : T2'Class) is
   begin
-     V'Super.P; -- static call to T1.V
+     V'Super.P; -- non-dispatching call to T1.V
   end Call;
 
   procedure Call (V : C2) is
   begin
-     V'Super.P; -- static call to C1.V
+     V'Super.P; -- non-dispatching call to C1.V
   end Call;
 
 Note that while the value of `'Super` is always statically known, it may
