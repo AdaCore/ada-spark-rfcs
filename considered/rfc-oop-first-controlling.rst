@@ -29,13 +29,23 @@ For example:
 
     type Root is null record;
 
-    procedure P (V : Integer; V2 : Root); -- Primitive
+    procedure P (V : Integer; V2 : Root);
+    -- Primitive
 
-    type Child1 is null record
+    type Child is null record
     with First_Controlling_Parameter;
 
     override
-    procedure P (V : Integer; V2 : Root); -- Primitive
+    procedure P (V : Integer; V2 : Child);
+    -- Primitive
+
+    procedure P2 (V : Integer; V2 : Child);
+    -- NOT Primitive
+
+    function F return Child; -- NOT Primitive
+
+    function F2 (V : Child) return Child;
+    -- Primitive, but only controlling on the first parameter
 
 Reference-level explanation
 ===========================
