@@ -42,6 +42,7 @@ The proposal is split between the following parts:
 - `Assignment overriding <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-assignment.rst>`_
 - `Final classes and primitives <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-final.rst>`_
 - `Body restriction lift <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-body.rst>`_
+- `First Controlling <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-first-controlling.rst>`_
 - `Tagged record compatibilty <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-tagged.rst>`_
 - `Obsolete features <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-obsolete.rst>`_
 

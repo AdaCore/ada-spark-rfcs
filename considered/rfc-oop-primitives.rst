@@ -165,7 +165,7 @@ Class record can still be limited or have discriminants, in which cases the set
 of constaints that they have follow similar rules as for tagged types.
 
 Visibilty rules are the same as for types today. In particular, a class instance
-as access to private components of other instances of the same class.
+has access to private components of other instances of the same class.
 
 Overriding and extensions
 -------------------------

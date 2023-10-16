@@ -57,37 +57,24 @@ object. For example:
      V'Super.P; -- non-dispatching call to C1.V
   end Call;
 
-Note that while the value of `'Super` is always statically known, it may
-not be directly visible in the code. For example:
+'Super is only visible from sections of the code that have full visibility on
+the type. As a consequence, it can't be used on private types, nor on generic
+parameters. Note that generic package may still derive generic parameters and
+use 'Super if they have access to the view of the derivation, e.g.:
+
 
 .. code-block:: ada
-
-  package P is
-     type A is tagged record with private;
-     type B is new A with private; -- B'Super is C,
-   private
-     type A is tagged record with private;
-     type C is new A with null record.
-     type B is new C with private;
-   end P;
-
-   type Root is tagged null record;
-   type Child is new Root with null record;
 
    generic
       type T is new Root with private;
    package G is
-      -- T'Super is only known at instantiation time
+      type C is new T with null record;
+
+      --  Here, T'Super can't be referenced, but C'Super can, refers to T
    end G;
 
-   package I1 is new G (Root); -- T'Super is Root
-   package I1 is new G (Child); -- T'Super is Child
 
-'Super is only visible from sections of the code that have full visibility on
-the type.
-
-Note that 'Super only designate the parent record. It does not designate
-interfaces.
+'Super only designate the parent record. It does not designate interfaces.
 
 Reference-level explanation
 ===========================
