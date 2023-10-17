@@ -36,15 +36,24 @@ or access reference to the object.
 
 As soon as a constructor exist, and object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
-the object creation, e.g.:
+the object creation, using the tagged / class type followed by tick and the
+constructor paramters. E.g:
 
 .. code-block:: ada
 
    V : T1; -- OK, parameterless constructor
-   V2 : T1 (42); -- OK, 1 parameter constructor
+   V2 : T1 := T1'(42); -- OK, 1 parameter constructor
    V3 : T1'Ref := new T1;
-   V4 : T1'Ref := new T1 (42);
+   V4 : T1'Ref := new T1'(42);
    V5 : T2; -- NOT OK, there's no parameterless constructor
+
+Interestingly, the syntax to initialize an object on the heap through a copy
+doesn't change (but will now invoke a by-copy constructor described below):
+
+.. code-block:: ada
+
+   V : T1; -- OK, parameterless constructor
+   V2 : T1'Ref := new T1'(V1); -- OK, constructor by copy
 
 A constructor of a child class always call its parent constructor before its
 own. It's either implicit (parameterless constructor) or explicit. When
@@ -73,7 +82,7 @@ constructor, for example:
 
       type body T2 is new T1 with record
          procedure T2 (Self : in out T1)
-	        with Super (0) -- special notation for calling the super constructor. First parameter is omitted
+	        with Super'(0) -- special notation for calling the super constructor. First parameter is omitted
 	      is
 	         null;
 	      end T2;
@@ -107,6 +116,9 @@ by field its additional components, calling component constructors if necessary.
 Constructors and discriminants
 ------------------------------
 
+Note: syntax needs to be further explored in light of the constructor syntax
+T'(params)
+
 These considerations are applicatble to both class records and simple records.
 
 When a type has discriminants, discriminants values are expected to be set by
@@ -123,7 +135,7 @@ constructor that takes these discriminants as input. E.g.:
       end T1;
    end P;
 
-   V : T1 (10);
+   V : T1 := T1'(10);
 
 However, as soon as a constructor is provided, there is no default constructor
 anymore (with the exception of the copy constructor):
@@ -138,7 +150,7 @@ anymore (with the exception of the copy constructor):
       end T1;
    end P;
 
-   V : T1 (10); -- illegal
+   V : T1'(10); -- illegal
 
 In the presence of discriminants, constructors are expected to set the
 discriminant values through a special aspect `Constraints`:
@@ -162,6 +174,9 @@ discriminant values through a special aspect `Constraints`:
 
 Constructors default values and and aggregates
 ----------------------------------------------
+
+Note: syntax needs to be further explored in light of the constructor syntax
+T'(params)
 
 These considerations are applicatble to both class records and simple records.
 
@@ -203,7 +218,7 @@ For example:
       end T1;
 
       V : T1 := (Y => 2); -- V.Y = 2
-      V2 : T1'Ref := new T1 (1)'(Y => 2); -- V.Y = 2
+      V2 : T1'Ref := new T1'(1)'(Y => 2); -- V.Y = 2
    end P;
 
 Note that it's of course always possible (and useful) to use an aggreate within
@@ -256,9 +271,9 @@ constructors are provided. For example:
 
    V1 : T1;        -- OK
    V2a : T2;       -- Compilation error, no parameterless constructor is present
-   V2b : T2 (5);   -- OK
-   V3 : T3 (5);    -- Compilation error, no more constructor with 1 parameter for T3
-   V3 : T3 (5, 6); -- OK
+   V2b : T2 := T2'(5);   -- OK
+   V3 : T3 := T3'(5);    -- Compilation error, no more constructor with 1 parameter for T3
+   V3 : T3 := T3'(5, 6); -- OK
 
 Note that as a consequence, it's not possible to know what constructors will be
 available when using a class record as a formal parameter of a generic. As
@@ -272,7 +287,7 @@ declaring such parameters:
          procedure Some_T (Self : in out Some_T; X, Y : Integer);
       end Some_T;
    package G
-      X : Some_T (5, 6); -- OK, we expect a 2 parameters con
+      X : Some_T := Some_T'(5, 6); -- OK, we expect a 2 parameters con
    end G;
 
    package I1 is new G (T2); -- Compilation error, constructor missing
