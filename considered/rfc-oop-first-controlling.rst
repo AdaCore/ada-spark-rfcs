@@ -47,6 +47,11 @@ For example:
     function F2 (V : Child) return Child;
     -- Primitive, but only controlling on the first parameter
 
+Note that `function F2 (V : Child) return Child;` differs from
+`function F2 (V : Child) return Child'Class;` in that the returned type is a
+definite type. It's also different from the legacy semantic which would force
+further derivations adding fields to override the function.
+
 Reference-level explanation
 ===========================
 
