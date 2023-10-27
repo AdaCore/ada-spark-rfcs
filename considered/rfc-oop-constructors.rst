@@ -119,7 +119,7 @@ Constructors and discriminants
 Note: syntax needs to be further explored in light of the constructor syntax
 T'(params)
 
-These considerations are applicatble to both class records and simple records.
+These considerations are applicable to both class records and simple records.
 
 When a type has discriminants, discriminants values are expected to be set by
 the constructor. A type with such disriminants will be provided by default with a
@@ -180,10 +180,27 @@ T'(params)
 
 These considerations are applicatble to both class records and simple records.
 
-Aggregates are still possible with class records. The order of evaluation for
-fields is:
+Ada 2022 already allows homogeneous data structure aggregates to be expressed
+through angular brackets. This proposal extends that notation to hetoregeneous
+data structures, so that you can write:
 
-- their default value. Always computed
+.. code-block:: ada
+
+   type R is record
+      V, W : Integer;
+   end record;
+
+   X : V := [0, 2];
+
+   type A is access all R;
+
+   X2 : A := new R'[0, 2];
+
+In the presence of constructors, aggregates values are evaluated and assigned
+after the contructor is executed. So the full sequence of evaluation for
+fields of a class record is:
+
+- their default value
 - the constructor
 - any value from the aggregate
 
@@ -193,7 +210,15 @@ initialization. Under this model, there is no more way to override default
 initialization for records - if initialization should only be done some times
 and not others, it is to be done in the constructor (which is available for
 records and class records). With class records, aggreates are a shortcut for
-field by field assignment after iniitalization.
+field by field assignment after initialization.
+
+Class record, and record that contain constructirs, can only use the new
+aggregate notation.
+
+To maintain compatibilty, non-class record types (including tagged types) that
+do not have constructors will sill be initialized following legacy rules,
+in particular field default values will not be computed if initialized by an
+aggregate.
 
 For example:
 
@@ -217,8 +242,8 @@ For example:
          end T1;
       end T1;
 
-      V : T1 := (Y => 2); -- V.Y = 2
-      V2 : T1'Ref := new T1'(1)'(Y => 2); -- V.Y = 2
+      V : T1 := [Y => 2] -- V.Y = 2
+      V2 : T1'Ref := new T1'(1)[Y => 2]; -- V.Y = 2
    end P;
 
 Note that it's of course always possible (and useful) to use an aggreate within
@@ -238,11 +263,11 @@ a constructor, still as a shortcut to field by field assignment:
       type body T1 is class record
          procedure T1 (Self : in out T1) is
 	      begin
-	         Self := (1, 2, 3);
+	         Self := [1, 2, 3];
          end T1;
       end T1;
 
-      V : T1 := (A => 99, others => <>); -- V.A = 99, V.B = 2, V.C = 3.
+      V : T1 := [A => 99, others => <>]; -- V.A = 99, V.B = 2, V.C = 3.
    end P;
 
 Constructors presence guarantees
