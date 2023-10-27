@@ -34,7 +34,7 @@ or access reference to the object.
       end T2;
    end P;
 
-As soon as a constructor exist, and object cannot be created without calling one
+As soon as a constructor exist, an object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
 the object creation, using the tagged / class type followed by tick and the
 constructor paramters. E.g:
