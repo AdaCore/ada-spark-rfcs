@@ -36,24 +36,16 @@ or access reference to the object.
 
 As soon as a constructor exist, an object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
-the object creation, using the tagged / class type followed by tick and the
+the object creation, using the tagged / class type followed by 'Make and the
 constructor paramters. E.g:
 
 .. code-block:: ada
 
    V : T1; -- OK, parameterless constructor
-   V2 : T1 := T1'(42); -- OK, 1 parameter constructor
+   V2 : T1 := T1'Make(42); -- OK, 1 parameter constructor
    V3 : T1'Ref := new T1;
-   V4 : T1'Ref := new T1'(42);
+   V4 : T1'Ref := new T1'Make(42);
    V5 : T2; -- NOT OK, there's no parameterless constructor
-
-Interestingly, the syntax to initialize an object on the heap through a copy
-doesn't change (but will now invoke a by-copy constructor described below):
-
-.. code-block:: ada
-
-   V : T1; -- OK, parameterless constructor
-   V2 : T1'Ref := new T1'(V1); -- OK, constructor by copy
 
 A constructor of a child class always call its parent constructor before its
 own. It's either implicit (parameterless constructor) or explicit. When
@@ -82,7 +74,7 @@ constructor, for example:
 
       type body T2 is new T1 with record
          procedure T2 (Self : in out T1)
-	        with Super'(0) -- special notation for calling the super constructor. First parameter is omitted
+	        with Super'Make(0) -- special notation for calling the super constructor. First parameter is omitted
 	      is
 	         null;
 	      end T2;
@@ -110,14 +102,24 @@ initialized from a copy. For example:
       end T1;
 
 If not specified, a default copy constructor is automatically generated.
-It componses - it will will call the parent copy constructor, then copy field
+It composes - it will will call the parent copy constructor, then copy field
 by field its additional components, calling component constructors if necessary.
+
+Note that, similar to the default constructor, copy constructor may be
+explicitely or implicitely called:
+
+.. code-block:: ada
+
+   V1 : T; -- implicit default constructor call
+   V2 : T := V1; -- implicit copy constructor call
+   V3 : T := T'Make (V1); -- explicit copy constructor call
 
 Constructors and discriminants
 ------------------------------
 
-Note: syntax needs to be further explored in light of the constructor syntax
-T'(params)
+Note: We may be forbidding discriminants in the presence of constructors for
+now and describe syntax in a separate RFC. The first question to answer is
+wether we set discriminants in the constructor or externally.
 
 These considerations are applicable to both class records and simple records.
 
@@ -172,11 +174,8 @@ discriminant values through a special aspect `Constraints`:
       end T1;
    end T1;
 
-Constructors default values and and aggregates
-----------------------------------------------
-
-Note: syntax needs to be further explored in light of the constructor syntax
-T'(params)
+Constructors default values and aggregates
+------------------------------------------
 
 These considerations are applicatble to both class records and simple records.
 
@@ -190,7 +189,7 @@ data structures, so that you can write:
       V, W : Integer;
    end record;
 
-   X : V := [0, 2];
+   X : R := [0, 2];
 
    type A is access all R;
 
@@ -212,11 +211,11 @@ and not others, it is to be done in the constructor (which is available for
 records and class records). With class records, aggreates are a shortcut for
 field by field assignment after initialization.
 
-Class record, and record that contain constructirs, can only use the new
+Class record, and record that contain constructors, can only use the new
 aggregate notation.
 
 To maintain compatibilty, non-class record types (including tagged types) that
-do not have constructors will sill be initialized following legacy rules,
+do not have constructors will still be initialized following legacy rules,
 in particular field default values will not be computed if initialized by an
 aggregate.
 
@@ -242,8 +241,8 @@ For example:
          end T1;
       end T1;
 
-      V : T1 := [Y => 2] -- V.Y = 2
-      V2 : T1'Ref := new T1'(1)[Y => 2]; -- V.Y = 2
+      V : T1 :=  T1'Make (42)'[Y => 2]; -- V.Y = 2
+      V2 : T1'Ref := new T1'Make (42)'[Y => 2]; -- V.Y = 2
    end P;
 
 Note that it's of course always possible (and useful) to use an aggreate within
@@ -296,9 +295,9 @@ constructors are provided. For example:
 
    V1 : T1;        -- OK
    V2a : T2;       -- Compilation error, no parameterless constructor is present
-   V2b : T2 := T2'(5);   -- OK
-   V3 : T3 := T3'(5);    -- Compilation error, no more constructor with 1 parameter for T3
-   V3 : T3 := T3'(5, 6); -- OK
+   V2b : T2 := T2'Make (5);   -- OK
+   V3 : T3 := T3'Make(5);    -- Compilation error, no more constructor with 1 parameter for T3
+   V3 : T3 := T3'Make(5, 6); -- OK
 
 Note that as a consequence, it's not possible to know what constructors will be
 available when using a class record as a formal parameter of a generic. As
@@ -312,7 +311,7 @@ declaring such parameters:
          procedure Some_T (Self : in out Some_T; X, Y : Integer);
       end Some_T;
    package G
-      X : Some_T := Some_T'(5, 6); -- OK, we expect a 2 parameters con
+      X : Some_T := Some_T'Make(5, 6); -- OK, we expect a 2 parameters con
    end G;
 
    package I1 is new G (T2); -- Compilation error, constructor missing

@@ -34,7 +34,7 @@ In the case of a type, it refers to its direct parent. E.g.:
       procedure P (V : C1);
    end C1;
 
-   type C2 is class record
+   type C2 is new C1 with record
       procedure P (V : C2);
    end C2;
 
