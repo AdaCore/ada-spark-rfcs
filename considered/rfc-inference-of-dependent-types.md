@@ -292,3 +292,5 @@ package Inst is new G (Nat_Ref, Integer'Image) -- Would be illegal if we don't g
 ```
 
 Tuck: What about formal objects?  If a type is passed in along with a formal object, presumably the formal object by itself would be enough to determine the corresponding actual *type*.  Presumably again the inferred *subtype* of the actual would default to that of the object, unless there is a stronger matching requirement from some other formal.
+
+Steve: Another possible form of inference that we are not addressing here has to do with a pair of formal packages, with the second being an instance of a generic declared in the first (possibly an implicitly declared "sprouted" child of the first as per RM 10.1.1(19)). Given "generic with package I1 is new G1 (<>); with package I2 is new I1.G2 (<>); package My_Generic is ...", the first actual parameter in an instantiation of My_Generic is determined by the second and therefore could be safely omitted (if this were allowed). This proposal is only about inferring actual subtypes, not inferring actual packages, so such an omission is not allowed.
