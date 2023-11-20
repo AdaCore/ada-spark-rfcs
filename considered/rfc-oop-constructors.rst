@@ -37,7 +37,8 @@ or access reference to the object.
 As soon as a constructor exist, an object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
 the object creation, using the tagged / class type followed by 'Make and the
-constructor paramters. E.g:
+constructor paramters. When preceded by a `new` operator, it creates an
+object on the heap. E.g:
 
 .. code-block:: ada
 
@@ -46,40 +47,6 @@ constructor paramters. E.g:
    V3 : T1'Ref := new T1;
    V4 : T1'Ref := new T1'Make(42);
    V5 : T2; -- NOT OK, there's no parameterless constructor
-
-A constructor of a child class always call its parent constructor before its
-own. It's either implicit (parameterless constructor) or explicit. When
-explicit, it's provided through the Super aspect, specified on the body of the
-constructor, for example:
-
-.. code-block:: ada
-
-   package P is
-      type T1 is class record
-         procedure T1 (Self : in out T1; V : Integer);
-      end T1;
-
-      type T2 is new T1 with record
-         procedure T2 (Self : in out T1);
-      end T2;
-   end P;
-
-   package body P is
-      type body T1 is class record
-         procedure T1 (Self : in out T1; V : Integer) is
-	      begin
-	         null;
-	      end T1;
-      end T1;
-
-      type body T2 is new T1 with record
-         procedure T2 (Self : in out T1)
-	        with Super'Make(0) -- special notation for calling the super constructor. First parameter is omitted
-	      is
-	         null;
-	      end T2;
-      end T2;
-   end P;
 
 In the case of objects containing other objects, innermost objects constructors
 are called first, before their containing object.
@@ -114,6 +81,123 @@ explicitely or implicitely called:
    V2 : T := V1; -- implicit copy constructor call
    V3 : T := T'Make (V1); -- explicit copy constructor call
 
+Initialization lists
+--------------------
+
+Constructors may need to initialize / call constructors on three categories of
+data:
+
+- fields within that object
+- the parent object
+- discriminants (see later section, possibly excluded from this proposal)
+
+Initialization of these objects can be done with the `Initialize` aspect. For
+example:
+
+.. code-block:: ada
+
+   type C is class record
+      F : Integer;
+
+      procedure C (Self : in out C; V : Integer);
+   end C;
+
+   type body C is class record
+      procedure C (Self : in out C; V : Integer)
+         with Initialize (F => V)
+      is
+      begin
+         null;
+      end C;
+   end C;
+
+Field initialization appens after explicit field initialization, for example:
+
+.. code-block:: ada
+
+   type C is class record
+      F : Integer := 5;
+
+      procedure C (Self : in out C);
+
+      procedure C (Self : in out C; V : Integer);
+   end C;
+
+   type body C is class record
+      procedure C (Self : in out C) -- no explicit initialization, V is assigned to 5
+      is
+      begin
+         null;
+      end C;
+
+      procedure C (Self : in out C; V : Integer)
+         with Initialize (F => V) -- Replaces initialization to 5 by V
+      is
+      begin
+         null;
+      end C;
+   end C;
+
+This becomes quite useful when using fields that are themselves object with
+constructors, e.g.:
+
+.. code-block:: ada
+
+   type Some_Type is class record
+      procedure Some_Type (Self : in out C, Some_Value : Integer);
+   end Some_Type;
+
+   type C is class record
+      F : Some_Type;
+
+      procedure C (Self : in out C; V : Integer);
+   end C;
+
+   type body C is class record
+      procedure C (Self : in out C; V : Integer)
+         with Initialize (F => Some_Type'Make (V))
+      is
+      begin
+         null;
+      end C;
+   end C;
+
+Note that in case fields have no default constructors (as it's the case above),
+then constructs of the enclosing object have to provide explicit construction,
+either through constructors or field initialization. E.g.:
+
+.. code-block:: ada
+
+   type Some_Type is class record
+      procedure Some_Type (Self : in out C, Some_Value : Integer);
+   end Some_Type;
+
+   type C is class record
+      F : Some_Type; -- Compilation error, F needs explicit constructor call
+   end C;
+
+The super view object can also be initialied in the initialization list,
+for example:
+
+.. code-block:: ada
+
+   type Root is class record
+      procedure Root (Self : in out Root; V : Integer);
+   end Root;
+
+   type Child is new Root with record
+      procedure Child (Self : in out Child);
+   end Child;
+
+   type body Child is new Root with record
+      procedure Child (Self : in out Child)
+         with Initialize (Super => Root'Make (42))
+      is
+      begin
+         null;
+      end Child;
+   end Child;
+
 Constructors and discriminants
 ------------------------------
 
@@ -137,7 +221,8 @@ constructor that takes these discriminants as input. E.g.:
       end T1;
    end P;
 
-   V : T1 := T1'(10);
+   V1 : T1 (10); -- legacy syntax for creating objects, may be forbidden for class records
+   V2 : T1 := T1'Make (10); -- constructor-like syntax
 
 However, as soon as a constructor is provided, there is no default constructor
 anymore (with the exception of the copy constructor):
@@ -152,10 +237,11 @@ anymore (with the exception of the copy constructor):
       end T1;
    end P;
 
-   V : T1'(10); -- illegal
+   V1 : T1 (10); -- illegal
+   V2 : T1 := T1'Make (10); -- illegal
 
 In the presence of discriminants, constructors are expected to set the
-discriminant values through a special aspect `Constraints`:
+discriminant values through the initialization list:
 
 .. code-block:: ada
 
@@ -167,7 +253,7 @@ discriminant values through a special aspect `Constraints`:
 
    type body T1 (L : Integer) is class record
       procedure T1 (Self : in out T1)
-         with Constraints (10)
+         with Initializes (L => 10)
       is
       begin
          null;
@@ -234,10 +320,10 @@ For example:
    package body P is
       type body T1 is class record
          procedure T1 (Self : in out T1; Val : Integer) is
-	 begin
-	    -- Y is 0 here
-	    Self.Y := Val;
-	    -- Y is val here
+	      begin
+	          -- Y is 0 here
+	          Self.Y := Val;
+	          -- Y is val here
          end T1;
       end T1;
 
