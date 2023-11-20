@@ -37,7 +37,7 @@ or access reference to the object.
 As soon as a constructor exist, an object cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
 the object creation, using the tagged / class type followed by 'Make and the
-constructor paramters. When preceded by a `new` operator, it creates an
+constructor parameters. When preceded by a `new` operator, it creates an
 object on the heap. E.g:
 
 .. code-block:: ada
@@ -111,7 +111,7 @@ example:
       end C;
    end C;
 
-Field initialization appens after explicit field initialization, for example:
+Field initialization happens after explicit field initialization, for example:
 
 .. code-block:: ada
 
@@ -285,7 +285,7 @@ In the presence of constructors, aggregates values are evaluated and assigned
 after the contructor is executed. So the full sequence of evaluation for
 fields of a class record is:
 
-- their default value
+- their default value (unless overriden by initialization list)
 - the constructor
 - any value from the aggregate
 
