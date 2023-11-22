@@ -279,16 +279,24 @@ What if we add a static constraint to the subtype declaration, as in
     subtype S is String (1 .. N);
 ?
 
+> Raph: For me we shouldn't try to be clever about those cases (so no resolving of renamings/subtypes)
+> The right approach is for the compiler to show where the generic has been instantiated and why.
+
 Is some cases, there may be no suitable declaration site and so the
 implicit instance reference would presumably have to be rejected.
 Consider an implicit instance with an actual parameter that is a
 formal parameter of an expression function:
     function Expr_Func (N : Natural) is
        (Some_Generic(N).Some_Function);
+       
 Would we want to allow this? Note that implicitly replacing an
 expression function with a "regular" function would give us a place
 to declare the implicitly-declared instance, but it would also introduce
 complexity (e.g., interactions with freezing).
+
+> Raph: It's a shame that expression functions and regular functions have different semantics in that regard.
+> I think this case can acceptably be flagged as illegal, at least for now, as long as we have decent
+> error messages in the implementation.
 
 ====
 
@@ -299,6 +307,8 @@ access-before-elaboration failure. Similarly, if would not be good if we have a
 subprogram that is never called and it contains a reference to an implicitly
 declared package instance, and if that instance gets hoisted to some point outside
 of the subprogram and then the elaboration of the instance propagates an exception.
+
+> Raph: Can you give examples ?
 
 ====
 
@@ -320,6 +330,10 @@ explicit) seems like it would lead to problems. So if we are going to
 treat S1 and S2 as being subtypes of the same type, then the two
 implicit instance references probably need to be somehow required to refer
 to the same instance.
+
+> Raph: That's a good point but yes. At the user level, we want there to be only one type.
+>  In this particular case, it means that we *need* the emitted code to have only one tag
+>  for this type.
 
 Another somewhat similar case is access equality, as in
 
@@ -347,3 +361,5 @@ in cases where it makes a difference, sharing should be forbidden or
 required. Another approach is to give up on the ideal that program
 behavior should be unaffected by whether the implementation chooses to
 share instances or not.
+
+> Raph: Question: is there an ideal compilation model where we can guarantee sharing in 100% of the cases ? Under what constraints ? How would it look like ?
