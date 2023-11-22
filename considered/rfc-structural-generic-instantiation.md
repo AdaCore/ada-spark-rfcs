@@ -325,8 +325,13 @@ elaboration).
 One case that requires some thought is tagged type declarations. Consider
 
 ```
+    p1.ads
     subtype S1 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p2.ads
     subtype S2 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p3.ads
     Flag : Boolean := S1'Tag = S2'Tag;
 ```
 
@@ -380,3 +385,10 @@ behavior should be unaffected by whether the implementation chooses to
 share instances or not.
 
 > Raph: Question: is there an ideal compilation model where we can guarantee sharing in 100% of the cases ? Under what constraints ? How would it look like ?
+
+Discussion during WG
+====================
+
+* Safer to forbid interaction with nested library level generics, because GNAT already handles them pretty badly
+
+  
