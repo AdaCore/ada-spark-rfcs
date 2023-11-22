@@ -298,6 +298,9 @@ complexity (e.g., interactions with freezing).
 > I think this case can acceptably be flagged as illegal, at least for now, as long as we have decent
 > error messages in the implementation.
 
+> Romain: I agree that we can forbid such instantiations in those cases, although this will prevent doing some
+> of the cool stuff we advertised for, like `function Sum (X: Float_Array) return Float is (Reduce (Fn => "+") (X))` :D
+
 ====
 
 When hoisting the implicit declaration of an instance, we probaby need to be
