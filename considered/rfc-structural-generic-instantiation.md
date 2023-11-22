@@ -323,9 +323,12 @@ generics that have variable state (or which query variable state during their
 elaboration).
 
 One case that requires some thought is tagged type declarations. Consider
+
+```
     subtype S1 is Some_Generic (Integer, "+").Some_Tagged_Type;
     subtype S2 is Some_Generic (Integer, "+").Some_Tagged_Type;
     Flag : Boolean := S1'Tag = S2'Tag;
+```
 
 If two tagged types have distinct tags and neither is descended from
 the other, then allowing conversion between the types (implicit or
@@ -349,10 +352,12 @@ to the same instance.
 
 Another somewhat similar case is access equality, as in
 
+```
      type Ref is access procedure;
      Ptr1 : Ref := Some_Generic (Integer, "+").Proc'Access;
      Ptr2 : Ref := Some_Generic (Integer, "+").Proc'Access;
      Flag : Boolean := Ptr1 = Ptr2;
+```
 
 where Flag will probably be initialized to True if and only if instance
 sharing occurs (although in this particular case, Flag might be False even
