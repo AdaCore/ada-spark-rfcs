@@ -335,6 +335,15 @@ to the same instance.
 >  In this particular case, it means that we *need* the emitted code to have only one tag
 >  for this type.
 
+> Romain: "then allowing conversion between the types (implicit or explicit) seems like it
+> would lead to problems" are you thinking of problems at runtime? Because if I understand
+> correctly, it couldn't cause problems at compile-time because if two instances are not
+> shared it means they couldn't "see" each other in the first place. So assuming they can't
+> "see" each other, maybe we can rely on the fact that the compiler will generate the same
+> code for the duplicate instances in such a way that it is not possible to make a
+> distinction between them at runtime? If that's not an option, does it mean that we would
+> have to find a way to share the instances accross libraries?
+
 Another somewhat similar case is access equality, as in
 
      type Ref is access procedure;
