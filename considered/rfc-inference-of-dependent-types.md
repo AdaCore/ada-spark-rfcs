@@ -336,9 +336,9 @@ for a formal subprogram whose profile includes a parameter or result
 whose type is a formal type of the same generic unit, and the actual
 subprogram parameter name statically denotes a directly visible subprogram,
 and no other subprograms with the same defining name are directly visible at
-the point where that name is resolved. [So no inference from an
+the point where that name is resolved. (So no inference from an
 actual subprogram if any nontrivial overload resolution is required to
-identify the subprogram.]
+identify the subprogram.)
 
 > [!NOTE]  
 > An actual parameter for a generic formal object of a generic formal type
@@ -348,7 +348,8 @@ identify the subprogram.]
 > access type (such as a discriminant type, a formal parameter type, or a
 > function result type). Some of these rules may be relaxed at some point.]
 
-> [!TIP] If we allow inference from formal object parameters, there are subtleties involving
+> [!TIP]
+> If we allow inference from formal object parameters, there are subtleties involving
 > anonymous object types to consider. And in-out mode formal objects would need
 > to be treated like subprograms for inferring subtypes, as opposed to types.]]
 
@@ -358,24 +359,28 @@ type is referenced within the enclosing generic_formal_part other than
 via a subtype_mark that does not occur within an expression, then the
 corresponding actual subtype cannot be inferred.
 
-> [!TIP]  We don't want to allow something like
->    generic
->      type T is private;
->      X : Integer := T'Size;
->      type Ref is access T;
->    package G1 is end G1;
->    type Float_Ref is access Float;
->    package I1 is new G (Ref => Float_Ref);
-> or
->    generic
+> [!TIP]
+>   We don't want to allow something like
+> 
+>     generic
 >       type T is private;
+>       X : Integer := T'Size;
 >       type Ref is access T;
->       Sp : Root_Storage_Pool'Class := Ref'Storage_Pool;
->       type Ref_Vector is array (Positive range <>) of Ref;
->    package G2 is end G2;
->    type Float_Ref is access Float;
->    type Float_Ref_Vector is array (Positive range <>) of Float_Ref;
->    package I2 is new G2 (Ref_Vector => Float_Ref_Vector);
+>     package G1 is end G1;
+>     type Float_Ref is access Float;
+>     package I1 is new G (Ref => Float_Ref);
+> 
+> or
+> 
+>     generic
+>        type T is private;
+>        type Ref is access T;
+>        Sp : Root_Storage_Pool'Class := Ref'Storage_Pool;
+>        type Ref_Vector is array (Positive range <>) of Ref;
+>     package G2 is end G2;
+>     type Float_Ref is access Float;
+>     type Float_Ref_Vector is array (Positive range <>) of Float_Ref;
+>     package I2 is new G2 (Ref_Vector => Float_Ref_Vector);
 
 If the same actual subtype is inferrable from multiple sources (e.g.,
 if one formal type is mentioned as both the component type and as
@@ -387,7 +392,7 @@ one exception: if a given actual subtype is inferred both from one or more
 actual subprogram parameters and from one or more actual non-subprogram
 parameters, then this static matching requirement is ignored for the
 parameter/result subtypes of the actual subprogram parameters; the
-inferred actual *subtype* [as opposed to *type*] is determined solely by
+inferred actual *subtype* (as opposed to *type*) is determined solely by
 the actual non-subprogram parameters.
 
 
