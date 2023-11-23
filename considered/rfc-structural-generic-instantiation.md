@@ -386,9 +386,127 @@ share instances or not.
 
 > Raph: Question: is there an ideal compilation model where we can guarantee sharing in 100% of the cases ? Under what constraints ? How would it look like ?
 
-Discussion during WG
-====================
+### Discussion during WG
 
 * Safer to forbid interaction with nested library level generics, because GNAT already handles them pretty badly
 
-  
+### Steve on elaboration issues
+
+RM 3.11(13) states that the elaboration of an instantiation of a generic
+unit that has a body includes a check that the body has been elaborated.
+If this elaboration check fails, then Program_Error is raised.
+
+This check is needed in order to prevent use-before-declaration
+problems, either directly (i.e., during the elaboration of a package instance)
+or via a call to a subprogram declared in the instance. Both scenarios are
+illustrated by the following example:
+
+```ada
+    generic
+    package G is
+       function Foo return Integer;
+    end G;
+
+    package Inst is new G;
+
+    Int : Integer := Inst.Foo;
+
+    Table : Some_Array_Type (1 .. Some_Function);
+
+    package body G is
+       function Foo return Integer is
+       begin
+          return Table (Table'First).Some_Integer_Component;
+       end Foo;
+    begin
+       Table (Table'First) := ... ;
+    end;
+```
+
+The instantiation `package Inst is new G;` will fail the check and raise
+`Program_Error`. But imagine the consequences if the language did not require
+this check. First, the elaboration of the expanded body for Inst would try
+to assign to a component of the object Table before the declaration of that
+object has been elaborated (and, in particular, before the bounds of that
+object are known). Next, the call to Inst.Foo would try to read some part of
+the Table object, again before the declaration of that object has been
+elaborated. So there are good reasons for this elaboration check.
+
+Sometimes code has to be structured specifically to avoid failing this check.
+For example, a package usually cannot export both a generic that has a body
+and an instance of that generic. Or it may be the case that elaboration
+order issues mean that a package body that wants to instantiate some generic
+has to cope with the case where that instantiating package body is elaborated
+before the body of the generic is elaborated. In some cases, one solution
+is to move the declaration of the instantiation into the bodies of the
+subprograms that need to refer to it. This defers the elaboration check for
+the generic body until an instantiating subprogram is called. So instead of
+version #1,
+
+```
+   package Pkg is
+      procedure Foo;
+      procedure Bar;
+   end Pkg;
+
+   with G;
+   package body Pkg is
+      package I is new G;
+      procedure Foo is
+      begin
+         I.Do_Stuff;
+      end;
+      procedure Bar is
+      begin
+         I.Do_Other_Stuff;
+      end;
+    end Pkg;
+```
+
+we might see version #2,
+
+```
+   package Pkg is
+      procedure Foo;
+      procedure Bar;
+   end Pkg;
+
+   with G;
+   package body Pkg is
+      procedure Foo is
+         package I is new G;
+      begin
+         I.Do_Stuff;
+      end;
+      procedure Bar is
+         package I is new G;
+      begin
+         I.Do_Other_Stuff;
+      end;
+    end G;
+```
+
+Now consider this case with the added wrinkle that the instance is
+implicitly declared in version #3:
+
+```
+   with G;
+   package body Pkg is
+      procedure Foo is
+      begin
+         G[].Do_Stuff;
+      end;
+      procedure Bar is
+      begin
+         G[].Do_Other_Stuff;
+      end;
+   end G;
+```
+
+If hoisting-to-get-sharing of implicit instance declarations turns this
+into something equivalent to version #1, then we may have introduced an
+elaboration check failure.
+
+I'm not claiming that this is an insurmountable problem, but it is a
+scenario that we need to be aware of.
+
