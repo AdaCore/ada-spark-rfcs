@@ -15,10 +15,9 @@ Guide-level explanation
 'Super attribute
 ----------------
 
-A new attribute `'Super` is introduced, and can be applied to a class type, a
-tagged type, or an object of these types.
-
-In the case of a type, it refers to its direct parent. E.g.:
+A new attribute `'Super` is introduced, and can be applied to a an object of
+these types. It refers to a static view of the object typed after the parent and
+can be used to make non dispatching calls. For example:
 
 .. code-block:: ada
 
@@ -42,108 +41,25 @@ In the case of a type, it refers to its direct parent. E.g.:
 
    V2 : C2'Super; -- V2 is of type C1
 
-In the case of an object, it refers to the parent of the static type of that
-object. For example:
-
-.. code-block:: ada
-
-  procedure Call (V : T2'Class) is
-  begin
+   procedure Call (V : T2'Class) is
+   begin
      V'Super.P; -- non-dispatching call to T1.V
-  end Call;
+   end Call;
 
-  procedure Call (V : C2) is
-  begin
+   procedure Call (V : C2) is
+   begin
      V'Super.P; -- non-dispatching call to C1.V
-  end Call;
-
-'Super is only visible from sections of the code that have full visibility on
-the type. As a consequence, it can't be used on private types, nor on generic
-parameters. Note that generic package may still derive generic parameters and
-use 'Super if they have access to the view of the derivation, e.g.:
-
-
-.. code-block:: ada
-
-   generic
-      type T is new Root with private;
-   package G is
-      type C is new T with null record;
-
-      --  Here, T'Super can't be referenced, but C'Super can, refers to T
-   end G;
-
-
-'Super only designate the parent record. It does not designate interfaces.
+   end Call;
 
 Reference-level explanation
 ===========================
 
-'Super references more specifically the first name parent subtype
-(formerly called a "first named subtype"; see RM 3.2.1 (6)).
-
-As a consequence, T'Super may be unconstrained, e.g. in:
-
-.. code-block:: ada
-
-    type T1 (D1 : Integer) is tagged null record;
-    type T2 (D2 : Integer) is new T1 (D1 => D2) with null record;
-    subtype S is T2'Super;
-
-Note that this also means that the parent type is viewed as unconstrained, even
-if the derivation poses a constrain, e.g. in:
-
-.. code-block:: ada
-
-    type Aaa (Discrim : Boolean) is tagged null record;
-    type Bbb  is new Aaa (Discrim => False);
-
-Bbb'Super is unconstrained.
+TBD
 
 Rationale and alternatives
 ==========================
 
-We consider making 'Super visible for sections that have only partial visibilty
-of the type. This causes problems however as you don't know if you parent
-is an abstract type. Take for example:
-
-.. code-block:: ada
-
-   package P is
-
-      type Root is private;
-
-      procedure Prim (V : Root);
-
-      type Child is new Root with private;
-
-      procedure Prim (V : Child);
-
-   private
-
-      type Root is private;
-
-      procedure Prim (V : Root);
-
-      type A_Root is abstract Root with private;
-
-      procedure Prim (V : A_Root) is abstract;
-
-      type Child is new A_Root with private;
-
-      procedure Prim (V : Child);
-
-   end P;
-
-in the above example, you can't allocate Child'Super, nor can you call
-Child'Super.Prim. However, this is not known by the user.
-
-We could have enforced restrictions on the above (e.g. you can't introduce an
-abstract type in a private derivation chain). However, the main use case for
-'Super is to help implementing the primitive of the types and its descendants,
-not for users themselves, so restricting 'Super to fully visible types is
-a reasonable restriction. It's also consistent with other languages that
-provide such feature.
+TBD
 
 Drawbacks
 =========
