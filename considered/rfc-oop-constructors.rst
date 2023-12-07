@@ -18,7 +18,7 @@ Constructors
 Constructors are available to both class record and simple records.
 
 Record, tagged records and class records can declare constructors. The
-constructor needs to be a procedure of the name of the object, taking an in out
+constructor needs to be a procedure of the name of the type, taking an in out
 or access reference to the object.
 
 .. code-block:: ada
@@ -34,7 +34,7 @@ or access reference to the object.
       end T2;
    end P;
 
-As soon as a constructor exist, an object cannot be created without calling one
+As soon as a constructor exist, an objects cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
 the object creation, using the type followed by 'Make and the
 constructor parameters. When preceded by a `new` operator, it creates an
@@ -56,8 +56,8 @@ Constructor as a Function
 
 Constructors can be used in places where a function taking the same parameters
 and returning a definite view of the type is expected, in particular as a value
-for a generic parameter or an access-to-subprogram. For example:'
-'
+for a generic parameter or an access-to-subprogram. For example:
+
 .. code-block:: ada
 
    generic
@@ -107,8 +107,9 @@ initialized from a copy. For example:
       end T1;
 
 If not specified, a default copy constructor is automatically generated.
-It composes - it will will call the parent copy constructor, then copy field
-by field its additional components, calling component constructors if necessary.
+The implicit copy constructor will call the parent copy constructor, then copy
+field by field its additional components, calling component copy constructors if
+necessary.
 
 Note that, similar to the default constructor, copy constructor may be
 explicitely or implicitely called:
@@ -134,9 +135,9 @@ The following sections will describe all three cases.
 Initialization of Components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Initialization of these components can be done with the `Initialize` aspect.
+Initialization of components can be done with the ``Initialize`` aspect.
 This is particularly useful when component types do not have default
-constructors, but is generally available. For example:
+constructors. For example:
 
 .. code-block:: ada
 
@@ -159,9 +160,8 @@ constructors, but is generally available. For example:
       end C;
    end C;
 
-Note that in case componnents have no default constructors (as it's the case
-above), then constructs of the enclosing object have to provide explicit
-construction, either through constructors or field initialization. E.g.:
+Note that if there is no initialization for components with no default
+constructors, the compiler will raise an error:
 
 .. code-block:: ada
 
@@ -228,15 +228,15 @@ others, it is possible to initialize limited types:
       A, B : Integer;
    end record;
 
-   type C is tagged record
+   type C is limited tagged record
       F : R;
 
       procedure C (Self : in out C);
    end C;
 
-   type body C is tagged record
+   type body C is limited tagged record
       procedure C (Self : in out C)
-         with Initialize (F => (1, 2))
+         with Initialize (F => [1, 2])
       is
       begin
          null;
@@ -356,13 +356,13 @@ of legal and illegal code:
 
    package P is
       type T1 (L : Integer) is tagged record
-	      X : Some_Array (1 .. L);
+         X : Some_Array (1 .. L);
       end record;
 
       type T2 (L : Integer) is tagged record
          procedure T2 (Self : in out T2);
 
-	      X : Some_Array (0 .. L);
+         X : Some_Array (0 .. L);
       end record;
 
       V1 : T1 (10); -- legal
@@ -378,7 +378,7 @@ initialization list. For example:
       type T2 (L : Integer) is tagged record
          procedure T2 (Self : in out T2; Size : Integer);
 
-	      X : Some_Array (0 .. L);
+         X : Some_Array (0 .. L);
       end record;
 
       type body T2 (L : Integer) is tagged record
@@ -395,9 +395,9 @@ initialization list. For example:
       V2 : T2 := T2'Make (10);
    end P;
 
-As for fields, only the type discriminants can be initialized by the
-initialization list. In addition, in the presence of constructors, the parent
-type discriminants are not set. For example:
+As for fields, only the discriminants of the current type can be initialized by
+the initialization list, not the parents. In addition, in the presence of
+constructors, the parent type discriminants are not set. For example:
 
 .. code-block:: ada
 
@@ -416,7 +416,7 @@ Constructors and Type Predicates
 Type predicates are meant to check the consistency of a type. In the context
 of a type that has constructor, the consistency is expected to be true when
 exiting the constructor. In particular, the initializion list is not expected
-to create a predicate-valid type - perdicate will only be checked after the
+to create a predicate-valid type - predicates will only be checked after the
 constructor has been processed.
 
 Constructors And Aggregates
@@ -504,7 +504,7 @@ can be used. For example:
    end record;
 
    V1 : R := [1, 2]; -- prints "Default"
-   V2 : R := [R'Make (42) with 1, 2]; -- prints "V = 42"
+   V2 : R := [R'Make (42) with delta 1, 2]; -- prints "V = 42"
 
 One of the consequences of the rules above is that it's not possible to use an
 aggregate within a constructor as it would create an infinite recursion:
@@ -522,8 +522,8 @@ aggregate within a constructor as it would create an infinite recursion:
    package body P is
       type body T1 is class record
          procedure T1 (Self : in out T1) is
-	      begin
-	         Self := [1, 2, 3]; -- infinite recursion
+         begin
+            Self := [1, 2, 3]; -- infinite recursion
          end T1;
       end T1;
    end P;
@@ -540,17 +540,17 @@ constructors are provided. For example:
 
 .. code-block:: ada
 
-   type T1 is class record
+   type T1 is tagged record
 
-   end T1;
+   end record;
 
-   type T2 is class record
+   type T2 is tagged record
       procedure T2 (Self : in out T1, X : Integer);
-   end T2;
+   end record;
 
    type T3 is new T2 with record
       procedure T3 (Self : in out T1, X : Integer, Y : Integer);
-   end T3;
+   end record;
 
    V1 : T1;        -- OK
    V2a : T2;       -- Compilation error, no parameterless constructor is present
