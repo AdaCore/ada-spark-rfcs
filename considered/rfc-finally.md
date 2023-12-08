@@ -9,7 +9,7 @@ will be executed unconditionally, whichever path the execution takes in the
 
 ## Motivation
 
-Ada is a language with exceptions, but there is no way to have uncondional
+Ada is a language with exceptions, but there is no way to have unconditional
 finalization of objects, apart from using either `goto_statements`, which are a
 verbose workaround, and controlled objects, which impose performance penalties
 and are not the most expressive way in some situations.
