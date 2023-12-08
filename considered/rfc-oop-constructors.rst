@@ -89,6 +89,9 @@ for a generic parameter or an access-to-subprogram. For example:
       package I2 is new G (T2, T2'Make);
    end P;
 
+In presence of multiple constructors, the rules of overloading resolution
+that apply to subprograms overall would apply here too.
+
 Copy Constructor Overload
 -------------------------
 
@@ -111,12 +114,12 @@ The implicit copy constructor will call the parent copy constructor, then copy
 field by field its additional components, calling component copy constructors if
 necessary.
 
-Note that, similar to the default constructor, copy constructor may be
+Note that, similar to the parameterless constructor, copy constructor may be
 explicitely or implicitely called:
 
 .. code-block:: ada
 
-   V1 : T; -- implicit default constructor call
+   V1 : T; -- implicit parameterless constructor call
    V2 : T := V1; -- implicit copy constructor call
    V3 : T := T'Make (V1); -- explicit copy constructor call
 
@@ -135,9 +138,14 @@ The following sections will describe all three cases.
 Initialization of Components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Initialization of components can be done with the ``Initialize`` aspect.
-This is particularly useful when component types do not have default
-constructors. For example:
+Initialization of components can be done in two ways:
+- Through the default value provided at component declaration.
+- Through an ``Initialize`` aspect that can rely on constructor parameters.
+
+If the component is of a type that doesn't have a parameterless constructor, it has
+to be initialized by on of these two mechanism.
+
+Here's an example of using ``Initialize`` for such a case:
 
 .. code-block:: ada
 
@@ -321,9 +329,9 @@ constructor or a copy of an already defined value. For example this also works:
       end Child;
    end Child;
 
-In addition, initializing the super is the only place where a value of an
-abstract type can be created, as it will be completed by a concrete type. For
-example:
+In addition, initializing the ``Super`` is the only place where the constructor
+of an abstract type can be called, as it will be completed by a concrete type.
+For example:
 
 .. code-block:: ada
 
@@ -337,7 +345,7 @@ example:
 
    type body Child is new Root with record
       procedure Child (Self : in out Child)
-         -- Root'Make is ok here even if it returns an abstract object
+         -- Root'Make can be called here to initialize Super
          with Initialize (Super => Root'Make (42))
       is
       begin
@@ -422,9 +430,9 @@ constructor has been processed.
 Constructors And Aggregates
 ---------------------------
 
-Ada 2022 already allows homogeneous data structure aggregates to be expressed
-through angular brackets. This proposal extends that notation to hetoregeneous
-data structures, so that you can write:
+Ada 2022 already allows arrays aggregates to be expressed through angular
+brackets. This proposal extends that notation to record aggregates, so that you
+can write:
 
 .. code-block:: ada
 
@@ -471,14 +479,18 @@ example:
    V2 : R2 := [1, 2]; -- also prints Default Default
 
 This means that units compiled with the new version of Ada will have a specific
-backward incompatible change. This could be identified statically by migration
-tools.
+backward incompatible change. Specifically, record initialized with an aggregate
+used to bypass default initialization, they would not anymore. From a
+functional standpoint, this would result in more code as well as different
+behavior if the default initialization has side effects. This can be fixed
+by offering constructors with the right parameters. These issues could be
+identified statically by migration tools.
 
-In terms of syntax, in the presence of an implicit or explicit default
-constructors, aggregates can be written as usual. The default constructor will
-be called implicitly before modification of the values by the aggregate.
-If a non-default constructor needs to be called, the delta aggregate syntax
-can be used. For example:
+In terms of syntax, in the presence of an implicit or explicit parameterless
+constructors, aggregates can be written as usual. The parameterless constructor
+will be called implicitly before modification of the values by the aggregate.
+If a non-parameterless constructor needs to be called, the delta aggregate
+syntax can be used. For example:
 
 .. code-block:: ada
 
@@ -562,7 +574,7 @@ Constructors and Generics
 -------------------------
 
 A type used an as a actual of a formal generic parameter is expected to have
-a default constructor. This is necessary to enable proper derivation and
+a parameterless constructor. This is necessary to enable proper derivation and
 allocation. For example:
 
 .. code-block:: ada
@@ -584,11 +596,11 @@ allocation. For example:
       end record;
 
       package G1 is new G (T1); -- Legal
-      package G2 is new G (T2); -- Illegal, T2 doesn't have a default constructor
+      package G2 is new G (T2); -- Illegal, T2 doesn't have a parameterless constructor
 
    end P;
 
-Types without default constructors behave like indefinite types in generics.
+Types without parameterless constructors behave like indefinite types in generics.
 For example:
 
 .. code-block:: ada
@@ -639,8 +651,8 @@ such constructor can be passed as function as seen before, for example:
 Removing Constructors from Public View
 --------------------------------------
 
-A special syntax is provided to remove the default constructor from
-the public view, without providing any other constructor. The full view of a
+A special syntax is provided to remove the default parameterless constructor
+from the public view, without providing any other constructor. The full view of a
 type is then responsible to provide constructor (with or without parameters).
 Such object can only be created by code that has visibility over the
 private section of the package:
@@ -693,7 +705,7 @@ Record with Indefinite Fields
 
 With initialization lists, it becomes possible to envision record with
 indefinite fields that are initialized at object creation. This is already
-somewhat the case as types without default constructors can already be
+somewhat the case as types without parameterless constructors can already be
 initialized by an initialization list and behave like indefinite types in
 generics. We could consider allowing:
 
@@ -703,12 +715,12 @@ generics. We could consider allowing:
       type T1 (<>) is tagged record -- T1 is indefinite
 	      X : String;
 
-         procedure T1 (Size : Ineger);
+         procedure T1 (Val : String);
       end record;
 
       type body T1 (<>) is tagged record
-         procedure T1 (Size : Integer)
-            with Initialize (X => String'(1 .. Size));
+         procedure T1 (Val : String)
+            with Initialize (X => Val);
          begin
             null;
          end T1;
