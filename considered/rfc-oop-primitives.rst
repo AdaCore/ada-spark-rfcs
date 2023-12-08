@@ -20,7 +20,7 @@ type. The first parameter of the primitive has to be of the type of the record.
 This allows the user to decide on the naming convention, as well as the mode of
 such parameter (in, out, in out, access, aliased). A record and
 a class record can have primitives declared both in the public and the private
-part. This is possibilty is extended to other components as well. The existence
+part. This is possibility is extended to other components as well. The existence
 of a private part needs to be specified in the public part of a package with
 the notation "with private". The following demonstrates the above:
 
@@ -162,7 +162,7 @@ public primitives or components:
    end P;
 
 Class record can still be limited or have discriminants, in which cases the set
-of constaints that they have follow similar rules as for tagged types.
+of constraints that they have follow similar rules as for tagged types.
 
 Visibilty rules are the same as for types today. In particular, a class instance
 has access to private components of other instances of the same class.

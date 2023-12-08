@@ -32,7 +32,7 @@ For example:
     procedure P (V : Integer; V2 : Root);
     -- Primitive
 
-    type Child is null record
+    type Child is new Root with null record
     with First_Controlling_Parameter;
 
     override

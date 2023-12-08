@@ -45,7 +45,7 @@ A restricted tagged type has the following contraints:
    - It cannot have coextensions
 
 The advantage of a restricted tagged record is that it can be extended by a
-class record, thus providing an initial mirgration path.
+class record, thus providing an initial migration path.
 
 Reference-level explanation
 ===========================

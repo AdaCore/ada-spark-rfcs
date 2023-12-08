@@ -142,7 +142,7 @@ constructors. For example:
 .. code-block:: ada
 
    type Some_Type is tagged record
-      procedure Some_Type (Self : in out C, Some_Value : Integer);
+      procedure Some_Type (Self : in out C; Some_Value : Integer);
    end Some_Type;
 
    type C is tagged record
@@ -166,14 +166,14 @@ constructors, the compiler will raise an error:
 .. code-block:: ada
 
    type Some_Type is tagged record
-      procedure Some_Type (Self : in out C, Some_Value : Integer);
+      procedure Some_Type (Self : in out C; Some_Value : Integer);
    end Some_Type;
 
    type C is tagged record
       F : Some_Type; -- Compilation error, F needs explicit constructor call
    end C;
 
-When a component is mentionned in the initialization list, it overrides its
+When a component is mentioned in the initialization list, it overrides its
 default initialization. Components that are not in the initialization list are
 initialized as described at declaration time. For example:
 
@@ -201,7 +201,7 @@ initialized as described at declaration time. For example:
          null;
       end C;
 
-      procedure C (Self : in out C; S : Sting)
+      procedure C (Self : in out C; S : String)
          with Initialize (A => Print_And_Return (S))
       is
       begin
@@ -214,7 +214,7 @@ initialized as described at declaration time. For example:
 
 Note for implementers - the objective of the semantic above is to make
 initialization as efficient as possible and to avoid undecessary processing.
-Conceptually, a developper would expect to have a specific initialization
+Conceptually, a developer would expect to have a specific initialization
 procedure generated for each constructor (or maybe, have the initialization
 directly expanded in the constructor).
 
@@ -275,7 +275,7 @@ object. The following for example will issue an error:
 Initialization of Super View
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The super view object can also be initialied in the initialization list,
+The super view object can also be initialized in the initialization list,
 for example:
 
 .. code-block:: ada
@@ -669,7 +669,7 @@ Rationale for Initialization Lists
 Languages like Java or Python do not require initialization lists. However, by
 default, class fields are references and initialized by null. In system-level
 languages like C++ or Ada, we want to be able to have fields as direct members
-of their enclosing records (as opposed to references). However, these tagged
+of their enclosing records (as opposed to references). However, these tagged records
 may themselves have constructors that need parameters, such parameters may
 not be known at the time of the description of the record. They should however
 be known when the object is created. As a consequence, in Ada (similar to C++),

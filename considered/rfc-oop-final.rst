@@ -25,17 +25,17 @@ considered as a shortcut for assignment. For example:
       type T1 is class record
          procedure T1 (Self : in out T1; Val : Integer);
 
-	      Y : final Integer := 0;
+         Y : final Integer := 0;
       end T1;
    end P;
 
    package body P is
       type body T1 is class record
          procedure T1 (Self : in out T1; Val : Integer) is
-	      begin
-	         -- Y is 0 here
-	         Self.Y := Val; -- Legal
-	         -- Y is val here
+         begin
+            -- Y is 0 here
+            Self.Y := Val; -- Legal
+            -- Y is val here
          end T1;
       end T1;
 

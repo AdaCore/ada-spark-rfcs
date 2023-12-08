@@ -15,7 +15,7 @@ Guide-level explanation
 Components declarations
 -----------------------
 
-A record, tagged record and class record type can now have 3 declarations
+A record, tagged record and class record type can now have 3 declarative
 region where fields can be declared:
 
 - the package public view
@@ -70,7 +70,7 @@ For example:
 Fields that are private to a type (noted `Hidden` in the above example) can
 only be accessed through the primitives, constructors and destructors of that
 very type. They are inaccessible to other subprograms, notably non-primitive
-or overriden privimitives.
+or overriden primitives.
 
 Reference-level explanation
 ===========================

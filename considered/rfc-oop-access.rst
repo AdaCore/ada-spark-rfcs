@@ -37,7 +37,7 @@ directly on the object. For example:
    end Some_Procedure;
 
 For homogenity, 'Ref and 'Unchecked_Free are available to all Ada type -
-including pointers themesleves. It's now possible to write:
+including pointers themsleves. It's now possible to write:
 
 .. code-block:: ada
 

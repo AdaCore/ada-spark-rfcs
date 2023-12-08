@@ -111,7 +111,7 @@ One important aspect of Ada is to allow data to be as static as possible. OOP ty
 proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow
 polymorphic object residing in automatic memory section such as fields or stack.
 
-Some of the notations introduced could be extended to other types, such as protected or tasks type.
+Some of the notations introduced could be extended to other types, such as protected or tasks types.
 
 The "with private;" notation should also be extended to nested packages, allowing to differenciate to nest the private part of a
 nested package in the private part of its enclosing package.
