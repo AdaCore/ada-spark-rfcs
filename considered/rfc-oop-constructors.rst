@@ -292,7 +292,7 @@ others, it is possible to initialize limited types:
 
    type body C is limited tagged record
       procedure C (Self : in out C)
-         with Initialize (F => [1, 2])
+         with Initialize (F => (1, 2))
       is
       begin
          null;
@@ -536,7 +536,7 @@ aggregate within a constructor as it would create an infinite recursion:
       type body T1 is class record
          procedure T1 (Self : in out T1) is
          begin
-            Self := [1, 2, 3]; -- infinite recursion
+            Self := (1, 2, 3); -- infinite recursion
          end T1;
       end T1;
    end P;
