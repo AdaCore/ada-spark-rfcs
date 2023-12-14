@@ -12,18 +12,17 @@ Motivation
 Guide-level explanation
 =======================
 
-
-Record and class record can declare destructors. The
+Record, tagged records and class records can declare destructors. The
 destructor needs to be called "final", taking an in out to the object:
 
 .. code-block:: ada
 
    package P is
-      type T is class record
+      type T is tagged record
          final T (Self : in out T1);
       end T1;
 
-      type T2 is class record
+      type T2 is new T with record
          final T2 (Self : in out T2);
       end T1;
    end P;
@@ -31,7 +30,7 @@ destructor needs to be called "final", taking an in out to the object:
 In hierarchies, destructors are implicitely called in sequence - the parent
 destructor is always called after its child.
 
-When composing objects together, fields that have destructors are called after
+When composing objects together, components that have destructors are called after
 the containing object (you destroy from the outermost to the innermost, reverse
 of the construction order).
 

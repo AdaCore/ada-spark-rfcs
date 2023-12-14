@@ -13,6 +13,7 @@ Guide-level explanation
 =======================
 
 A new syntax is provided to all types to allow to override assignment:
+
 .. code-block:: ada
 
    type T is null record;
@@ -24,28 +25,17 @@ However, it is not a 1-to-1 replacement, as `Adjust` is called after a binary
 copy and allows to modify the results, while these two subprogram are
 responsible to copy and assign a value respectively.
 
-The syntax for classes is slightly different, as these need to be part of the
-class definition.
-
-.. code-block:: ada
-
-   type T is class record
-
-      procedure ":=" (Destination : in out T; Source : T);
-
-   end T;
-
 Note that this operation is not called when initializing an object. Notably:
 
 .. code-block:: ada
 
       V1 : T;
-      V2 : T := V1; -- This is an initialization
+      V2 : T := V1; -- This is an initialization, calls copy constructor
    begin
       V2 := V1; -- This is an assignment, calling ":="
 
 Initialization override is controlled by other mechanism, notably so-called
-copy constructor in classes.
+copy constructors.
 
 Reference-level explanation
 ===========================
