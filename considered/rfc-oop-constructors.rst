@@ -123,17 +123,65 @@ explicitely or implicitely called:
    V2 : T := V1; -- implicit copy constructor call
    V3 : T := T'Make (V1); -- explicit copy constructor call
 
+Super Constructor Call
+----------------------
+
+By default, the parent constructor called is the parameterless constructor.
+A parametric constructor can be called instead by using the ``Super`` aspect
+in the constuctor body, For example:
+
+.. code-block:: ada
+
+   type Root is tagged record
+      procedure Root (Self : in out Root; V : Integer);
+   end Root;
+
+   type Child is new Root with record
+      procedure Child (Self : in out Child);
+   end Child;
+
+   type body Child is new Root with record
+      procedure Child (Self : in out Child)
+         with Super (42)
+      is
+      begin
+         null;
+      end Child;
+   end Child;
+
+Note that the constructor of an abstract type can be called here, for example:
+
+.. code-block:: ada
+
+   type Root is abstract tagged record
+      procedure Root (Self : in out Root; V : Integer);
+   end Root;
+
+   type Child is new Root with record
+      procedure Child (Self : in out Child);
+   end Child;
+
+   type body Child is new Root with record
+      procedure Child (Self : in out Child)
+         -- Root'Make can be called here to initialize Super
+         with Super (42)
+      is
+      begin
+         null;
+      end Child;
+   end Child;
+
+
 Initialization Lists
 --------------------
 
-Constructors may need to initialize / call constructors on three categories of
+Constructors may need to initialize / call constructors on two categories of
 data:
 
 - fields within that object
-- the parent object
-- discriminants (see later section, possibly excluded from this proposal)
+- discriminants
 
-The following sections will describe all three cases.
+The following sections will describe these two cases:
 
 Initialization of Components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -280,79 +328,6 @@ object. The following for example will issue an error:
       end C;
    end C;
 
-Initialization of Super View
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The super view object can also be initialized in the initialization list,
-for example:
-
-.. code-block:: ada
-
-   type Root is tagged record
-      procedure Root (Self : in out Root; V : Integer);
-   end Root;
-
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
-   end Child;
-
-   type body Child is new Root with record
-      procedure Child (Self : in out Child)
-         with Initialize (Super => Root'Make (42))
-      is
-      begin
-         null;
-      end Child;
-   end Child;
-
-Note that any value can be provided to Super, either through the call of a
-constructor or a copy of an already defined value. For example this also works:
-
-.. code-block:: ada
-
-   type Root is tagged record
-      procedure Root (Self : in out Root; V : Integer);
-   end Root;
-
-   Default_Root : Root := Root'Make (42);
-
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
-   end Child;
-
-   type body Child is new Root with record
-      procedure Child (Self : in out Child)
-         with Initialize (Super => Default_Root)
-      is
-      begin
-         null;
-      end Child;
-   end Child;
-
-In addition, initializing the ``Super`` is the only place where the constructor
-of an abstract type can be called, as it will be completed by a concrete type.
-For example:
-
-.. code-block:: ada
-
-   type Root is abstract tagged record
-      procedure Root (Self : in out Root; V : Integer);
-   end Root;
-
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
-   end Child;
-
-   type body Child is new Root with record
-      procedure Child (Self : in out Child)
-         -- Root'Make can be called here to initialize Super
-         with Initialize (Super => Root'Make (42))
-      is
-      begin
-         null;
-      end Child;
-   end Child;
-
 Valuation of Discriminants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -430,22 +405,6 @@ constructor has been processed.
 Constructors And Aggregates
 ---------------------------
 
-Ada 2022 already allows arrays aggregates to be expressed through angular
-brackets. This proposal extends that notation to record aggregates, so that you
-can write:
-
-.. code-block:: ada
-
-   type R is record
-      V, W : Integer;
-   end record;
-
-   X : R := [0, 2];
-
-   type A is access all R;
-
-   X2 : A := new R'[0, 2];
-
 In the presence of constructors, aggregates values are evaluated and assigned
 after the contructor is executed. So the full sequence of evaluation for
 fields of a class record is:
@@ -475,8 +434,8 @@ example:
       procedure R2 (Self : in out R2);
    end record;
 
-   V1 : R1 := [1, 2]; -- prints Default Default
-   V2 : R2 := [1, 2]; -- also prints Default Default
+   V1 : R1 := (1, 2); -- prints Default Default
+   V2 : R2 := (1, 2); -- also prints Default Default
 
 This means that units compiled with the new version of Ada will have a specific
 backward incompatible change. Specifically, record initialized with an aggregate
@@ -486,11 +445,52 @@ behavior if the default initialization has side effects. This can be fixed
 by offering constructors with the right parameters. These issues could be
 identified statically by migration tools.
 
+There is a specific question on performances impact, as the new semantic would
+evaluate default value where the current Ada semantic would not. This can be
+solved by not using default initialization in the type, but to provide instead
+a constructor that takes parameters to value all components. For example:
+
+.. code-block:: ada
+
+   type R1 is record
+      V, W : Integer := Some_Value;
+   end record;
+
+Can become:
+
+.. code-block:: ada
+
+   type R1 is record
+      V, W : Integer;
+
+      procedure R1 (Self : in out R1; V, W : Integer);
+   end record;
+
+   type body R1 is record
+      procedure R1 (Self : in out R1; V, W : Integer) is
+      begin
+         Self.V := V;
+         Self.W := W;
+      end R;
+   end record;
+
+As a consequence, writing:
+
+.. code-block:: ada
+
+   V1 : R1 := R1'Make(1, 2);
+
+Can be made compiled as efficiently as before (in particular if the constructors
+are inlined)
+
 In terms of syntax, in the presence of an implicit or explicit parameterless
 constructors, aggregates can be written as usual. The parameterless constructor
 will be called implicitly before modification of the values by the aggregate.
-If a non-parameterless constructor needs to be called, the delta aggregate
-syntax can be used. For example:
+
+If a non-parameterless constructor needs to be called, two syntaxes are available:
+- if only some values need to be modified, a delta aggregate can be used
+- if all values need to be modified, the syntax is "(<constructor call> with <values>)"
+  which is very close to the current notation for extension aggregates. For example:
 
 .. code-block:: ada
 
@@ -515,8 +515,9 @@ syntax can be used. For example:
 
    end record;
 
-   V1 : R := [1, 2]; -- prints "Default"
-   V2 : R := [R'Make (42) with delta 1, 2]; -- prints "V = 42"
+   V1 : R := (1, 2); -- prints "Default"
+   V2 : R := (R'Make (42) with delta V => 1); -- prints "V = 42"
+   V3 : R := (R'Make (42) with 1, 2);         -- also prints "V = 42"
 
 One of the consequences of the rules above is that it's not possible to use an
 aggregate within a constructor as it would create an infinite recursion:
