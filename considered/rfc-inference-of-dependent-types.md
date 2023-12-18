@@ -131,19 +131,106 @@ Younger : Person := Min_By_Age (DB);
 Reference-level explanation
 ===========================
 
-To be completed
-
 ### Syntax changes
 
 No syntax changes planned
 
 ### Semantic changes
 
-When in the presence of a dependent type, as defined above, in a generic
-formal, the instantiator of the generic can omit this type, either passing `<>`
-explicitly, or just omitting it from the instantiation completely.
+Ada RM 12.3(10) says:
+   Each formal without an association shall have a default_expression,
+   default_subtype_mark, or subprogram_default.
 
-The compiler will deduce it from other parameters.
+In the case of formal type, this rule is relaxed (that is, the corresponding
+actual parameter can be omitted) in certain cases described below in which
+the actual subtype can be inferred from another actual parameter and
+therefore need not be provided explicitly. The corresponding "generic
+actual parameter" (see RM 12.3(7)) is then the inferred actual subtype.
+The resulting static and dynamic semantics are as if the actual subtype
+had been specified explicitly. Here are the cases where this is allowed:
+
+* If an actual parameter is provided (or is inferred) for a formal array type
+  whose component type is a formal type of the same generic unit, then that
+  actual component subtype can be inferred from the actual array type; it is
+  the component subtype of the array type.
+
+* Similarly for each of the formal array's index types that is a formal type of
+  the same generic generic unit: the actual index subtype can be inferred from
+  the actual array type and is the corresponding index subtype of the array
+  type.
+
+* Analogous rules apply if an actual parameter is provided (or is inferred) for
+  a formal access type whose designated type is a formal type of the same
+  generic unit, or for a formal discriminated type having one or more
+  discriminants of a formal type of the same generic unit.
+
+* Analogous rules apply if an actual parameter is explicitly provided for a
+  formal subprogram whose profile includes a parameter or result whose type is
+  a formal type of the same generic unit, and the actual subprogram parameter
+  name statically denotes a directly visible subprogram, and no other
+  subprograms with the same defining name are directly visible at the point
+  where that name is resolved. (So no inference from an actual subprogram if
+  any nontrivial overload resolution is required to identify the subprogram.)
+
+> [!NOTE]
+> An actual parameter for a generic formal object of a generic formal type
+> does not allow the corresponding actual subtype to be inferred. Similarly, no
+> actual subtypes can be inferred from the actual parameter corresponding to a
+> formal package, or from the designated subtype of any kind of anonymous
+> access type (such as a discriminant type, a formal parameter type, or a
+> function result type). Some of these rules may be relaxed at some point.]
+
+> [!TIP]
+> If we allow inference from formal object parameters, there are subtleties involving
+> anonymous object types to consider. And in-out mode formal objects would need
+> to be treated like subprograms for inferring subtypes, as opposed to types.]]
+
+In some cases, a type won't be infered:
+
+* If a generic formal type has a `default_subtype_mark`, then the corresponding
+  actual subtype cannot be inferred.
+
+* If a generic formal type is referenced within the enclosing
+  `generic_formal_part` other than via a `subtype_mark` that does not occur
+  within an expression, then the corresponding actual subtype cannot be
+  inferred.
+
+> [!TIP]
+>   We don't want to allow something like
+>
+>     generic
+>       type T is private;
+>       X : Integer := T'Size;
+>       type Ref is access T;
+>     package G1 is end G1;
+>     type Float_Ref is access Float;
+>     package I1 is new G (Ref => Float_Ref);
+>
+> or
+>
+>     generic
+>        type T is private;
+>        type Ref is access T;
+>        Sp : Root_Storage_Pool'Class := Ref'Storage_Pool;
+>        type Ref_Vector is array (Positive range <>) of Ref;
+>     package G2 is end G2;
+>     type Float_Ref is access Float;
+>     type Float_Ref_Vector is array (Positive range <>) of Float_Ref;
+>     package I2 is new G2 (Ref_Vector => Float_Ref_Vector);
+
+If the same actual subtype is inferrable from multiple sources (e.g., if one
+formal type is mentioned as both the component type and as an index type for a
+formal array type, or if one formal type is mentioned as the designated type of
+two formal access types), then all of the resulting inferred subtypes shall be
+subtypes of the same type.
+
+With one exception, all of the inferred subtypes shall statically match each
+other. The one exception: if a given actual subtype is inferred both from one
+or more actual subprogram parameters and from one or more actual non-subprogram
+parameters, then this static matching requirement is ignored for the
+parameter/result subtypes of the actual subprogram parameters; the inferred
+actual *subtype* (as opposed to *type*) is determined solely by the actual
+non-subprogram parameters.
 
 Rationale and alternatives
 ==========================
@@ -172,7 +259,6 @@ package Int_Array_Operations is new Array_Operations
 However, the current alternative has the advantage of being backwards
 compatible with existing generic declarations.
 
-
 Drawbacks
 =========
 
@@ -186,8 +272,24 @@ that they way generic formal packages' own params can be deduced when
 instantiating the generic, is pretty similar to what we propose here, so that
 this is the extension of an already existing mechanism.
 
-Discussion
-==========
+Future possibilities
+====================
+
+As mentioned earlier, we could extend inference mechanisms that has purposedly
+been kept limited so far:
+
+We could infer types from:
+
+* Formal objects in some cases
+* Formal packages
+* Formal tagged types with a parent
+
+We could also relax the rules wrt. inference of a type from formal subprograms.
+For the moment we completely forbid any cases where the designated set of
+subprograms is overloaded, but we might want to change that.
+
+Discussion/Notes
+================
 
 Types are not overloadable, so omitting earlier actual parameters does not complicate
 resolving the name of an actual type in an instance. This is not true for subprograms.
@@ -241,8 +343,10 @@ end Foo;
 > This restriction might be relaxed at a later stage (or not)
 
 If an actual subprogram is given and the corresponding formal subprogram has a parameter
-(or result) of a formal type, do we want to make inferences about the corresponding actual
-subtype, or only about the corresponding actual type? The point is that 12.6(8) only requires mode conformance, not subtype conformance.
+(or result) of a formal type, do we want to make inferences about the
+corresponding actual subtype, or only about the corresponding actual type? The
+point is that 12.6(8) only requires mode conformance, not subtype conformance.
+
 The following example is legal:
 
 ```ada
@@ -254,12 +358,13 @@ package G is ... end G;
 package I is new G (Natural, Integer'Image);
 ```
 
-despite the fact that Integer'Image takes an Integer parameter, not a Natural parameter.
-So if we omitted the first actual parameter and tried to infer it from the second, we'd have to assume subtype conformance.
-That might be ok, but we should make an explicit decision about that point.
+despite the fact that Integer'Image takes an Integer parameter, not a Natural
+parameter. So if we omitted the first actual parameter and tried to infer it
+from the second, we'd have to assume subtype conformance. That might be ok, but
+we should make an explicit decision about that point.
 
-We'll need to define rules for dealing with both consistent and inconsistent overspecification of inferred generic actuals.
-Consider:
+We'll need to define rules for dealing with both consistent and inconsistent
+overspecification of inferred generic actuals. Consider:
 
 ```ada
 generic
@@ -277,9 +382,11 @@ type Illegal_Inst (Ref1 => Nat_Ref, Ref2 => Int_Ref);
 
 If we want to get fancy, we can say that an inferred subtype from a formal type
 takes precedence over an inferred subtype from a formal subprogram (because, as
-mentioned above, an actual subprogram only has to be mode conformant). But do we want this complexity?
+mentioned above, an actual subprogram only has to be mode conformant). But do
+we want this complexity?
 
-> WG: We **need** to get fancy, because else some cases will be illegal with infered parameters, that would otherwise be legal
+> WG: We **need** to get fancy, because else some cases will be illegal with
+> infered parameters, that would otherwise be legal
 
 ```ada
 generic
@@ -294,108 +401,3 @@ package Inst is new G (Nat_Ref, Integer'Image) -- Would be illegal if we don't g
 Tuck: What about formal objects?  If a type is passed in along with a formal object, presumably the formal object by itself would be enough to determine the corresponding actual *type*.  Presumably again the inferred *subtype* of the actual would default to that of the object, unless there is a stronger matching requirement from some other formal.
 
 Steve: Another possible form of inference that we are not addressing here has to do with a pair of formal packages, with the second being an instance of a generic declared in the first (possibly an implicitly declared "sprouted" child of the first as per RM 10.1.1(19)). Given "generic with package I1 is new G1 (<>); with package I2 is new I1.G2 (<>); package My_Generic is ...", the first actual parameter in an instantiation of My_Generic is determined by the second and therefore could be safely omitted (if this were allowed). This proposal is only about inferring actual subtypes, not inferring actual packages, so such an omission is not allowed.
-
-### Steve's clarification on the "no subtype inference from an actual subprogram that requires complex overload resolution" rule
-
-At the last meeting, Raph asked me to  propose some wording to clarify (among other things)
-the "no subtype inference from an actual subprogram that requires complex overload resolution"
-rule that we discussed. I ended up with a proposal for reference wording for the whole actual
-subtype inference proposal (see below).
-
-   -- Steve
-
-Ada RM 12.3(10) says:
-   Each formal without an association shall have a default_expression,
-   default_subtype_mark, or subprogram_default.
-
-In the case of formal type, this rule is relaxed (that is, the corresponding
-actual parameter can be omitted) in certain cases described below in which
-the actual subtype can be inferred from another actual parameter and
-therefore need not be provided explicitly. The corresponding "generic
-actual parameter" (see RM 12.3(7)) is then the inferred actual subtype.
-The resulting static and dynamic semantics are as if the actual subtype
-had been specified explicitly.
-
-If an actual parameter is provided (or is inferred) for a formal array
-type whose component type is a formal type of the same generic unit, then
-that actual component subtype can be inferred from the actual array type;
-it is the component subtype of the array type.
-
-Similarly for each of the formal array's index types that is a formal type
-of the same generic generic unit: the actual index subtype can be inferred
-from the actual array type and is the corresponding index subtype of the
-array type.
-
-Analogous rules apply if an actual parameter is provided (or is inferred) for
-a formal access type whose designated type is a formal type of the same generic
-unit, or for a formal discriminated type having one or more discriminants
-of a formal type of the same generic unit.
-
-Analogous rules apply if an actual parameter is explicitly provided
-for a formal subprogram whose profile includes a parameter or result
-whose type is a formal type of the same generic unit, and the actual
-subprogram parameter name statically denotes a directly visible subprogram,
-and no other subprograms with the same defining name are directly visible at
-the point where that name is resolved. (So no inference from an
-actual subprogram if any nontrivial overload resolution is required to
-identify the subprogram.)
-
-> [!NOTE]  
-> An actual parameter for a generic formal object of a generic formal type
-> does not allow the corresponding actual subtype to be inferred. Similarly, no
-> actual subtypes can be inferred from the actual parameter corresponding to a
-> formal package, or from the designated subtype of any kind of anonymous
-> access type (such as a discriminant type, a formal parameter type, or a
-> function result type). Some of these rules may be relaxed at some point.]
-
-> [!TIP]
-> If we allow inference from formal object parameters, there are subtleties involving
-> anonymous object types to consider. And in-out mode formal objects would need
-> to be treated like subprograms for inferring subtypes, as opposed to types.]]
-
-If a generic formal type has a default_subtype_mark, then the
-corresponding actual subtype cannot be inferred. If a generic formal
-type is referenced within the enclosing generic_formal_part other than
-via a subtype_mark that does not occur within an expression, then the
-corresponding actual subtype cannot be inferred.
-
-> [!TIP]
->   We don't want to allow something like
-> 
->     generic
->       type T is private;
->       X : Integer := T'Size;
->       type Ref is access T;
->     package G1 is end G1;
->     type Float_Ref is access Float;
->     package I1 is new G (Ref => Float_Ref);
-> 
-> or
-> 
->     generic
->        type T is private;
->        type Ref is access T;
->        Sp : Root_Storage_Pool'Class := Ref'Storage_Pool;
->        type Ref_Vector is array (Positive range <>) of Ref;
->     package G2 is end G2;
->     type Float_Ref is access Float;
->     type Float_Ref_Vector is array (Positive range <>) of Float_Ref;
->     package I2 is new G2 (Ref_Vector => Float_Ref_Vector);
-
-If the same actual subtype is inferrable from multiple sources (e.g.,
-if one formal type is mentioned as both the component type and as
-an index type for a formal array type, or if one formal type is mentioned
-as the designated type of two formal access types), then all of the resulting
-inferred subtypes shall be subtypes of the same type. With one exception,
-all of the inferred subtypes shall statically match each other. The
-one exception: if a given actual subtype is inferred both from one or more
-actual subprogram parameters and from one or more actual non-subprogram
-parameters, then this static matching requirement is ignored for the
-parameter/result subtypes of the actual subprogram parameters; the
-inferred actual *subtype* (as opposed to *type*) is determined solely by
-the actual non-subprogram parameters.
-
-
-
-
-
