@@ -35,11 +35,6 @@ package Int_Array_Sort
 is new Ada.Containers.Generic_Array_Sort (Array_Type => Arr);
 ```
 
-or
-
-```ada
-```
-
 Guide-level explanation
 =======================
 
