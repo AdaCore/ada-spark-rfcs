@@ -175,19 +175,67 @@ And alter the `name` rule to include `structural_generic_instantiation_reference
 * Each `structural_generic_instantiation_reference` references a structural
   generic instantiation.
 
-* This structural generic instantiation is semantically unique accross all
-  units of the closure, so all references refer to the same instantiation.
+* This structural generic instantiation is semantically unique, and refers to a
+  unique code entity. All references refer to the same instantiation.
 
 * As soon as there exists one reference to a given structural instantiation,
   then it will be instantiated.
 
-* Any generic can be instantiated, be it a package, procedure or function. A
-  `structural_generic_instantiation_reference` will be syntactically valid in
-  any context where a name is valid, and semantically valid in any context
-  where a reference to the instantiated entity (subprogram or package) is
-  valid.
+* All three kinds of generics can be instantiated, be it a package, procedure
+  or function. A `structural_generic_instantiation_reference` will be
+  syntactically valid in any context where a name is valid, and semantically
+  valid in any context where a reference to the instantiated entity (subprogram
+  or package) is valid.
 
-TODO: Add stuff about specific aspect for structurally instantiable generics
+* For the moment, in order to be able to impose restrictions on the generic
+  code that can be compilable this way, generics that are instantiable
+  structurally need to be explicitly marked with the
+  `Allow_Structural_Instantiation` aspect:
+
+```ada
+generic
+   type T is private;
+package F
+    with Allow_Structural_Instantiation
+is
+   ...
+end F;
+```
+
+* Generics annotated with the `Allow_Structural_Instantiation` aspect are
+  forbidden to have:
+
+  - Mutable global state
+  - In out object formals
+
+* Generics annotated with the `Allow_Structural_Instantiation` are forbidden to
+  have no generic formals.
+
+* Generics annotated with the `Allow_Structural_Instantiation` cannot be
+  library-level descendants of library level generic packages.
+
+> [!NOTE]
+> This restriction solely exists because GNAT already handle library level
+> generic packages badly according to Steve, and we can't see compelling use
+> cases.
+
+* The instantiation denoted by a `structural_generic_instantiation_reference`
+  is considered to be expansed in the topmost scope where it is legal to hoist
+  it. Its accessibility level is deduced from this.
+
+* For the moment, if there is no legal syntactic declarative region in which
+  the equivalent explicit instantiation could live, then the instantiation is
+  forbidden:
+
+```ada
+function Expr_Func (N : Natural) is
+    (Some_Generic(N).Some_Function); -- ILLEGAL
+```
+
+> [!NOTE]
+> This does not appear necessary, and is more dependent on implementation
+> details than anything else in my opinion. But it might facilitate
+> implementation in a first step.
 
 Implementation guidance
 =======================
@@ -390,185 +438,6 @@ languages/implementations that monomorphize the result, as GNAT does:
 Issues to consider
 ==================
 
-The accessibility level of an instance of a generic package can impact both
-the static legality and the dynamic behavior of a program. Examples
-illustrating this are provided below. This suggests that the point at which
-an implicit instance is declared should be well-defined.
-
-First, a static example:
-
-    generic
-    package G1 is
-      Int : aliased Integer;
-    end package;
-
-    type Int_Ref is access all Integer;
-    Ref : Int_Ref;
-
-    package I1 is new G1;
-
-    procedure Foo is
-       package I2 is new G1;
-    begin
-       Ref := I1.Int'Access; -- legal
-       Ref := I2.Int'Access; -- illegal
-    end Foo;
-
-One might argue that this is not a problem since we do not plan to allow
-implicit instances of generic packages that declare variables. But the
-entity declared in the generic have been a constant or even a subprogram
-(with corresponding changes to the access type declaration).
-
-Next, a dynamic example, referencing the same G1, Int_Ref, Ref, and I1
-declarations:
-
-     procedure Bar is
-       package I2 is new G1;
-       procedure Update_Ref (Value : access Integer) is
-       begin
-           Ref := Int_Ref (Value);
-       end;
-    begin
-       Update_Ref (I1.Int'Access); -- succeeds
-       Update_Ref (I2.Int'Access); -- raises Program_Error
-    end;
-
-Accessibility levels can also impact the results of membership tests
-and the point at which finalization takes place. We presumably want all
-these sorts of things to be well-defined for an implicitly declared instance.
-
-A general approach that was discussed briefly at the meeting was to
-hoist the implicit declaration of an instance to the outermost possible
-scope. For example, if a formal parameter of a subprogram is an actual
-parameter of an instance, then we can't hoist the implicit declaration
-to some point outside of the subprogram. But what does "outermost possible"
-mean in the case of renamings and subtype declarations? In a case like
-
-    procedure Foo (N : Natural) is
-       subtype S is String;
-       function Eq (X, Y : S) return Boolean renames "=";
-    begin
-       Some_Generic (S, Eq).Some_Procedure;
-    end;
-
-can we hoist the implicit instance declaration outside of Foo?
-What if we add a static constraint to the subtype declaration, as in
-    subtype S is String (1 .. 10);
-? Or a dynamic constraint, as in
-    subtype S is String (1 .. N);
-?
-
-> Raph: For me we shouldn't try to be clever about those cases (so no resolving of renamings/subtypes)
-> The right approach is for the compiler to show where the generic has been instantiated and why.
-
-Is some cases, there may be no suitable declaration site and so the
-implicit instance reference would presumably have to be rejected.
-Consider an implicit instance with an actual parameter that is a
-formal parameter of an expression function:
-    function Expr_Func (N : Natural) is
-       (Some_Generic(N).Some_Function);
-       
-Would we want to allow this? Note that implicitly replacing an
-expression function with a "regular" function would give us a place
-to declare the implicitly-declared instance, but it would also introduce
-complexity (e.g., interactions with freezing).
-
-> Raph: It's a shame that expression functions and regular functions have different semantics in that regard.
-> I think this case can acceptably be flagged as illegal, at least for now, as long as we have decent
-> error messages in the implementation.
-
-> Romain: I agree that we can forbid such instantiations in those cases, although this will prevent doing some
-> of the cool stuff we advertised for, like `function Sum (X: Float_Array) return Float is (Reduce (Fn => "+") (X))` :D
-
-====
-
-When hoisting the implicit declaration of an instance, we probaby need to be
-careful not to introduce a case where the instance is elaborated before
-the corresponding generic body. We don't want to introduce an
-access-before-elaboration failure. Similarly, if would not be good if we have a
-subprogram that is never called and it contains a reference to an implicitly
-declared package instance, and if that instance gets hoisted to some point outside
-of the subprogram and then the elaboration of the instance propagates an exception.
-
-> Raph: Can you give examples ?
-
-====
-
-We want to allow, but not require, sharing of implicitly declared instances
-that have the same actual parameters. The idea is that program legality
-and behavior should be unaffected by such sharing (or its absence). That's
-one reason, for example, that we want to disallow implicit instances of
-generics that have variable state (or which query variable state during their
-elaboration).
-
-One case that requires some thought is tagged type declarations. Consider
-
-```
-    p1.ads
-    subtype S1 is Some_Generic (Integer, "+").Some_Tagged_Type;
-
-    p2.ads
-    subtype S2 is Some_Generic (Integer, "+").Some_Tagged_Type;
-
-    p3.ads
-    Flag : Boolean := S1'Tag = S2'Tag;
-```
-
-If two tagged types have distinct tags and neither is descended from
-the other, then allowing conversion between the types (implicit or
-explicit) seems like it would lead to problems. So if we are going to
-treat S1 and S2 as being subtypes of the same type, then the two
-implicit instance references probably need to be somehow required to refer
-to the same instance.
-
-> Raph: That's a good point but yes. At the user level, we want there to be only one type.
->  In this particular case, it means that we *need* the emitted code to have only one tag
->  for this type.
-
-> Romain: "then allowing conversion between the types (implicit or explicit) seems like it
-> would lead to problems" are you thinking of problems at runtime? Because if I understand
-> correctly, it couldn't cause problems at compile-time because if two instances are not
-> shared it means they couldn't "see" each other in the first place. So assuming they can't
-> "see" each other, maybe we can rely on the fact that the compiler will generate the same
-> code for the duplicate instances in such a way that it is not possible to make a
-> distinction between them at runtime? If that's not an option, does it mean that we would
-> have to find a way to share the instances accross libraries?
-
-Another somewhat similar case is access equality, as in
-
-```
-     type Ref is access procedure;
-     Ptr1 : Ref := Some_Generic (Integer, "+").Proc'Access;
-     Ptr2 : Ref := Some_Generic (Integer, "+").Proc'Access;
-     Flag : Boolean := Ptr1 = Ptr2;
-```
-
-where Flag will probably be initialized to True if and only if instance
-sharing occurs (although in this particular case, Flag might be False even
-if sharing occurs because of RM 4.5.2(13)). Similar scenarios involving
-an access-to-constant type are possible.
-
-[Aside: hopefully we will not introduce any violation of the equivalence
-rule for multi-identifier object declarations given in 3.3.1(7). We don't
-want to treat
-   X, Y : Some_Generic (Integer, "+").T;
-differently than
-   X : Some_Generic (Integer, "+").T;
-   Y : Some_Generic (Integer, "+").T;
-with respect to allowing/forbidding instance sharing]
-
-One approach is to invent rules to eliminate optional instance sharing -
-in cases where it makes a difference, sharing should be forbidden or
-required. Another approach is to give up on the ideal that program
-behavior should be unaffected by whether the implementation chooses to
-share instances or not.
-
-> Raph: Question: is there an ideal compilation model where we can guarantee sharing in 100% of the cases ? Under what constraints ? How would it look like ?
-
-### Discussion during WG
-
-* Safer to forbid interaction with nested library level generics, because GNAT already handles them pretty badly
-
 ### Steve on elaboration issues
 
 RM 3.11(13) states that the elaboration of an instantiation of a generic
@@ -688,4 +557,189 @@ elaboration check failure.
 
 I'm not claiming that this is an insurmountable problem, but it is a
 scenario that we need to be aware of.
+
+> Raph: I feel like the workaround *might* be to use explicit instantiations in
+> those cases ? But let's discuss during the meeting.
+
+### Problems already discussed, and solved (in principle)
+
+The accessibility level of an instance of a generic package can impact both
+the static legality and the dynamic behavior of a program. Examples
+illustrating this are provided below. This suggests that the point at which
+an implicit instance is declared should be well-defined.
+
+First, a static example:
+
+    generic
+    package G1 is
+      Int : aliased Integer;
+    end package;
+
+    type Int_Ref is access all Integer;
+    Ref : Int_Ref;
+
+    package I1 is new G1;
+
+    procedure Foo is
+       package I2 is new G1;
+    begin
+       Ref := I1.Int'Access; -- legal
+       Ref := I2.Int'Access; -- illegal
+    end Foo;
+
+One might argue that this is not a problem since we do not plan to allow
+implicit instances of generic packages that declare variables. But the
+entity declared in the generic have been a constant or even a subprogram
+(with corresponding changes to the access type declaration).
+
+Next, a dynamic example, referencing the same G1, Int_Ref, Ref, and I1
+declarations:
+
+     procedure Bar is
+       package I2 is new G1;
+       procedure Update_Ref (Value : access Integer) is
+       begin
+           Ref := Int_Ref (Value);
+       end;
+    begin
+       Update_Ref (I1.Int'Access); -- succeeds
+       Update_Ref (I2.Int'Access); -- raises Program_Error
+    end;
+
+Accessibility levels can also impact the results of membership tests
+and the point at which finalization takes place. We presumably want all
+these sorts of things to be well-defined for an implicitly declared instance.
+
+A general approach that was discussed briefly at the meeting was to
+hoist the implicit declaration of an instance to the outermost possible
+scope. For example, if a formal parameter of a subprogram is an actual
+parameter of an instance, then we can't hoist the implicit declaration
+to some point outside of the subprogram. But what does "outermost possible"
+mean in the case of renamings and subtype declarations? In a case like
+
+    procedure Foo (N : Natural) is
+       subtype S is String;
+       function Eq (X, Y : S) return Boolean renames "=";
+    begin
+       Some_Generic (S, Eq).Some_Procedure;
+    end;
+
+can we hoist the implicit instance declaration outside of Foo?
+What if we add a static constraint to the subtype declaration, as in
+    subtype S is String (1 .. 10);
+? Or a dynamic constraint, as in
+    subtype S is String (1 .. N);
+?
+
+> Raph: For me we shouldn't try to be clever about those cases (so no resolving of renamings/subtypes)
+> The right approach is for the compiler to show where the generic has been instantiated and why.
+
+Is some cases, there may be no suitable declaration site and so the
+implicit instance reference would presumably have to be rejected.
+Consider an implicit instance with an actual parameter that is a
+formal parameter of an expression function:
+
+    function Expr_Func (N : Natural) is
+       (Some_Generic(N).Some_Function);
+
+Would we want to allow this? Note that implicitly replacing an
+expression function with a "regular" function would give us a place
+to declare the implicitly-declared instance, but it would also introduce
+complexity (e.g., interactions with freezing).
+
+> Raph: It's a shame that expression functions and regular functions have different semantics in that regard.
+> I think this case can acceptably be flagged as illegal, at least for now, as long as we have decent
+> error messages in the implementation.
+
+> Romain: I agree that we can forbid such instantiations in those cases, although this will prevent doing some
+> of the cool stuff we advertised for, like `function Sum (X: Float_Array) return Float is (Reduce (Fn => "+") (X))` :D
+
+====
+
+When hoisting the implicit declaration of an instance, we probaby need to be
+careful not to introduce a case where the instance is elaborated before
+the corresponding generic body. We don't want to introduce an
+access-before-elaboration failure. Similarly, if would not be good if we have a
+subprogram that is never called and it contains a reference to an implicitly
+declared package instance, and if that instance gets hoisted to some point outside
+of the subprogram and then the elaboration of the instance propagates an exception.
+
+> Raph: Can you give examples ?
+
+====
+
+We want to allow, but not require, sharing of implicitly declared instances
+that have the same actual parameters. The idea is that program legality
+and behavior should be unaffected by such sharing (or its absence). That's
+one reason, for example, that we want to disallow implicit instances of
+generics that have variable state (or which query variable state during their
+elaboration).
+
+One case that requires some thought is tagged type declarations. Consider
+
+```
+    p1.ads
+    subtype S1 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p2.ads
+    subtype S2 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p3.ads
+    Flag : Boolean := S1'Tag = S2'Tag;
+```
+
+If two tagged types have distinct tags and neither is descended from
+the other, then allowing conversion between the types (implicit or
+explicit) seems like it would lead to problems. So if we are going to
+treat S1 and S2 as being subtypes of the same type, then the two
+implicit instance references probably need to be somehow required to refer
+to the same instance.
+
+> Raph: That's a good point but yes. At the user level, we want there to be only one type.
+>  In this particular case, it means that we *need* the emitted code to have only one tag
+>  for this type.
+
+> Romain: "then allowing conversion between the types (implicit or explicit) seems like it
+> would lead to problems" are you thinking of problems at runtime? Because if I understand
+> correctly, it couldn't cause problems at compile-time because if two instances are not
+> shared it means they couldn't "see" each other in the first place. So assuming they can't
+> "see" each other, maybe we can rely on the fact that the compiler will generate the same
+> code for the duplicate instances in such a way that it is not possible to make a
+> distinction between them at runtime? If that's not an option, does it mean that we would
+> have to find a way to share the instances accross libraries?
+
+Another somewhat similar case is access equality, as in
+
+```
+     type Ref is access procedure;
+     Ptr1 : Ref := Some_Generic (Integer, "+").Proc'Access;
+     Ptr2 : Ref := Some_Generic (Integer, "+").Proc'Access;
+     Flag : Boolean := Ptr1 = Ptr2;
+```
+
+where Flag will probably be initialized to True if and only if instance
+sharing occurs (although in this particular case, Flag might be False even
+if sharing occurs because of RM 4.5.2(13)). Similar scenarios involving
+an access-to-constant type are possible.
+
+[Aside: hopefully we will not introduce any violation of the equivalence
+rule for multi-identifier object declarations given in 3.3.1(7). We don't
+want to treat
+   X, Y : Some_Generic (Integer, "+").T;
+differently than
+   X : Some_Generic (Integer, "+").T;
+   Y : Some_Generic (Integer, "+").T;
+with respect to allowing/forbidding instance sharing]
+
+One approach is to invent rules to eliminate optional instance sharing -
+in cases where it makes a difference, sharing should be forbidden or
+required. Another approach is to give up on the ideal that program
+behavior should be unaffected by whether the implementation chooses to
+share instances or not.
+
+> Raph: Question: is there an ideal compilation model where we can guarantee sharing in 100% of the cases ? Under what constraints ? How would it look like ?
+
+### Discussion during WG
+
+* Safer to forbid interaction with nested library level generics, because GNAT already handles them pretty badly
 
