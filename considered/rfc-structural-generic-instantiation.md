@@ -71,7 +71,7 @@ Ada.Unchecked_Deallocation [] (My_Int_Access);
 --  NOTE: This relies on inference from name & type resolution context
 ```
 
-> *Note*
+> [!NOTE]
 >
 > Do we want to allow `Ada.Unchecked_Deallocation (My_Int_Access)` - so,
 > without any explicit syntactic instantiation indication ? Seems nifty and
@@ -187,15 +187,174 @@ And alter the `name` rule to include `structural_generic_instantiation_reference
   where a reference to the instantiated entity (subprogram or package) is
   valid.
 
+TODO: Add stuff about specific aspect for structurally instantiable generics
+
+Implementation guidance
+=======================
+
+## Compilation model
+
+The main challenge is to guarantee the unicity of the emitted code, both for
+code-bloat and semantic reasons.
+
+We distinguish two cases:
+
+1. Instantiations which can be unnested up to the library level, such as:
+
+```ada
+package P is
+    T : Vectors [Positive, Positive].Vector; -- Library-level
+
+    function Foo return Positive;
+end P;
+
+package body P is
+    function Foo return Positive is
+        T : Vectors [Positive, Positive].Vector -- Local, but only depends on library-level entities
+    begin
+        ...
+    end Foo;
+end P;
+```
+
+2. Instantiations which are inherently local such as
+
+```ada
+    function Foo return Positive is
+        type P is new Positive;
+        T : Vectors [P, P].Vector -- Local
+    begin
+        ...
+    end Foo;
+```
+
+### Toplevel instantiations
+
+We want to follow the C++ compilation model, where the code for a specific
+generic instantiation is emitted in every compilation unit it is used, and then
+de-duplicated at link time.
+
+#### Unique symbol name for the toplevel entity
+
+For this, the symbols emitted for a given top-level instantiation needs to be
+exactly the same. We thus need to name the emitted monomorphized generic
+according to a naming scheme that guarantees that a given structurally
+instantiated generic always has the same name.
+
+For top-level generics, this is luckily quite easy to guarantee: At a high
+level, we want the name of the instantiated generic to be a combination of the
+fully qualified name of every formal, + the qualified name of the generic.
+
+In the case of the toplevel `Vectors [Positive, Positive].Vector` above, the
+name could be something like:
+
+`Ada_Containers_Vectors_Positive_Positive` (We don't include `Standard` because
+the names are going to be pretty-long already)
+
+> [!IMPORTANT]
+> Unlike traditional explicitly instantiated Ada generics, the name **will not
+> contain** the name of the containing library-level unit, by design.
+
+#### Deduplicate multiple local instances
+
+During compilation, we keep a set of those names, for the generics we have
+already instantiated as part of the currently compiled compilation unit. If we
+come across a generic twice (which is very likely), we don't emit it a second
+time.
+
+> [!NOTE] For symbol names internal to the instantiated generic, we presumably
+> don't need to change the naming scheme.
+> It's enough that the compiler is idempotent, ie that it will generate the
+> same symbol names twice accross compilations, which is already the case
+> AFAICT.
+
+#### Linker machinery
+
+The symbols emitted as part of the instantiated generic need to be marked as
+`weak`, so that only one instance is kept at link-time.
+
+### Local instantiations
+
+Local instantiations by definition cannot be shared accross compilation units,
+because they depend on local entities that are not globally visible. Thus, we
+do not need to devise a scheme to share their code accross compilations.
+
+We then just need a set of locally already compiled structural generics, so
+that we emit each one only once.
+
+## Shared libraries
+
+There are some cases where the code potentially cannot be de-duplicated,
+particularly where objects are linked together at run-time via dynamic linking.
+In those cases, two concurrent implementations will potentially be used
+concurrently in the same executable. We then need to make sure that either the
+two implementations are compatible and their interaction produce consistent
+results, either those use cases are forbidden.
+
+> [!IMPORTANT]
+> It looks from what is achieved in C++, that, at least on certain platforms,
+> de-duplicating in every case is possible. See for example
+> https://stackoverflow.com/questions/4924082/static-template-data-members-storage
+>
+> It means that every potential problem that Steve raised (address of
+> operators, tags) could potentially be solved this way. Remains to see how
+> easy it is/whether this is what we want to do.
+>
+> It also means that the restrictions we want to impose on global state could
+> probably be relaxed if we follow this implementation model.
+
+Examples of this problem:
+
+### Tags
+
+```ada
+    p1.ads
+    subtype S1 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p2.ads
+    subtype S2 is Some_Generic (Integer, "+").Some_Tagged_Type;
+
+    p3.ads
+    Flag : Boolean := S1'Tag = S2'Tag;
+```
+
+In this case we have two possible work-arounds:
+
+* The first is to not rely on tags being exactly the same for the above to
+  work: abstracting the tag and overloadng tag equality, and then generate a
+  unique identifier for the tag, that is used by the equality function.
+
+* The second is to manage to always use only one copy of the code at runtime,
+  by emitting the proper code with the proper link attributes.
+
+### Addresses for shared entities (constants, functions, etc)
+
+```ada
+     type Ref is access procedure;
+     Ptr1 : Ref := Some_Generic (Integer, "+").Proc'Access;
+     Ptr2 : Ref := Some_Generic (Integer, "+").Proc'Access;
+     Flag : Boolean := Ptr1 = Ptr2;
+```
+
+As said above, managing to always use the same symbol, via linker attributes,
+would be the only solution to guarantee that this works.
+
+However, we consider that it's acceptable for the above to return `False` if
+implementing it correctly is too complex.
+
 Rationale and alternatives
 ==========================
 
 The rationale is contained in the high level RFC on generics.
 
+The alternative, as far as generic instantiation is concerned, is what already
+implements: Nominal, explicit, non-structural generic instantiation.
+
 Drawbacks
 =========
 
-N/A
+Some users raised the question of code-bloat that would arise from the use of
+this feature.
 
 Prior art
 =========
@@ -206,7 +365,27 @@ languages (C++, C#, Java, Rust, Haskell, OCaml, etc), which makes it difficult
 to identify the feature with such a specific name, because it is usually just
 called "generics".
 
-TODO: Try to fill out this section nonetheless
+Implementation models & advice exist for similar features in
+languages/implementations that monomorphize the result, as GNAT does:
+
+* The GCC documentation has a short page describing the Borland template
+  instantiation model, which is the one that was chosen in GCC too:
+  https://gcc.gnu.org/onlinedocs/gcc/Template-Instantiation.html
+
+> [!NOTE]
+> It seems like [Weak symbols](https://en.wikipedia.org/wiki/Weak_symbol) is
+> all that is needed in terms of linker on modern native platforms, and that
+> such weak symbols will be "collapsed" at link time.
+>
+> [LLVM's
+> documentation](https://llvm.org/doxygen/group__LLVMCCoreTypes.html#ga0e85efb9820f572c69cf98d8c8d237de)
+> about link modes gives some more information about this.
+
+* The Rust compilation model for generics [is described
+  here](https://rustc-dev-guide.rust-lang.org/backend/monomorph.html), but I
+  didn't see any information about the specific way generic instantiations are
+  de-duplicated. A confirmation that something similar to the C++ compilation
+  model is used would be good.
 
 Issues to consider
 ==================
