@@ -310,7 +310,8 @@ already instantiated as part of the currently compiled compilation unit. If we
 come across a generic twice (which is very likely), we don't emit it a second
 time.
 
-> [!NOTE] For symbol names internal to the instantiated generic, we presumably
+> [!NOTE]
+> For symbol names internal to the instantiated generic, we presumably
 > don't need to change the naming scheme.
 > It's enough that the compiler is idempotent, ie that it will generate the
 > same symbol names twice accross compilations, which is already the case
