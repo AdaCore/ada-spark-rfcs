@@ -492,7 +492,7 @@ subprograms that need to refer to it. This defers the elaboration check for
 the generic body until an instantiating subprogram is called. So instead of
 version #1,
 
-```
+```ada
    package Pkg is
       procedure Foo;
       procedure Bar;
@@ -514,7 +514,7 @@ version #1,
 
 we might see version #2,
 
-```
+```ada
    package Pkg is
       procedure Foo;
       procedure Bar;
@@ -538,7 +538,7 @@ we might see version #2,
 Now consider this case with the added wrinkle that the instance is
 implicitly declared in version #3:
 
-```
+```ada
    with G;
    package body Pkg is
       procedure Foo is
@@ -571,6 +571,7 @@ an implicit instance is declared should be well-defined.
 
 First, a static example:
 
+```ada
     generic
     package G1 is
       Int : aliased Integer;
@@ -587,6 +588,7 @@ First, a static example:
        Ref := I1.Int'Access; -- legal
        Ref := I2.Int'Access; -- illegal
     end Foo;
+```
 
 One might argue that this is not a problem since we do not plan to allow
 implicit instances of generic packages that declare variables. But the
@@ -596,6 +598,7 @@ entity declared in the generic have been a constant or even a subprogram
 Next, a dynamic example, referencing the same G1, Int_Ref, Ref, and I1
 declarations:
 
+```ada
      procedure Bar is
        package I2 is new G1;
        procedure Update_Ref (Value : access Integer) is
@@ -606,6 +609,7 @@ declarations:
        Update_Ref (I1.Int'Access); -- succeeds
        Update_Ref (I2.Int'Access); -- raises Program_Error
     end;
+```
 
 Accessibility levels can also impact the results of membership tests
 and the point at which finalization takes place. We presumably want all
@@ -618,12 +622,14 @@ parameter of an instance, then we can't hoist the implicit declaration
 to some point outside of the subprogram. But what does "outermost possible"
 mean in the case of renamings and subtype declarations? In a case like
 
+```ada
     procedure Foo (N : Natural) is
        subtype S is String;
        function Eq (X, Y : S) return Boolean renames "=";
     begin
        Some_Generic (S, Eq).Some_Procedure;
     end;
+```
 
 can we hoist the implicit instance declaration outside of Foo?
 What if we add a static constraint to the subtype declaration, as in
