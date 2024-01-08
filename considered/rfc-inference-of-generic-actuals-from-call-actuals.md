@@ -44,7 +44,7 @@ function Sum (X: Float_Array) return Float
 is
     --  Implicit instantiation of Reduce. All formals except `Fn` can be
     --  deduced from the type of `X`, and from the expected return type.
-  (Reduce [Fn => "+"] (X))
+  (Reduce [Fn => "+"] (0.0, X))
 
 type Float_Access is access all Float;
 
