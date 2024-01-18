@@ -27,12 +27,12 @@ destructor needs to be called "final", taking an in out to the object:
       end T1;
    end P;
 
-In hierarchies, destructors are implicitely called in sequence - the parent
-destructor is always called after its child.
-
-When composing objects together, components that have destructors are called after
-the containing object (you destroy from the outermost to the innermost, reverse
-of the construction order).
+The destruction sequence works in the following way:
+- If a type has an explicit destructor, it is first called.
+- If a type has components hierarchy, wether or not it has an explicit
+  destructor, the destructor sequence is called on each components.
+- If a type is in a tagged hierarchy, wether or not it has an explicit
+  destructor, the parent destructor sequence is called.
 
 Destructors are not equivalent to finalization. A destructor for an object is
 only called if the memory associated to the object is deallocated because:
