@@ -476,7 +476,7 @@ types that have constructors:
 - the parent discriminant is not set at derivation anymore, but through the
 call to the super constructor
 - the child type does not need to declare additional discriminant anymore just
-  for the purpose of setting the parent ones.
+for the purpose of setting the parent ones.
 
 Constructors and Type Predicates
 --------------------------------
