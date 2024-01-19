@@ -21,7 +21,7 @@ its discriminants, which allows to have indefinite fields, e.g.:
 .. code-block:: Ada
 
       type T (<>) is record -- T1 is indefinite
-	      X : String; -- it's ok to have an indefinite field here
+         X : String; -- it's ok to have an indefinite field here
 
          procedure T (Self : in out T; Val : String); -- constructor
 
@@ -30,6 +30,8 @@ its discriminants, which allows to have indefinite fields, e.g.:
 
 Indefinite fields must be provided with a value  by the initialization list of
 the constructor. For example:
+
+.. code-block:: Ada
 
    package P is
 
