@@ -24,14 +24,15 @@ or access reference to the object.
 .. code-block:: ada
 
    package P is
-      type T1 is tagged record
-         procedure T1 (Self : in out T1);
-         procedure T1 (Self : in out T1; Some_Value : Integer);
-      end T1;
+      type T1 is tagged null record;
 
-      type T2 is record
-         procedure T2 (Self : in out T2; Some_Value : Integer);
-      end T2;
+      procedure T1 (Self : in out T1);
+      procedure T1 (Self : in out T1; Some_Value : Integer);
+
+
+      type T2 is null record;
+
+      procedure T2 (Self : in out T2; Some_Value : Integer);
    end P;
 
 As soon as a constructor exist, an objects cannot be created without calling one
@@ -54,27 +55,21 @@ object on the heap. E.g:
 In the case of objects containing other objects, innermost objects constructors
 are called first, before their containing object.
 
-While the rest of the RFC is written using the scoped notation describe above,
-we will also provide a non scoped notation which can be used for any type. A
-constructor is a function in the same scope as the type its construct, of the
-same name, with at least one parameter `in out` of the type in question. The
-above can be re-written:
+Note that constructors will be "scoped" in a future extension of the RFC, but
+the scoping notation isn't strictly necessary to implement initial semantics:
 
 .. code-block:: ada
 
    package P is
       type T1 is tagged record
-         null;
+         procedure T1 (Self : in out T1);
+         procedure T1 (Self : in out T1; Some_Value : Integer);
       end record;
 
-      procedure T1 (Self : in out T1);
-      procedure T1 (Self : in out T1; Some_Value : Integer);
 
       type T2 is record
-         null;
+         procedure T2 (Self : in out T2; Some_Value : Integer);
       end record;
-
-      procedure T2 (Self : in out T2; Some_Value : Integer);
    end P;
 
 Constructor as a Function
@@ -95,14 +90,14 @@ for a generic parameter or an access-to-subprogram. For example:
    end;
 
    package P is
-      type T1 is tagged record
-         procedure T1 (Self : in out T1);
-         procedure T1 (Self : in out T1; Some_Value : Integer);
-      end T1;
+      type T1 is tagged null record;
 
-      type T2 is record
-         procedure T2 (Self : in out T2; Some_Value : Integer);
-      end T2;
+      procedure T1 (Self : in out T1);
+      procedure T1 (Self : in out T1; Some_Value : Integer);
+
+      type T2 is null record record;
+
+      procedure T2 (Self : in out T2; Some_Value : Integer);
 
       type Acc1 is access function (Some_Value : Integer) return T1;
 
@@ -131,9 +126,9 @@ initialized from a copy. For example:
 .. code-block:: ada
 
    package P is
-      type T1 is tagged record
-         procedure T1 (Self : in out T1; Source : T1);
-      end T1;
+      type T1 is tagged null record;
+
+      procedure T1 (Self : in out T1; Source : T1);
 
 If not specified, a default copy constructor is automatically generated.
 The implicit copy constructor will call the parent copy constructor, then copy
@@ -158,45 +153,37 @@ in the constuctor body, For example:
 
 .. code-block:: ada
 
-   type Root is tagged record
-      procedure Root (Self : in out Root; V : Integer);
-   end Root;
+   type Root is tagged null record;
+   procedure Root (Self : in out Root; V : Integer);
 
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
-   end Child;
+   type Child is new Root with null record;
+   procedure Child (Self : in out Child);
 
-   type body Child is new Root with record
-      procedure Child (Self : in out Child)
-         with Super (42)
-      is
-      begin
-         null;
-      end Child;
+   procedure Child (Self : in out Child)
+      with Super (42)
+   is
+   begin
+      null;
    end Child;
 
 Note that the constructor of an abstract type can be called here, for example:
 
 .. code-block:: ada
 
-   type Root is abstract tagged record
-      procedure Root (Self : in out Root; V : Integer);
-   end Root;
+   type Root is abstract tagged null record;
+   procedure Root (Self : in out Root; V : Integer);
 
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
+   type Child is new Root with null record;'
+   procedure Child (Self : in out Child);
+
+
+   procedure Child (Self : in out Child)
+      -- Root'Make can be called here to initialize Super
+      with Super (42)
+   is
+   begin
+      null;
    end Child;
-
-   type body Child is new Root with record
-      procedure Child (Self : in out Child)
-         -- Root'Make can be called here to initialize Super
-         with Super (42)
-      is
-      begin
-         null;
-      end Child;
-   end Child;
-
 
 Initialization Lists
 --------------------
@@ -223,33 +210,30 @@ Here's an example of using ``Initialize`` for such a case:
 
 .. code-block:: ada
 
-   type Some_Type is tagged record
-      procedure Some_Type (Self : in out C; Some_Value : Integer);
-   end Some_Type;
+   type Some_Type is tagged null record;
+   procedure Some_Type (Self : in out C; Some_Value : Integer);
 
    type C is tagged record
       F : Some_Type;
+   end record;
 
-      procedure C (Self : in out C; V : Integer);
+   procedure C (Self : in out C; V : Integer);
+
+   procedure C (Self : in out C; V : Integer)
+      with Initialize (F => Some_Type'Make (V))
+   is
+   begin
+      null;
    end C;
 
-   type body C is tagged record
-      procedure C (Self : in out C; V : Integer)
-         with Initialize (F => Some_Type'Make (V))
-      is
-      begin
-         null;
-      end C;
-   end C;
 
 Note that if there is no initialization for components with no default
 constructors, the compiler will raise an error:
 
 .. code-block:: ada
 
-   type Some_Type is tagged record
-      procedure Some_Type (Self : in out C; Some_Value : Integer);
-   end Some_Type;
+   type Some_Type is tagged null record;
+   procedure Some_Type (Self : in out C; Some_Value : Integer);
 
    type C is tagged record
       F : Some_Type; -- Compilation error, F needs explicit constructor call
@@ -271,24 +255,22 @@ initialized as described at declaration time. For example:
    type C is tagged record
       A : Integer := Print_And_Return ("A FROM RECORD");
       B : Integer := Print_And_Return ("B FROM RECORD");
+   end record;
 
-      procedure C (Self : in out C);
-      procedure C (Self : in out C; S : String);
+   procedure C (Self : in out C);
+   procedure C (Self : in out C; S : String);
+
+   procedure C (Self : in out C)
+   is
+   begin
+      null;
    end C;
 
-   type body C is tagged record
-      procedure C (Self : in out C)
-      is
-      begin
-         null;
-      end C;
-
-      procedure C (Self : in out C; S : String)
-         with Initialize (A => Print_And_Return (S))
-      is
-      begin
-         null;
-      end C;
+   procedure C (Self : in out C; S : String)
+      with Initialize (A => Print_And_Return (S))
+   is
+   begin
+      null;
    end C;
 
    V1 : C := C'Make; -- Will print A FROM RECORD, B FROM RECORD
@@ -312,17 +294,15 @@ others, it is possible to initialize limited types:
 
    type C is limited tagged record
       F : R;
+   end record;
 
-      procedure C (Self : in out C);
-   end C;
+   procedure C (Self : in out C);
 
-   type body C is limited tagged record
-      procedure C (Self : in out C)
-         with Initialize (F => (1, 2))
-      is
-      begin
-         null;
-      end C;
+   procedure C (Self : in out C)
+      with Initialize (F => (1, 2))
+   is
+   begin
+      null;
    end C;
 
 The only components that a constructor can initialize in the initialization list
@@ -337,21 +317,18 @@ object. The following for example will issue an error:
 
    type Child is new Root with record
       C : R;
+   end record;
+   procedure Child (Self : in out Child);
 
-      procedure Root (Child : in out C);
-   end C;
-
-   type body Child is tagged record
-      procedure Child (Self : in out C)
-         with Initialize (
-            A => 1, -- Compilation Error
-            B => 2, -- Compilation Error
-            C => 3  -- OK
-         )
-      is
-      begin
-         null;
-      end C;
+   procedure Child (Self : in out Child)
+      with Initialize (
+         A => 1, -- Compilation Error
+         B => 2, -- Compilation Error
+         C => 3  -- OK
+      )
+   is
+   begin
+      null;
    end C;
 
 Valuation of Discriminants
@@ -369,10 +346,9 @@ of legal and illegal code:
       end record;
 
       type T2 (L : Integer) is tagged record
-         procedure T2 (Self : in out T2);
-
          X : Some_Array (0 .. L);
       end record;
+      procedure T2 (Self : in out T2);
 
       V1 : T1 (10); -- legal
       V2 : T2 (10); -- compilation error
@@ -385,21 +361,16 @@ initialization list. For example:
 
    package P is
       type T2 (L : Integer) is tagged record
-         procedure T2 (Self : in out T2; Size : Integer);
-
          X : Some_Array (0 .. L);
       end record;
+      procedure T2 (Self : in out T2; Size : Integer);
 
-      type body T2 (L : Integer) is tagged record
-
-         procedure T2 (Self : in out T2; Size : Integer)
-            with Initialize (L => Size - 1)
-         is
-         begin
-            null;
-         end T2;
-
-      end record;
+      procedure T2 (Self : in out T2; Size : Integer)
+         with Initialize (L => Size - 1)
+      is
+      begin
+         null;
+      end T2;
 
       V2 : T2 := T2'Make (10);
    end P;
@@ -410,14 +381,12 @@ constructors, the parent type discriminants are not set. For example:
 
 .. code-block:: ada
 
-   type Root (V : Integer) is tagged record
-      procedure Root (Self : in out Child);
-   end Root;
+   type Root (V : Integer) is tagged null record;
+   procedure Root (Self : in out Child);
 
    -- note that we're not specifying Root discriminant as Root has a constructor
-   type Child is new Root with record
-      procedure Child (Self : in out Child);
-   end Child;
+   type Child is new Root with null record;
+   procedure Child (Self : in out Child);
 
 Here's a full example demonstrating both a regular use of discriminant and a use
 with the new notation:
@@ -427,47 +396,41 @@ with the new notation:
    package P is
 
       type Reg_Root (L_Root : Integer) is tagged record
-      V : String (1 .. L_Root);
+         V : String (1 .. L_Root);
       end record;
 
       type Reg_Child (L_Child_1, L_Child_2 : Integer) is new Reg_Root (L_Child_1) with record
-      W : String (1 .. L_Child_2);
+         W : String (1 .. L_Child_2);
       end record;
 
       type New_Root (L_Root : Integer) is tagged record
-      V : String (1 .. L_Root);
+         V : String (1 .. L_Root);
+      end record;
 
       procedure New_Root (Self : in out New_Root; L : Integer);
-      end record;
 
       type New_Child (L_Child_2 : Integer) is new New_Root with record
-      W : String (1 .. L_Child_2);
-
-      procedure New_Child (Self : in out New_Child; L1, L2 : Integer);
+         W : String (1 .. L_Child_2);
       end record;
+      procedure New_Child (Self : in out New_Child; L1, L2 : Integer);
 
   end P;
 
   package body P is
 
+   procedure New_Root (Self : in out New_Root; L : Integer)
+      with Initializes (L_Root => L)
+   is
+   begin
+      null;
+   end;
 
-   type body New_Root (L_Root : Integer) is tagged record
-    procedure New_Root (Self : in out New_Root; L : Integer)
-       with Initializes (L_Root => L)
-    is
-    begin
-       null;
-    end;
-   end record;
-
-   type body New_Child (L_Child_2 : Integer) is new New_Root with record
-    procedure New_Child (Self : in out New_Child; L1, L2 : Integer)
-        with Super (L1), Initializes (L_Child_2 => L2)
-    is
-    begin
-       null;
-    end;
-   end record;
+   procedure New_Child (Self : in out New_Child; L1, L2 : Integer)
+      with Super (L1), Initializes (L_Child_2 => L2)
+   is
+   begin
+      null;
+   end;
 
  end P;
 
@@ -503,13 +466,11 @@ constructors are provided. For example:
 
    end record;
 
-   type T2 is tagged record
-      procedure T2 (Self : in out T1, X : Integer);
-   end record;
+   type T2 is tagged null record;
+   procedure T2 (Self : in out T1, X : Integer);
 
-   type T3 is new T2 with record
-      procedure T3 (Self : in out T1, X : Integer, Y : Integer);
-   end record;
+   type T3 is new T2 with null record;
+   procedure T3 (Self : in out T1, X : Integer, Y : Integer);
 
    V1 : T1;        -- OK
    V2a : T2;       -- Compilation error, no parameterless constructor is present
@@ -534,13 +495,11 @@ allocation. For example:
 
    package P is
 
-      type T1 is tagged record
-         procedure T1 (Self : in out T1);
-      end record;
+      type T1 is tagged null record;
+      procedure T1 (Self : in out T1);
 
-      type T2 is tagged record
-         procedure T2 (Self : in out T1; V : Integer);
-      end record;
+      type T2 is tagged null record;
+      procedure T2 (Self : in out T1; V : Integer);
 
       package G1 is new G (T1); -- Legal
       package G2 is new G (T2); -- Illegal, T2 doesn't have a parameterless constructor
@@ -560,13 +519,11 @@ For example:
 
    package P is
 
-      type T1 is tagged record
-         procedure T1 (Self : in out T1);
-      end record;
+      type T1 is tagged null record;
+      procedure T1 (Self : in out T1);
 
-      type T2 is tagged record
-         procedure T2 (Self : in out T1; V : Integer);
-      end record;
+      type T2 is tagged null record;
+      procedure T2 (Self : in out T1; V : Integer);
 
       package G1 is new G (T1); -- Legal
       package G2 is new G (T2); -- Legal
@@ -587,9 +544,8 @@ such constructor can be passed as function as seen before, for example:
 
    package P is
 
-      type T2 is tagged record
-         procedure T2 (Self : in out T1; V : Integer);
-      end record;
+      type T2 is tagged null record;
+      procedure T2 (Self : in out T1; V : Integer);
 
       package G2 is new G (T2, T2'Make); -- Legal
 
@@ -607,13 +563,11 @@ private section of the package:
 .. code-block:: ada
 
    package P is
-      type T1 is class record
-         procedure T1 (Self : in out T1) is abstract;
-      end T1;
+      type T1 is null record;
+      procedure T1 (Self : in out T1) is abstract;
+
    private
-      type T1 is class record
-         procedure T1 (Self : in out T1);
-      end T1;
+      procedure T1 (Self : in out T1);
    end P;
 
 Reference-level explanation
@@ -661,17 +615,14 @@ generics. We could consider allowing:
    package P is
       type T1 (<>) is tagged record -- T1 is indefinite
 	      X : String;
-
-         procedure T1 (Val : String);
       end record;
+      procedure T1 (Val : String);
 
-      type body T1 (<>) is tagged record
-         procedure T1 (Val : String)
-            with Initialize (X => Val);
-         begin
-            null;
-         end T1;
-      end record;
+      procedure T1 (Val : String)
+         with Initialize (X => Val);
+      begin
+         null;
+      end T1;
    end P;
 
 This could make such constructions easier to write than when they rely on a
