@@ -37,10 +37,6 @@ can be used to make non dispatching calls. For example:
       procedure P (V : C2);
    end C2;
 
-   V1 : T2'Super; -- V1 is of type T1
-
-   V2 : C2'Super; -- V2 is of type C1
-
    procedure Call (V : T2'Class) is
    begin
      V'Super.P; -- non-dispatching call to T1.V
