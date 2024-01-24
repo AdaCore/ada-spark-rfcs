@@ -47,6 +47,10 @@ can be used to make non dispatching calls. For example:
      V'Super.P; -- non-dispatching call to C1.V
    end Call;
 
+Note that `'Super` being used to make non dispatching calls to primitives using
+the parent view, it is only available is said view is of a derived type (there'S
+no primitive to call otherwise).
+
 Reference-level explanation
 ===========================
 
