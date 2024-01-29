@@ -98,6 +98,10 @@ Note that subtype predicates cannot refer to ghost entities, including ghost
 components, as they are evaluated in type membership tests. Type invariants can
 refer to ghost entities, including ghost components.
 
+Note that one of the consequence of using ghost fields is that overlays and
+unchecked conversion may fail at compile time. This is expected, and is a known
+limitation of ghost fields.
+
 Ghost Parameters
 ----------------
 
@@ -117,11 +121,17 @@ values), and can be with expression containing ghost entities. E.g.:
    Some_Procedure (V1, V1 + V2);
 ```
 
+As a consequence, ghost parameters are used for name resolution and overloading
+rules.
+
 When Ghost code is not compiled, the expression valuating ghost parameter is
 not evaluated and no parameters is passed.
 
 Inside the body of a procedure or a function, ghost parameters behave like
 Ghost variable and can only be used in the context of ghost code.
+
+Controlling parameters cannot be marked as being ghost (as the tag of the object
+is always needed at run-time to resolve dispatching).
 
 
 Reference-level explanation
