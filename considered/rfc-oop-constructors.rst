@@ -185,6 +185,9 @@ Note that the constructor of an abstract type can be called here, for example:
       null;
    end Child;
 
+When valuating values in the Super aspect, the constructed object does not
+exit yet. It is illegal to refer to this parameter in the aspect.
+
 Initialization Lists
 --------------------
 
@@ -329,7 +332,28 @@ object. The following for example will issue an error:
    is
    begin
       null;
-   end C;
+   end Child;
+
+When valuating values in the Initialize aspect, the constructed object does not
+exit yet. It is illegal to refer to this parameter in the aspect. The following
+is illegal:
+
+.. code-block:: ada
+
+   type Root is record
+      A, B : Integer;
+   end record;
+
+   procedure Root (Self : in out Root)
+      with Initialize (
+         A => 1, -- OK
+         B => Self.A -- Compilation Error
+      )
+   is
+   begin
+      null;
+   end Root;
+
 
 Valuation of Discriminants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -506,8 +530,31 @@ allocation. For example:
 
    end P;
 
-Types without parameterless constructors behave like indefinite types in generics.
-For example:
+The syntax to provide a constructor on a tagged type is similar to a scopeless
+constructor - it's a formal procedure of the name of the type, that takes
+an in out reference to the type as first parameter:
+
+.. code-block:: ada
+
+   generic
+      type T is tagged record;
+      with procedure T (V : Integer) return T;
+   package G is
+      V : T := T'Make (55);
+   end G;
+
+   package P is
+
+      type T2 is tagged null record;
+      procedure T2 (Self : in out T1; V : Integer);
+
+      package G2 is new G (T2, T2'Make); -- Legal
+
+   end P;
+
+Types without parameterless constructors must either have explicit constructors
+declared, or be declared as indefinite type (ie they can't be instanciated in
+by the generic).
 
 .. code-block:: ada
 
@@ -530,26 +577,6 @@ For example:
 
    end P;
 
-There is no syntax to specify specific constructor on tagged formal. However,
-such constructor can be passed as function as seen before, for example:
-
-.. code-block:: ada
-
-   generic
-      type T (<>) is tagged record;
-      function Create (V : Integer) return T;
-   package G is
-      V : T := Create (55);
-   end G;
-
-   package P is
-
-      type T2 is tagged null record;
-      procedure T2 (Self : in out T1; V : Integer);
-
-      package G2 is new G (T2, T2'Make); -- Legal
-
-   end P;
 
 Removing Constructors from Public View
 --------------------------------------
@@ -588,6 +615,118 @@ not be known at the time of the description of the record. They should however
 be known when the object is created. As a consequence, in Ada (similar to C++),
 we introduced the concept of "Initialization List" which allows to provide
 values to fields after receiving the constructor parameters.
+
+Why do we have a Constructor as a Procedure and not a Function?
+---------------------------------------------------------------
+
+While explicit calls to a constructor are made through a function call `'Make`,
+declaring a constructor is done through a procedure declaration, which might
+look suprising. The overall rationale is that the constructed object must
+be allocated (and sometimes even partially initialized) before any constructor
+operation. The discriminants may need to be valuated, the super constructor
+must be called. In some cases, the object memory is already allocated (think
+of the case of a component with an implicit constructor call).
+
+Having a constructor as a procedure also allows for expansion without undecessary
+copies:
+
+.. code-block:: ada
+
+   package Test is
+
+      type Pos_Array is array (Positive range <>) of Positive;
+
+      type T (S : Integer) is tagged record
+         Content : Pos_Array (1..S);
+      end record;
+
+      procedure T (Self : in out T; S : Integer);
+
+      type U (S2 : Integer) is new T with record
+         Content_2 : Pos_Array (1..S2);
+      end record;
+
+      procedure U (Self : in out T);
+
+   end Test;
+
+   package body Test is
+      procedure T (Self : in out T; S : Integer)
+         with Initializes (S => S * 2);
+      is
+      begin
+         Self.Content := (others => 12);
+      end T;
+
+      procedure U (Self : in out U)
+         with Initializes (S2 => 12)
+              Super (S => 15)
+      is
+      begin
+         Self.Content2 := (others => 18);
+      end U;
+
+   end Test;
+
+   ------------------
+   --  EXPANDS TO  --
+   ------------------
+
+   package body Test is
+
+      --  Initialize part of the constructor. Takes in parameter:
+      --  Fields to init
+      --  Needed values from the constructor
+      procedure _T_Initialize (T__S : in out Integer; S : Integer) is
+      begin
+         T__S := S * 2;
+      end _T_Initialize;
+
+      --  Body part of the constructor. Has the same signature as the user defined
+      --  constructor.
+      procedure _T_Constructor_Body (Self : in out T; S : Integer) is
+      begin
+         Self.Content := (others => 12);
+      end _T_Constructor_Body;
+
+      function T'Make (S : Integer) return T is
+         --  Evaluation of `Initializes` expressions
+         T__S : Integer;
+
+      begin
+         _T_Initialize (T__S, S);
+
+         declare
+            Ret : T (T__S);
+         begin
+            _T_Constructor_Body (Ret, S);
+            return Ret;
+         end;
+
+      end T;
+
+      procedure _U_Initialize (U__S2 : in out Integer) is
+      begin
+         U__S2 := 12;
+      end _U_Initialize;
+
+      procedure _U_Constructor_Body (Self : in out U) is
+         T__S : Integer;
+         U__S2 : Integer;
+      begin
+         _T_Initialize (T__S, 15);
+         _U_Initialize (U__S2, 12);
+
+         declare
+            Ret : U (T__S, U__S2);
+         begin
+            _T_Constructor_Body (T (Ret), S);
+            _U_Constructor_Body (Ret);
+            return Ret;
+         end;
+      end _U_Constructor_Body;
+
+   end Test;
 
 Drawbacks
 =========
