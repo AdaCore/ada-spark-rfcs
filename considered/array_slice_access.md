@@ -57,7 +57,7 @@ for another example.
 Interrupt based data transfer
 -----------------------------
 
-In low-level embedded applications and/or operating-systems, incoming data from
+In low-level embedded applications and/or operating-systems, incoming data
 will sometimes be automatically written in a memory buffer by a peripheral.
 This is known as Direct Memory Access (DMA). The use of DMA can greatly improve
 performances by avoiding costly interrupts and CPU usage for every single byte
