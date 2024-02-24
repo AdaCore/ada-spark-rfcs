@@ -31,18 +31,22 @@ Reference-level explanation
 
 The proposal is split between the following parts:
 
+Currently ready for prototyping:
+
+- `Constructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
+- `Super cast <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-super.rst>`_
+- `First Controlling <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-first-controlling.rst>`_
+
+Under discussion:
+
 - `New structure <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-structure.rst>`_
 - `Component declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-fields.rst>`_
 - `Primitives declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-primitives.rst>`_
 - `Dispatching <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-dispatching.rst>`_
-- `Constructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
 - `Destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-destructors.rst>`_
-- `Super cast <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-super.rst>`_
 - `New access types <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-access.rst>`_
-- `Assignment overriding <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-assignment.rst>`_
 - `Final classes and primitives <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-final.rst>`_
 - `Body restriction lift <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-body.rst>`_
-- `First Controlling <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-first-controlling.rst>`_
 - `Tagged record compatibilty <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-tagged.rst>`_
 - `Obsolete features <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-obsolete.rst>`_
 
@@ -107,10 +111,6 @@ different model for general iteration, as it currently relies on user-defined re
 Future possibilities
 ====================
 
-One important aspect of Ada is to allow data to be as static as possible. OOP typically requires the use of pointer. The Max_Size
-proposal (https://github.com/QuentinOchem/ada-spark-rfcs/blob/max_size/considered/max_size.rst) is a independent proposal to allow
-polymorphic object residing in automatic memory section such as fields or stack.
-
 Some of the notations introduced could be extended to other types, such as protected or tasks types.
 
 The "with private;" notation should also be extended to nested packages, allowing to differenciate to nest the private part of a
@@ -126,3 +126,16 @@ Given the fact that a class is now a syntactical scope, we could also consider
 to allow classes to be their own compilation units. This would fit a number
 of architectures inherited from other programming languages, which require in
 Ada to create an package for a single type.
+
+A new syntax was considered to allow to override assignment:
+
+.. code-block:: ada
+
+   type T is null record;
+
+   procedure ":=" (Destination : in out T; Source : T);
+
+The difference with copy constructor was that it works on a previously
+initialized type. At this stage however, the assignment semantic will be
+destroying the destination object then calling the copy constructor with the
+source in parameter.

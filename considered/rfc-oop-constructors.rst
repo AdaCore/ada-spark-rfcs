@@ -144,6 +144,19 @@ explicitely or implicitely called:
    V2 : T := V1; -- implicit copy constructor call
    V3 : T := T'Make (V1); -- explicit copy constructor call
 
+Note that by-copy constructor are also called in assignments situations
+(following the call to a destructor). e.g.:
+
+.. code-block:: ada
+
+      V1 : T;
+      V2 : T;
+   begin
+      V1 := V2; -- calls destructor on V1, then copy from V2.
+
+A non-limited type always have a by constructor copy available, overloaded or
+not.
+
 Super Constructor Call
 ----------------------
 
@@ -465,6 +478,58 @@ call to the super constructor
 - the child type does not need to declare additional discriminant anymore just
 for the purpose of setting the parent ones.
 
+Subtyping and Discriminants
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When a type is built by constructor, it is not possible to provide the value
+of a discriminant other than by valuating it in a constructor. However, it
+remains possible to constrain a subtype to be of a certain discriminant type.
+
+For simple record types, this is done either by creating a subtype or by
+providing a distriminant constrain at variable or component declaration. This
+cannot however be used to create a value. For exmample:
+
+.. code-block:: ada
+
+   type Bla (V : Boolean) is record
+      case V is
+         when True =>
+            A : Integer;
+         when False =>
+            B, C : Integer;
+      end case;
+   end record;
+
+   procedure Bla (Self : in out Bla; Val : Boolean)
+      with Initialize (V => Val);
+   is
+      null;
+   end Bla;
+
+   V1 : Bla := V'Make (True); -- OK, that's what we want
+   V2 : Bla (True); -- NOK, this needs an explicit discriminant check
+   V3 : Bla (True) := V'Make (True); -- OK, that's what we want
+   V3 : Bla (False) := V'Make (True); -- OK, but will raise an exception at run-time
+
+such subtyping can also be used for components:
+
+.. code-block:: ada
+
+      type Arr1 is array (Integer range <>) of Bla; -- illegal
+      type Arr2 is array (Integer range <>) of Bla (True); -- legal
+
+      V2a : Arr2; -- Illegal, no default constructor
+      V2b : Arr2 := (others => Bla'Make (True)); -- Legal
+
+      type R is record
+         V1 : Bla;	 -- was already illegal
+         V2 : Bla (True); -- legal, needs to be valuated by the constructor
+      end record;
+
+In this version of the proposal, discriminant subtyping is only legal for
+non-tagged types. Considerations around type types are described in the future
+possibilities section.
+
 Constructors and Type Predicates
 --------------------------------
 
@@ -596,6 +661,30 @@ private section of the package:
    private
       procedure T1 (Self : in out T1);
    end P;
+
+Tagged Hierarchy Consistency
+----------------------------
+
+A tagged type can be either created by the legacy mechanism, or by a constructor
+as soon as such constructor exist. It is possible to extend a "regular" tagged
+type by a "by constructor" tagged type, e.g.:
+
+.. code-block:: ada
+
+   type New_Root is tagged record
+      null
+   end record;
+
+   type New_Child is new New_Root with record
+      null;
+   end record;
+
+   procedure New_Child (Self : in out New_Child; L1, L2 : Integer);
+
+In that case, any child of New_Child has to be a by-constructor type, ie it
+while it is possible to extend a "regular" tagged type by a "by constructor"
+tagged type, it is not possible to extend a "by constructor" tagged type by
+a regular one.
 
 Reference-level explanation
 ===========================
@@ -766,3 +855,47 @@ generics. We could consider allowing:
 
 This could make such constructions easier to write than when they rely on a
 discriminant value.
+
+Subtyping with specific discriminants and tagged types
+------------------------------------------------------
+
+Consider the following hierarchy:
+
+.. code-block:: Ada
+
+   type Root (D : Boolean) is tagged record
+      case D is
+         when True =>
+            A : Integer;
+         when False =>
+            B : Integer;
+      end case;
+   end record;
+
+   procedure Root (Self : in out Bla; C : Boolean)
+      with Initialize (D => C);
+   is
+      null;
+   end Root;
+
+   type Child is new Root with null record;
+
+   procedure Child (Self : in out Bla; C : Boolean)
+      with Super (C);
+   is
+      null;
+   end Child;
+
+Child does not have any discrimininant. Root discriminant is set by its own
+constructor. There is currently no syntax allowing to subtype Child and provide
+a constrain to its discriminant.
+
+An extension of the simple record syntax would be to be able to allow to refer
+to parent discriminants in the constraint of a child type, so that one could
+write:
+
+.. code-block:: Ada
+
+   V : Child (D => True) := Child'Make (True); -- We can constrain Date
+
+this would allow to create components of type Child.
