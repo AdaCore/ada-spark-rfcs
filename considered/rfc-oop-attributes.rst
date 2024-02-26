@@ -32,7 +32,7 @@ the type:
 
    type T is null record;
 
-   procedure T'My_Write(
+   procedure T'Write(
       Stream : not null access Ada.Streams.Root_Stream_Type'Class;
       Item : in T);
 
@@ -44,7 +44,7 @@ of parameters to ensure that the first parameter is conceptually the one
 
    type T is class record
 
-      procedure T'My_Write(
+      procedure T'Write(
          Stream : not null access Ada.Streams.Root_Stream_Type'Class;
          Item : in T);
 
