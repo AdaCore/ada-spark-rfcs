@@ -36,7 +36,7 @@ The destruction sequence works in the following way:
 - If a type is in a tagged hierarchy, wether or not it has an explicit
   destructor, the parent destructor sequence is called.
 
-Destructors are called following the same rules as Ada finalization.
+Destructors are called at the same place as when Ada finalization is run.
 
 
 Reference-level explanation
