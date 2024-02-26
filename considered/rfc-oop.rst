@@ -34,6 +34,7 @@ The proposal is split between the following parts:
 Currently ready for prototyping:
 
 - `Constructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-constructors.rst>`_
+- `Destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-destructors.rst>`_
 - `Super cast <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-super.rst>`_
 - `First Controlling <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-first-controlling.rst>`_
 
@@ -42,8 +43,8 @@ Under discussion:
 - `New structure <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-structure.rst>`_
 - `Component declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-fields.rst>`_
 - `Primitives declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-primitives.rst>`_
+- `Attributes declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-attributes.rst>`_
 - `Dispatching <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-dispatching.rst>`_
-- `Destructors <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-destructors.rst>`_
 - `New access types <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-access.rst>`_
 - `Final classes and primitives <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-final.rst>`_
 - `Body restriction lift <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-body.rst>`_
