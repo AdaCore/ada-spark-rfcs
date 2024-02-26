@@ -13,21 +13,7 @@ Guide-level explanation
 =======================
 
 Record, tagged records and class records can declare destructors. The
-destructor needs to be called "final", taking an in out to the object:
-
-.. code-block:: ada
-
-   package P is
-      type T is tagged record
-         final T (Self : in out T1);
-      end record;
-
-      type T2 is new T with record
-         final T2 (Self : in out T2);
-      end record;
-   end P;
-
-An "unscoped" syntax for destructor is also available:
+destructor is identifed by the `Destructor` attribute, e.g.:
 
 .. code-block:: ada
 
@@ -35,7 +21,7 @@ An "unscoped" syntax for destructor is also available:
       type T is tagged null record;
       for T'Destructor use My_Destructor;
 
-      procedure My_Destructor (Self : in out T1);
+      procedure My_Destructor (Self : in out T);
 
       type T2 is new T with null record
       with Destructor => My_Destructor;
@@ -72,3 +58,39 @@ Unresolved questions
 
 Future possibilities
 ====================
+
+We need a scoped syntax for the destructor. One option is to piggy back on
+a separate RFC being written that allows to define attributes directly in
+the form of type'attribute name. For example, specifying Write could be done
+in the following way:
+
+.. code-block:: ada
+
+   type T is null record;
+
+   procedure S'Write(
+      Stream : not null access Ada.Streams.Root_Stream_Type'Class;
+      Item : in T);
+
+Using this gives us a new un-scoped notation:
+
+.. code-block:: ada
+
+   package P is
+      type T is tagged null record;
+
+      procedure T'Destructor (Self : in out T);
+
+   end P;
+
+And this can be easily extended to a scoped notation for Destructor as well as
+other attributes:
+
+.. code-block:: ada
+
+   package P is
+      type T is tagged record
+          procedure T'Destructor (Self : in out T);
+      end record;
+   end P;
+
