@@ -141,7 +141,7 @@ Reference-level explanation
 * A tagged ``private_type_declaration`` or ``formal_private_type_definition``
 * An ``interface_type_definition`` or ``formal_interface_type_definition``
 
-.. note:: This aspect doesn't seem useful on regular types, and as such has not been considered
+   .. note:: This aspect doesn't seem useful on regular types, and as such has not been considered
 
 .. attention:: In a first step, rather than implementing the full generic machinery, disallowing the passing of types which have the aspect set to true as generic tagged formal seems to be a valid option, to simplify prototyping, and because that case seems to be extremely marginal (passing of tagged types in generics in general is a marginal use case as far as we can tell).
 
@@ -150,7 +150,7 @@ In the case of interface types:
 * If an interface type has the ``First_Controlling_Parameter`` aspect specified, then any interface or tagged type deriving from it should have the aspect explicitly specified as well
 * If a tagged type or interface extends several interfaces, they should be consistent with regards to the ``First_Controlling_Parameter`` aspect.
 
-.. note:: Those two rules are not strictly necessary, and we could make the feature work without them. However, they seem necessary to make the feature user-friendly and explicit, avoiding situations where a type has a completely disjoint set of primitives with different rules.
+   .. note:: Those two rules are not strictly necessary, and we could make the feature work without them. However, they seem necessary to make the feature user-friendly and explicit, avoiding situations where a type has a completely disjoint set of primitives with different rules.
 
 Types which have the ``First_Controlling_Parameter`` aspect have specific rules with regards to which subprograms will be considered primitives of the type:
 
@@ -158,7 +158,9 @@ Types which have the ``First_Controlling_Parameter`` aspect have specific rules 
 
 2. In addition, the return value won't ever be considered as being controlling. A primitive of a tagged type with the aspect defined can return a value of the type itself, but won't be controlling on the return type.
 
-.. note:: Not sure if the rule above is necessary. Not sure that return type dispatching has any effect if there are other parameters than the return type. In which case, the first additional rule is enough.
+
+   .. note:: Not sure if the rule above is necessary. Not sure that return type dispatching has any effect if there are other parameters than the return type. In which case, the first additional rule is enough.
+
 
 .. code-block:: ada
 
