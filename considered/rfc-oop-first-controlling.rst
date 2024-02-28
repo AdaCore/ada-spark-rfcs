@@ -154,21 +154,26 @@ In the case of interface types:
 
 Types which have the ``First_Controlling_Parameter`` aspect have specific rules with regards to which subprograms will be considered primitives of the type:
 
-A subprogram will be considered a primitive of the type following the same rules as for regular tagged types, with the added rule that **the first parameter of the subprogram needs to be controlling** in order for the subprogram to be considered a primitive.
+1. A subprogram will be considered a primitive of type ``T`` following the same rules as for regular tagged types, with the added rule that **the first parameter of the subprogram needs to be a controlling parameter of type ``T``** in order for the subprogram to be considered a primitive.
 
-In addition, the return value won't ever be considered as being controlling. A primitive of a tagged type with the aspect defined can return a value of the type itself, but won't be controlling on the return type.
+2. In addition, the return value won't ever be considered as being controlling. A primitive of a tagged type with the aspect defined can return a value of the type itself, but won't be controlling on the return type.
+
+.. note:: Not sure if the rule above is necessary. Not sure that return type dispatching has any effect if there are other parameters than the return type. In which case, the first additional rule is enough.
 
 .. code-block:: ada
 
    type T is tagged null record;
    
-   procedure Prim_1 (Self : T);            -- Primitive
-   procedure Prim_2 (Self : T; Other : T); -- Primitive. You can have several controlling parameters as long as the 1st is
-   function Prim_3 (Self : T) return T;  --  Primitive. Not controlling on the return type (no return type dispatching possible)
+   procedure Prim_1 (Self : T);  -- Primitive
+   procedure Prim_2 (Self : T; Other : T);
+   -- Primitive. You can have several controlling parameters as long as the 1st is
+   
+   function Prim_3 (Self : T) return T;
+   --  Primitive. Not controlling on the return type (no return type dispatching possible)
+   
    function "=" (Self, Other : T) return Boolean; -- Primitive (same as Prim_2)
    function Not_A_Prim_1 (Self : T'Class) return T; -- Not a primitive
    procedure Not_A_Prim_2 (Self : T'Class; Other : T); -- Not a primitive
-
 
 Rationale and alternatives
 ==========================
