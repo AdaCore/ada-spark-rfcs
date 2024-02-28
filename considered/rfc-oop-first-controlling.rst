@@ -73,9 +73,8 @@ A new pragma / aspect is introduced for tagged types, "First_Controlling_Paramet
 which modifies the semantic of primitive / controlling parameter.
 
 When a tagged type is marked under this aspect, only subprograms that have the
-first parameter of this type will be considered primitive. In addition, all
-other parameters are not dispatching. This pragma / aspect applies to all
-the hiearchy starting on this type.
+first parameter of this type will be considered primitive.
+This pragma / aspect applies to all the hiearchy starting on this type.
 
 Primitives inherited do not change.
 
@@ -134,6 +133,42 @@ between the partial and the full view:
 
 Reference-level explanation
 ===========================
+
+``First_Controlling_Parameter`` is an aspect that can be specified on either:
+
+* A tagged ``record_type_definition``
+* A ``derived_type_definition`` or ``formal_derived_type_definition``
+* A tagged ``private_type_declaration`` or ``formal_private_type_definition``
+* An ``interface_type_definition`` or ``formal_interface_type_definition``
+
+.. note:: This aspect doesn't seem useful on regular types, and as such has not been considered
+
+.. attention:: In a first step, rather than implementing the full generic machinery, disallowing the passing of types which have the aspect set to true as generic tagged formal seems to be a valid option, to simplify prototyping, and because that case seems to be extremely marginal (passing of tagged types in generics in general is a marginal use case as far as we can tell).
+
+In the case of interface types:
+
+* If an interface type has the ``First_Controlling_Parameter`` aspect specified, then any interface or tagged type deriving from it should have the aspect explicitly specified as well
+* If a tagged type or interface extends several interfaces, they should be consistent with regards to the ``First_Controlling_Parameter`` aspect.
+
+.. note:: Those two rules are not strictly necessary, and we could make the feature work without them. However, they seem necessary to make the feature user-friendly and explicit, avoiding situations where a type has a completely disjoint set of primitives with different rules.
+
+Types which have the ``First_Controlling_Parameter`` aspect have specific rules with regards to which subprograms will be considered primitives of the type:
+
+A subprogram will be considered a primitive of the type following the same rules as for regular tagged types, with the added rule that **the first parameter of the subprogram needs to be controlling** in order for the subprogram to be considered a primitive.
+
+In addition, the return value won't ever be considered as being controlling. A primitive of a tagged type with the aspect defined can return a value of the type itself, but won't be controlling on the return type.
+
+.. code-block:: ada
+
+   type T is tagged null record;
+   
+   procedure Prim_1 (Self : T);            -- Primitive
+   procedure Prim_2 (Self : T; Other : T); -- Primitive. You can have several controlling parameters as long as the 1st is
+   function Prim_3 (Self : T) return T;  --  Primitive. Not controlling on the return type (no return type dispatching possible)
+   function "=" (Self, Other : T) return Boolean; -- Primitive (same as Prim_2)
+   function Not_A_Prim_1 (Self : T'Class) return T; -- Not a primitive
+   procedure Not_A_Prim_2 (Self : T'Class; Other : T); -- Not a primitive
+
 
 Rationale and alternatives
 ==========================
