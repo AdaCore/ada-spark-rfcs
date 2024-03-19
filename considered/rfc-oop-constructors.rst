@@ -19,8 +19,26 @@ Constructors are available to both class record and simple records.
 
 Record, tagged records and class records can declare constructors. A constructor
 looks like a primitive that has an in out parameter of the type as first
-parameter, and is identified with the "Constructor" aspect of the type.
+parameter, and is identified with the "Constructor" attribute of the type.
 For example:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is tagged null record;
+      for T1' with Constructor => Constr;
+
+      procedure Constr (Self : in out T1);
+      procedure Constr (Self : in out T1; Some_Value : Integer);
+
+      type T2 is null record;
+      for T2'Constructor use Constr;
+
+      procedure Constr (Self : in out T2; Some_Value : Integer);
+   end P;
+
+Note that as for all attributes, the Ada 2012 syntax is available (and used in
+the rest of that document):
 
 .. code-block:: ada
 
@@ -31,9 +49,6 @@ For example:
       procedure Constr (Self : in out T1);
       procedure Constr (Self : in out T1; Some_Value : Integer);
 
-      type T2 is null record with Constructor => Constr;
-
-      procedure Constr (Self : in out T2; Some_Value : Integer);
    end P;
 
 Once a constructor name is chosen with the "Constructor" aspect, all primitives
