@@ -107,8 +107,7 @@ We follow the same dynamic semantics as controlled objects:
 
  - `Finalize` is called when an object of type `T` goes out of scope (for
    stack-allocated objects) or is explicitly deallocated (for heap-allocated
-   objects). It is also called when on the value being replaced in an
-   assignment.
+   objects). It is also called on the value being replaced in an assignment.
 
 However the following differences are enforced by default when compared to the
 current Ada controlled-objects finalization model:
@@ -125,6 +124,13 @@ current Ada controlled-objects finalization model:
 * The `Finalize` procedure should have have the `No_Raise` aspect specified
   (see [TODO ADD LINK TO NEW RFC](rfc-noraise.md)). If that's not the case, a
   compilation error will be raised.
+
+* If an exception is raised out of the `Finalize` procedure (either an
+  `Ada.Assertions.Assertion_Error` if the `No_Raise_Checks` check category is
+  activated as per the no raise RFC, or another kind of exception if the check
+  is deactivated), **none of the guarantees specified by the Ada Reference
+  Manual section 7.6.1 (14/1) are enforced**. Instead the exception is just
+  propagated upwards.
 
 Additionally, two other configuration aspects are added,
 `Legacy_Heap_Finalization` and `Exceptions_In_Finalize`:
@@ -201,10 +207,10 @@ private
 
 ### Finalized tagged types
 
-Aspects are inherited by derived types and optionally overriden by those. The
-compiler-generated calls to the user-defined operations should then be
-dispatching whenever it makes sense, i.e. the object in question is of
-classwide type and the class includes at least one finalized-type.
+Aspects are inherited by derived types. The compiler-generated calls to the
+user-defined operations should then be dispatching whenever it makes sense,
+i.e. the object in question is of classwide type and the class includes at
+least one finalized-type.
 
 However note that for simplicity, it is forbidden to change the value of any of
 those new aspects in derived types.
