@@ -1,7 +1,7 @@
-- Feature Name: lightweight-finalization
+# Generalized finalization
+
+- Feature Name: generalized-finalization
 - Start Date: 2020-11-23
-- RFC PR: (leave this empty)
-- RFC Issue: (leave this empty)
 
 ## Summary
 
@@ -122,8 +122,8 @@ current Ada controlled-objects finalization model:
   hence **not** be deallocated either. The result is simply that memory will be
   leaked in those cases.
 
-* The `Finalize` procedure should have have the `No_Throw` aspect specified
-  (see [TODO ADD LINK TO NEW RFC](rfc-nothrow.md)). If that's not the case, a
+* The `Finalize` procedure should have have the `No_Raise` aspect specified
+  (see [TODO ADD LINK TO NEW RFC](rfc-noraise.md)). If that's not the case, a
   compilation error will be raised.
 
 Additionally, two other configuration aspects are added,
@@ -270,7 +270,12 @@ TBD. Talk about RAII in languages such as C++.
 Unresolved questions
 ====================
 
-TBD.
+With the proposed solution, a `Finalize` raising an exception will make the
+program abort by default.
+
+Resilient programs need to be able to recover from exceptions, maybe even in
+destructor calls. The question remains on whether this should be the default or
+opt-in.
 
 Future possibilities
 ====================
