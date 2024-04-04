@@ -85,14 +85,16 @@ No_Heap_Finalization` and `pragma Finalize_Storage_Only`.
 
 ### Aspect-based finalization
 
-We propose to introduce three new aspects, analogous to the three
-controlled-type primitives, as in the following template:
+We propose to introduce a new aspect, `Finalization`, with the following specification:
 
 ```ada
 type T is ...
-   with Initialize => <Initialize_Procedure>,
-        Adjust     => <Adjust_Procedure>,
-        Finalize   => <Finalize_Procedure>;
+   with Finalizable =>
+     (Initialize => <Initialize_Procedure>,
+      Adjust     => <Adjust_Procedure>,
+      Finalize   => <Finalize_Procedure>,
+      Legacy_Heap_Finalization => True | False,
+      Exceptions_In_Finalization => True | False);
 ```
 
 The three procedures have the same profile, taking a single `in out T`
@@ -122,39 +124,40 @@ current Ada controlled-objects finalization model:
   leaked in those cases.
 
 * The `Finalize` procedure should have have the `No_Raise` aspect specified
-  (see [TODO ADD LINK TO NEW RFC](rfc-noraise.md)). If that's not the case, a
+  (see [The `No_Raise` RFC](rfc-noraise.md)). If that's not the case, a
   compilation error will be raised.
 
-* If an exception is raised out of the `Finalize` procedure (either an
-  `Ada.Assertions.Assertion_Error` if the `No_Raise_Checks` check category is
-  activated as per the no raise RFC, or another kind of exception if the check
-  is deactivated), **none of the guarantees specified by the Ada Reference
-  Manual section 7.6.1 (14/1) are enforced**. Instead the exception is just
-  propagated upwards.
+* If an exception is raised out of the `Finalize` procedure (either a
+  `Constraint_Error` if the `No_Raise_Checks` check category is activated as
+  per the no raise RFC, or another kind of exception if the check is
+  deactivated), **none of the guarantees specified by the Ada Reference Manual
+  section 7.6.1 (14/1) are enforced**. Instead the exception is just propagated
+  upwards.
 
-Additionally, two other configuration aspects are added,
+Additionally, two configuration values can be passed,
 `Legacy_Heap_Finalization` and `Exceptions_In_Finalize`:
 
-* `Legacy_Heap_Finalization`: Uses the legacy automatic finalization of
+* `Legacy_Heap_Finalization`: Use the legacy automatic finalization of
   heap-allocated objects
 
 * `Exceptions_In_Finalize`: Allow people to have a finalizer that raises, with
-  the corresponding execution time penalities.
+  the corresponding execution time penalities. In this case, the `No_Raise`
+  aspect is not necessary on the finalizer.
 
 ### New specification for `Ada.Finalization.Controlled`
 
 `Ada.Finalization.Controlled` will now be specified as:
 
 ```ada
-type Controlled is abstract tagged null record
+type Controlled is tagged private
 with Initialize => Initialize,
      Adjust => Adjust,
      Finalize => Finalize,
      Legacy_Heap_Finalization, Exceptions_In_Finalize;
 
-   procedure Initialize (Self : in out Controlled) is abstract;
-   procedure Adjust (Self : in out Controlled) is abstract;
-   procedure Finalize (Self : in out Controlled) is abstract;
+   procedure Initialize (Self : in out Controlled) is null;
+   procedure Adjust (Self : in out Controlled) is null;
+   procedure Finalize (Self : in out Controlled) is null;
 ```
 
 ### Examples
@@ -207,16 +210,16 @@ private
 
 ### Finalized tagged types
 
-Aspects are inherited by derived types. The compiler-generated calls to the
+The aspect is inherited by derived types. The compiler-generated calls to the
 user-defined operations should then be dispatching whenever it makes sense,
 i.e. the object in question is of classwide type and the class includes at
 least one finalized-type.
 
-However note that for simplicity, it is forbidden to change the value of any of
-those new aspects in derived types.
+However note that for simplicity, it is forbidden to change the values of the
+new aspect in derived types.
 
 > [!NOTE]
-> This is needed for the two configuration aspects `Legacy_Heap_Finalization`
+> This is needed for the two configuration values `Legacy_Heap_Finalization`
 > and `Exceptions_In_Finalize`, in order to avoid having to pessimize
 > code-generation. It also seems completely useless to change the value of any
 > of `Initialize`, `Adjust`, or `Finalize` in tagged types where you could just
@@ -250,8 +253,9 @@ follows the definition of the above rules. In particular we expect that:
 
 ### Other run-time aspects
 
-For every other aspect that is not mentioned in that RFC, those new finalized
-types follow the semantics defined by the Ada Reference Manual in section 7.6.
+For every other aspect that is not mentioned in that RFC, types with the
+`Finalizable` aspect specified follow the semantics defined by the Ada
+Reference Manual in section 7.6.
 
 Reference-level explanation
 ===========================
@@ -261,7 +265,66 @@ TBD.
 Rationale and alternatives
 ==========================
 
-TBD.
+The rationale for defining the `No_Raise` aspect in such a way will be put here
+because it's essentially linked to its use in Finalization. We think it's fundamental that:
+
+1. In development/testing setups, a finalizer raising an exception is as noisy
+   as possible and crashes the application early
+2. In some production setups, the above behavior is opt-out in certain cases
+
+First, for a bit of context:
+
+* In C++ a destructor should not raise an exception either. Starting from
+  C++11, all destructors are implicitly declared as
+  [noexcept](https://en.cppreference.com/w/cpp/language/noexcept_spec). This
+  means that if a destructor raises an exception,
+  [std::terminate](https://en.cppreference.com/w/cpp/error/terminate) will be
+  called. An important thing to know though is that historically code that uses
+  exceptions in C++ is very rare, and basic language operations rarely raise
+  exceptions. This might explain why it seems OK in C++ world. IMO it's too
+  drastic & dangerous in Ada.
+
+* In Rust, the situation is a bit more complex. There are no exceptions in
+  Rust, but there is panic, and 'panic' can use unwinding in some
+  configurations, and can be caught. Depending on the configuration, panic drop
+  implementations could panic. And some people think that in some configs, for
+  resilient programming, being able to catch a panic, even from a drop, is a
+  good idea. See the discussion here:
+  https://github.com/rust-lang/lang-team/issues/97
+
+A summary of the fundamental issues discussed in the Rust issue, and that are
+relevant to us in Ada:
+
+1. In dev and testing you definitely want an exception raised in your finalizer
+   to be a fatal and not be spuriously caught by an exception handier that is
+   too wide. In that regard, `Program_Error` probably fits the bill as well,
+   but you don't want, at least by default, the behavior of just propagating
+   exceptions.
+
+To further this point, some libraries in Ada (like LAL but not only LAL) use
+the pattern of exceptions being regular errors that can happen
+(`Property_Error` in LAL for example). If such an error was raised in a
+destructor, you'd want to catch that in order to refactor the code to not call
+this code in the destructor if possible, or to catch the possible exception, in
+order to avoid resources leaks.
+
+2. **However**, in many production scenarios where you want to have resilient
+   applications (The Rust thread cites web server. With the LAL example above,
+   IDEs come to mind. In Ada in general, early abort scenarios can make us
+   think of the Arianne scenario) having such an error crash your program is a
+   bad idea, because it's too drastic. In those cases you want to continue even
+   though you had an exception in a finalizer and might risk leaking some
+   resources.
+
+Other options that were discussed and considered:
+
+* Make it erroneous to raise an exception from a `No_Raise` subprogram, and do
+  nothing special in GNAT: an exception is raised, which may or not terminate
+  immediately the execution depending on the runtime.
+
+* Make it abort the program, like in C++ or in some Rust configurations. For
+  the reasons above about resilent applications, making this the only available
+  behavior seems non-desirable.
 
 Drawbacks
 =========
@@ -271,17 +334,10 @@ TBD.
 Prior art
 =========
 
-TBD. Talk about RAII in languages such as C++.
+TBD
 
 Unresolved questions
 ====================
-
-With the proposed solution, a `Finalize` raising an exception will make the
-program abort by default.
-
-Resilient programs need to be able to recover from exceptions, maybe even in
-destructor calls. The question remains on whether this should be the default or
-opt-in.
 
 Future possibilities
 ====================
