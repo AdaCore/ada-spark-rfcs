@@ -8,14 +8,14 @@
 This RFC proposes, in a two step mechanism, to:
 
 1. Introduce a new finalization mechanism that does not rely on tagged types
-   and has more modular semantics than today's controlled types
+   and allows more relaxed semantics than today's controlled types
 
 2. Specify `Ada.Finalization.Controlled` in terms of this new mechanism
 
 The aim for the first item is to make some aspects of the current machinery
 configurable, in such a way that:
 
-* In a certain configuration, the exact semantic of current controlled object
+* In a certain configuration, the exact semantic of current controlled objects
   is implemented
 
 * Simpler configurations are available, where the amount of constraints imposed
@@ -85,7 +85,8 @@ No_Heap_Finalization` and `pragma Finalize_Storage_Only`.
 
 ### Aspect-based finalization
 
-We propose to introduce a new aspect, `Finalization`, with the following specification:
+We propose to introduce a new aspect, `Finalizable`, with the following
+specification:
 
 ```ada
 type T is ...
@@ -93,8 +94,7 @@ type T is ...
      (Initialize => <Initialize_Procedure>,
       Adjust     => <Adjust_Procedure>,
       Finalize   => <Finalize_Procedure>,
-      Legacy_Heap_Finalization => True | False,
-      Exceptions_In_Finalization => True | False);
+      Relaxed_Finalization => True | False); -- Defaults to True
 ```
 
 The three procedures have the same profile, taking a single `in out T`
@@ -111,119 +111,54 @@ We follow the same dynamic semantics as controlled objects:
    stack-allocated objects) or is explicitly deallocated (for heap-allocated
    objects). It is also called on the value being replaced in an assignment.
 
-However the following differences are enforced by default when compared to the
-current Ada controlled-objects finalization model:
+The `Relaxed_Finalization` configuration value is `True` by default, which
+implies that:
 
-* No automatic finalization of heap allocated objects: `Finalize` is only
-  called when an object is implicitly deallocated. As a consequence, no-runtime
-  support is needed for the implicit case, and no header will be maintained for
-  this in heap-allocated controlled objects.
+* The compiler has permission to perform no automatic finalization of heap
+  allocated objects: `Finalize` is only called when an object is implicitly
+  deallocated. As a consequence, no-runtime support is needed for the implicit
+  case, and no header will be maintained for this in heap-allocated controlled
+  objects.
 
   Heap-allocated objects allocated through a nested access type definition will
   hence **not** be deallocated either. The result is simply that memory will be
   leaked in those cases.
 
-* The `Finalize` procedure should have have the `No_Raise` aspect specified
-  (see [The `No_Raise` RFC](rfc-noraise.md)). If that's not the case, a
-  compilation error will be raised.
+* If an exception is raised out of the `Finalize` procedure, the compiler has
+  permission to enforce **none of the guarantees specified by the Ada Reference
+  Manual section 7.6.1 (14/1)**, and to instead just let the exception be
+  propagated upwards.
 
-* If an exception is raised out of the `Finalize` procedure (either a
-  `Constraint_Error` if the `No_Raise_Checks` check category is activated as
-  per the no raise RFC, or another kind of exception if the check is
-  deactivated), **none of the guarantees specified by the Ada Reference Manual
-  section 7.6.1 (14/1) are enforced**. Instead the exception is just propagated
-  upwards.
+In this mode, additionally, the `Finalize` and `Adjust` procedures are
+automatically considered as having the `No_Raise` aspect specified (see [The
+`No_Raise` RFC](rfc-noraise.md)).
 
-Additionally, two configuration values can be passed,
-`Legacy_Heap_Finalization` and `Exceptions_In_Finalize`:
+> [!NOTE]
+> Initially the design was to force people to annotate with `No_Raise`
+> themselves. However, making it implicit is a better design in our opinion,
+> because it will allow us to make the `Relaxed_Finalization` the default in
+> some runtimes/configurations, without having to force people to annotate all
+> of their existing code making use of `Controlled` with `No_Raise` aspects.
 
-* `Legacy_Heap_Finalization`: Use the legacy automatic finalization of
-  heap-allocated objects
+### Applicable types
 
-* `Exceptions_In_Finalize`: Allow people to have a finalizer that raises, with
-  the corresponding execution time penalities. In this case, the `No_Raise`
-  aspect is not necessary on the finalizer.
+This aspect shall be explicitly defined only on:
 
-### New specification for `Ada.Finalization.Controlled`
+* Record types, tagged or not
+* Private types for which the full-view is a record type
 
-`Ada.Finalization.Controlled` will now be specified as:
-
-```ada
-type Controlled is tagged private
-with Initialize => Initialize,
-     Adjust => Adjust,
-     Finalize => Finalize,
-     Legacy_Heap_Finalization, Exceptions_In_Finalize;
-
-   procedure Initialize (Self : in out Controlled) is null;
-   procedure Adjust (Self : in out Controlled) is null;
-   procedure Finalize (Self : in out Controlled) is null;
-```
-
-### Examples
-
-A simple example of a ref-counted type:
-```ada
-type T is record
-   Value : Integer;
-   Ref_Count : Natural := 0;
-end record;
-
-procedure Inc_Ref (X : in out T);
-procedure Dec_Ref (X : in out T);
-
-type T_Access is access all T;
-
-type T_Ref is record
-   Value : T_Access;
-end record
-   with Adjust   => Adjust,
-        Finalize => Finalize;
-
-procedure Adjust (Ref : in out T_Ref) is
-begin
-   Inc_Ref (Ref.Value);
-end Adjust;
-
-procedure Finalize (Ref : in out T_Ref) is
-begin
-   Def_Ref (Ref.Value);
-end Finalize;
-```
-
-A simple file handle that ensures resources are properly released (Taken from a
-discussion in [this
-RFC](https://github.com/AdaCore/ada-spark-rfcs/pull/29#issuecomment-539025062))
-
-```ada
-   type File (<>) is limited private;
-
-   function Open (Path : String) return File;
-
-   procedure Close (F : in out File);
-private
-   type File is limited record
-      Handle : ...;
-   end record
-      with Finalize => Close;
-```
-
-### Finalized tagged types
+Any type that has a `Finalizable` aspect is a by-reference type.
 
 The aspect is inherited by derived types. The compiler-generated calls to the
 user-defined operations should then be dispatching whenever it makes sense,
 i.e. the object in question is of classwide type and the class includes at
 least one finalized-type.
 
-However note that for simplicity, it is forbidden to change the values of the
-new aspect in derived types.
-
 > [!NOTE]
-> This is needed for the two configuration values `Legacy_Heap_Finalization`
-> and `Exceptions_In_Finalize`, in order to avoid having to pessimize
-> code-generation. It also seems completely useless to change the value of any
-> of `Initialize`, `Adjust`, or `Finalize` in tagged types where you could just
-> override the primitive that implements those operations.
+> This wildly simplifies the design and implementation of the feature, and is sufficient for all foreseen use cases. We don't want to consider:
+> * What's the finalization of by-value types like integers
+> * What it means to change this aspect in derived types
+> * How to handle all of this in generics
 
 ### Composite types
 
@@ -251,11 +186,76 @@ follows the definition of the above rules. In particular we expect that:
 * It should be possible to have a controlled type have a finalized type
   component
 
+
 ### Other run-time aspects
 
 For every other aspect that is not mentioned in that RFC, types with the
 `Finalizable` aspect specified follow the semantics defined by the Ada
 Reference Manual in section 7.6.
+
+### New specification for `Ada.Finalization.Controlled`
+
+`Ada.Finalization.Controlled` will now be specified as:
+
+```ada
+type Controlled is tagged private
+with Finalizable => (Initialize => Initialize,
+                     Adjust => Adjust,
+                     Finalize => Finalize,
+                     Relaxed_Finalization => False);
+
+   procedure Initialize (Self : in out Controlled) is null;
+   procedure Adjust (Self : in out Controlled) is null;
+   procedure Finalize (Self : in out Controlled) is null;
+```
+
+### Examples
+
+A simple example of a ref-counted type:
+```ada
+type T is record
+   Value : Integer;
+   Ref_Count : Natural := 0;
+end record;
+
+procedure Inc_Ref (X : in out T);
+procedure Dec_Ref (X : in out T);
+
+type T_Access is access all T;
+
+type T_Ref is record
+   Value : T_Access;
+end record
+   with Finalizable => (Adjust   => Adjust,
+                        Finalize => Finalize);
+
+procedure Adjust (Ref : in out T_Ref) is
+begin
+   Inc_Ref (Ref.Value);
+end Adjust;
+
+procedure Finalize (Ref : in out T_Ref) is
+begin
+   Def_Ref (Ref.Value);
+end Finalize;
+```
+
+A simple file handle that ensures resources are properly released (Taken from a
+discussion in [this
+RFC](https://github.com/AdaCore/ada-spark-rfcs/pull/29#issuecomment-539025062))
+
+```ada
+   type File (<>) is limited private;
+
+   function Open (Path : String) return File;
+
+   procedure Close (F : in out File);
+private
+   type File is limited record
+      Handle : ...;
+   end record
+      with Finalizable => (Finalize => Close);
+```
 
 Reference-level explanation
 ===========================
@@ -339,7 +339,19 @@ TBD
 Unresolved questions
 ====================
 
+Finalized components with `Relaxed_Finalization => False`, in finalized records
+with `Relaxed_Finalization => True` will have the old behavior defined in ARM
+7.6.1 14/1. This is not a problem because a `Program_Error` will be propagated
+out of them.
+
+However we might want to emit a compiler warning for those cases, because
+having legacy components with `Relaxed_Finalization => False` negates all the
+benefits of the relaxed model.
+
 Future possibilities
 ====================
 
-TBD.
+Very probably, we want to add a `pragma Relaxed_Finalization_Everywhere` or
+something that allows to change the mode for `Ada.Finalization.Controlled`, and
+use this is constrained runtimes at the very least, or even make it the default
+everywhere eventually, at least in `-gnatX`.
