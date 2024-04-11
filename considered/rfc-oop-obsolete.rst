@@ -18,9 +18,10 @@ Guide-level explanation
 Operators and exotic primitives
 -------------------------------
 
-Class record do not provide dispatching on multiple parameters, on parameters
-other than the first, or dispatching on results. If you declare primitives with
-references to the type other than the first parameter, they will not be used
+When using the scoped primitive notation, tagged record do not provide
+dispatching on multiple parameters, on parameters other than the first, or
+dispatching on results. If you declare primitives with references to the type
+other than the first parameter, they will not be used
 for
 
 Under the current model, coextensions are replaced by constructors
