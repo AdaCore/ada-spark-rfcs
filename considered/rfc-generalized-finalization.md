@@ -46,7 +46,7 @@ In this situation, one cannot simply turn `U` into a controlled object,
 otherwise the subprogram `F` would become a primitive of two tagged types,
 which is forbidden.
 
-In general, taggedness, imposes compile-time and run-time constraints (More
+In general, taggedness imposes compile-time and run-time constraints (more
 memory used, interaction with other features, etc) that people might not want
 to tackle just to get finalization.
 
@@ -61,7 +61,7 @@ complex implementation and incurring a substantial runtime performance penalty.
   track of these objects, untrack them upon explicit deallocation, etc., which
   obviously induces a significant overhead at runtime.
 
-* The other is guarantees with regard to Bounded (Run-Time) Errors (see RM
+* Other guarantees with regard to Bounded (Run-Time) Errors (see RM
   7.6.1), or in other words, what happens in the case an exception is raised
   during finalization.
 
@@ -147,6 +147,8 @@ This aspect shall be explicitly defined only on:
 * Record types, tagged or not
 * Private types for which the full-view is a record type
 
+Note in particular that it cannot be defined on a derived type.
+
 Any type that has a `Finalizable` aspect is a by-reference type.
 
 The aspect is inherited by derived types. The compiler-generated calls to the
@@ -199,14 +201,14 @@ Reference Manual in section 7.6.
 
 ```ada
 type Controlled is tagged private
-with Finalizable => (Initialize => Initialize,
-                     Adjust => Adjust,
-                     Finalize => Finalize,
-                     Relaxed_Finalization => False);
+  with Finalizable => (Initialize => Initialize,
+                       Adjust => Adjust,
+                       Finalize => Finalize,
+                       Relaxed_Finalization => False);
 
-   procedure Initialize (Self : in out Controlled) is null;
-   procedure Adjust (Self : in out Controlled) is null;
-   procedure Finalize (Self : in out Controlled) is null;
+procedure Initialize (Self : in out Controlled) is null;
+procedure Adjust (Self : in out Controlled) is null;
+procedure Finalize (Self : in out Controlled) is null;
 ```
 
 ### Examples
@@ -301,19 +303,19 @@ relevant to us in Ada:
    but you don't want, at least by default, the behavior of just propagating
    exceptions.
 
-To further this point, some libraries in Ada (like LAL but not only LAL) use
+To further this point, some libraries in Ada (like Libadalang but not only) use
 the pattern of exceptions being regular errors that can happen
-(`Property_Error` in LAL for example). If such an error was raised in a
+(`Property_Error` in Libadalang for example). If such an error was raised in a
 destructor, you'd want to catch that in order to refactor the code to not call
 this code in the destructor if possible, or to catch the possible exception, in
 order to avoid resources leaks.
 
 2. **However**, in many production scenarios where you want to have resilient
-   applications (The Rust thread cites web server. With the LAL example above,
-   IDEs come to mind. In Ada in general, early abort scenarios can make us
-   think of the Arianne scenario) having such an error crash your program is a
-   bad idea, because it's too drastic. In those cases you want to continue even
-   though you had an exception in a finalizer and might risk leaking some
+   applications (the Rust thread cites web server. With the Libadalang example
+   above, IDEs come to mind. In Ada in general, early abort scenarios can make
+   us think of the Ariane scenario) having such an error crash your program is
+   a bad idea, because it's too drastic. In those cases you want to continue
+   even though you had an exception in a finalizer and might risk leaking some
    resources.
 
 Other options that were discussed and considered:
