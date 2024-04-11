@@ -15,7 +15,7 @@ Guide-level explanation
 Components declarations
 -----------------------
 
-A record, tagged record and class record type can now have 3 declarative
+A record and tagged record type can now have 3 declarative
 region where fields can be declared:
 
 - the package public view
@@ -41,11 +41,6 @@ For example:
        end T
        with private;
 
-       type C is class record
-          Pub : Integer;
-       end T
-       with private;
-
    private
 
       type R is record
@@ -59,12 +54,6 @@ For example:
        private
          Hidden : Integer;
        end T;
-
-       type C is class record
-         Priv : Integer;
-       private
-         Hidden : Integer;
-       end C;
    end P;
 
 Fields that are private to a type (noted `Hidden` in the above example) can

@@ -42,7 +42,7 @@ of parameters to ensure that the first parameter is conceptually the one
 
 .. code-block:: ada
 
-   type T is class record
+   type T is tagged record
 
       procedure T'Write(
          Stream : not null access Ada.Streams.Root_Stream_Type'Class;

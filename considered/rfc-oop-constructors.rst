@@ -15,9 +15,9 @@ Guide-level explanation
 Constructors
 ------------
 
-Constructors are available to both class record and simple records.
+Constructors are available to both tagged and non-tagged records.
 
-Record, tagged records and class records can declare constructors. A constructor
+Records and tagged records can declare constructors. A constructor
 looks like a primitive that has an in out parameter of the type as first
 parameter, and is identified with the "Constructor" attribute of the type.
 For example:
@@ -162,8 +162,7 @@ that apply to subprograms overall would apply here too.
 Copy Constructor Overload
 -------------------------
 
-Copy constructors overload are available to both class records and simple
-records.
+Copy constructors overload are available to both tagged and non-tagged records.
 
 A special constructor, a copy constructor, has two parameters: self, and a
 reference to an instance of the class. It's called when an object is

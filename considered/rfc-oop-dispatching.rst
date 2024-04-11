@@ -15,144 +15,35 @@ Guide-level explanation
 Dispatching and Class Wide Views
 --------------------------------
 
-A view to a class record is a class wide view and is dispatching, no matter if
-it's referenced in a primitive or not. So for example:
+A new library / partition level pragma is introduced, Default_Dispatching_Calls.
+When active, calls to primitives are dispatching (when the tag can be
+determined statically, the compiler may optimize the call to be static) unless
+explicitelly marked as static (for example, through 'Super). E.g:
 
 .. code-block:: ada
 
-   type T is class record
-      procedure P (Self : in out T1);
-   end T1;
+   pragma Default_Dispatching_Calls (On);
 
-   procedure P (V : in out T) is
+   type Root is tagged record
+      procedure P (Self : in out Root);
+   end record;
+
+   type Child is new Root with record
+      procedure P (Self : in out Root);
+   end record;
+
+   type A_Root is access all Root;
+
+   procedure P (V : in out Root) is
    begin
       V.P2; -- Dispatching
    end P;
 
-A new notation, `'Specific'` is introduced when denoting a non-dispatching view
-of an object. This can be used either at object declaration, or through an
-explicit conversion. For example:
+   V : A_Root := new Child;
 
-.. code-block:: ada
+   V.P; -- dispatching
 
-   procedure P (V : in out T) is
-   begin
-      V'Specific.P; -- Not dispatching, looks at V specific type
-      T'Specific (Self).P; -- Not dispatching, calling P primitive of T
-   end P;
-
-   procedure P (V : in out T'Specific) is
-   begin
-      V.P; -- Not dispatching, looks at V is a type specific view.
-   end P;
-
-References to T behave like a tagged class wide type. Notably, when used in
-local variables, their class or tag is set at initialization time:
-
-.. code-block:: ada
-
-      type T1 is class record
-         procedure P (Self : in out T1);
-      end T1;
-
-      type T2 is new T1 with record
-         procedure P (Self : in out T1);
-      end T2;
-
-      V1 : T1 := T1'(others => <>); -- This is a dispatching view of an object of type T1
-      V2 : T2 := T2'(others => <>); -- This is a dispatching view of an object of type T2
-      V3 : T1 := V2; -- This is a dispatching view of an object of type T2
-
-   begin
-
-      V3 := V2; -- OK, same class
-      V1 := V3; -- Constraint_Error, tag differ
-
-Such types cannot be used directly as a component declaration:
-
-.. code-block:: ada
-
-   type R is record
-      V : T1; -- Compilation_Error, V2 is indefinite
-   end record;
-
-As a shortcut, if no initial value is provided, a variable of a given class
-will be automatically initialized with its declared type:
-
-.. code-block:: ada
-
-   V1 : T1 := T1'(others => <>);
-   V2 : T1; -- Legal, equivalent to the above
-
-This is also true when using dynamic allocations:
-
-.. code-block:: ada
-
-   V1 : access T1 := new T1; -- Creating an instance of type T1
-
-It is still possible to refer to a specific type when declaring objects:
-
-.. code-block:: ada
-
-   type R is record
-      V1 : T1'Specific; -- OK, this is a reference to T1
-   end record;
-
-   V : T1'Specific; -- V can only be of type T1
-
-   type Arr is array (Integer range <>) of T1'Specific;
-   --  Arr contains specifically T1 references
-
-Non-Dispatching Operations
---------------------------
-
-The 'Specific notaton described above can also be used to declare non-primitive
-operations of a type. In this case, these operations can be called through the
-usual prefix notation, but they cannot be overriden and can't be used for
-dispatching. For example:
-
-.. code-block:: ada
-
-  package P is
-      type T1 is class record
-         procedure P (Self : in out T1'Specific);
-      end T1;
-
-      type T2 is new T1 with null record;
-
-  end P;
-
-  procedure Some_Procedure is
-     V : T1;
-     V2 : T2;
-  begin
-     V.P; -- Legal, P is an operation of T1
-     V2.P; -- Legal P is also an operation of T2, statically called
-
-Note that while it's illegal to declare dispatching operations in the body of
-the implementation of a class, it's still possible to declare non-dispatching
-specific operations:
-
-.. code-block:: ada
-
-  package body P is
-     type T1 is class record
-         procedure P2 (Self : in out T1'Specific); -- Legal
-
-         procedure P2 (Self : in out T1); -- Compilation Error
-      end T1;
-  end P;
-
-Membership and downcast
------------------------
-
-Membership and downcast work similarily to tagged types. For a class record C:
-
-- `V in C` checks that V is in the class of C
-- `V in C'Specific` checks that V is specifically of type C1
-- `C (V)` is a dispatching cast of V to C
-- `C'Specific (V)` is casting to a non-dispatching view of C
-
+Default_Dispatching_Calls is On by default on new version of the language.
 
 Reference-level explanation
 ===========================
@@ -174,7 +65,7 @@ following code becomes then much more natural to write:
 .. code-block:: ada
 
    package P is
-      type T1 is class record
+      type T1 is tagged record
          procedure P (Self : in out T1);
 
          procedure P2 (Self : in out T1);
@@ -182,7 +73,7 @@ following code becomes then much more natural to write:
    end P;
 
    package P is
-      type body T1 is class record
+      type body T1 is tagged record
          procedure P (Self : in out T1) is
          begin
             Self.P2; -- Dispatching

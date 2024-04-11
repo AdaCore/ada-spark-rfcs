@@ -132,7 +132,7 @@ aggregate within a constructor as it would create an infinite recursion:
 .. code-block:: ada
 
    package P is
-      type T1 is class record
+      type T1 is tagged record
          procedure T1 (Self : in out T1);
 
 	      A, B, C : Integer;
@@ -140,7 +140,7 @@ aggregate within a constructor as it would create an infinite recursion:
    end P;
 
    package body P is
-      type body T1 is class record
+      type body T1 is tagged record
          procedure T1 (Self : in out T1) is
          begin
             Self := (1, 2, 3); -- infinite recursion

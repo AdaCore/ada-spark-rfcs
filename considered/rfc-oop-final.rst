@@ -13,16 +13,14 @@ Motivation
 Guide-level explanation
 =======================
 
-Final fields are available to both class records and simple records.
-
-Class record support constant fields, which are field which value cannot be
+Tagged records support constant fields, which are field which value cannot be
 changed after the constructor call, not even during aggregate which is
 considered as a shortcut for assignment. For example:
 
 .. code-block:: ada
 
    package P is
-      type T1 is class record
+      type T1 is tagged record
          procedure T1 (Self : in out T1; Val : Integer);
 
          Y : final Integer := 0;
@@ -30,7 +28,7 @@ considered as a shortcut for assignment. For example:
    end P;
 
    package body P is
-      type body T1 is class record
+      type body T1 is tagged record
          procedure T1 (Self : in out T1; Val : Integer) is
          begin
             -- Y is 0 here
@@ -42,11 +40,11 @@ considered as a shortcut for assignment. For example:
       V : T1 := (Y => 2); -- Illegal, Y is final
    end P;
 
-Final classes
--------------
+Final types
+-----------
 
-tagged record and class record also implement the concept of final classes,
-which is a class not deriveable. There are two advantages of final classes:
+Tagged record also implement the concept of final types,
+which is a type not deriveable. There are two advantages of final types:
 
 - In terms of design, this makes it clear that this class is not intended to be
   derived. It's often the case where derivation is used just to have a class in
@@ -59,7 +57,7 @@ which is a class not deriveable. There are two advantages of final classes:
 .. code-block:: ada
 
    package P is
-      type T1 is class record
+      type T1 is tagged record
          null;
       end T1;
 
@@ -83,36 +81,6 @@ Rationale and alternatives
 
 Global object hierarchy
 -----------------------
-
-We consider a global object hierarchy:
-
-All class object implicitely derives from a top level object,
-Ada.Classes.Object, defined as follows:
-
-.. code-block:: ada
-
-   package Ada.Classes is
-      type Object is class record
-         function Image (Self : Object) return String;
-
-         function Hash (Self : Object) return Integer;
-      end Object;
-   end Ada.Classes;
-
-Other top level primitives may be needed here.
-
-However, there are several elements that argue against this design:
-
-- the language that implement that (Java) initially introduced that as a way
-  to workaround lack of genericity and `void *` notation. Ada provides
-  genericity, and in the extreme cases where `void *` is required,
-  `System.Address` is a reasonable replacement.
-- As opposed to Java, many types in Ada are not objects. This concept would then
-  be far less ubiquitous.
-
-As a consequence, the identified use case ended up being to narrow to justify
-the effort.
-
 
 
 Drawbacks

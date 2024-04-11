@@ -21,7 +21,7 @@ directly on the object. For example:
 .. code-block:: ada
 
    package P is
-      type T1 is class record
+      type T1 is tagged record
          procedure P (Self : in out T1);
 
          procedure P2 (Self : in out T1);
@@ -50,7 +50,7 @@ You can write:
 .. code-block:: ada
 
    package P is
-      type A is class record
+      type A is tagged record
          procedure P (Self : in out T1);
       end A;
 

@@ -29,22 +29,9 @@ can be used to make non dispatching calls. For example:
 
    procedure P (V : T2);
 
-   type C1 is class record
-      procedure P (V : C1);
-   end C1;
-
-   type C2 is new C1 with record
-      procedure P (V : C2);
-   end C2;
-
    procedure Call (V : T2'Class) is
    begin
      V'Super.P; -- non-dispatching call to T1.V
-   end Call;
-
-   procedure Call (V : C2) is
-   begin
-     V'Super.P; -- non-dispatching call to C1.V
    end Call;
 
 Note that `'Super` being used to make non dispatching calls to primitives using

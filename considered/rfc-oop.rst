@@ -40,7 +40,6 @@ Currently ready for prototyping:
 
 Under discussion:
 
-- `New structure <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-structure.rst>`_
 - `Component declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-fields.rst>`_
 - `Primitives declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-primitives.rst>`_
 - `Attributes declaration <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-attributes.rst>`_
@@ -48,7 +47,6 @@ Under discussion:
 - `New access types <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-access.rst>`_
 - `Final classes and primitives <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-final.rst>`_
 - `Body restriction lift <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-body.rst>`_
-- `Tagged record compatibilty <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-tagged.rst>`_
 - `Obsolete features <https://github.com/QuentinOchem/ada-spark-rfcs/blob/oop/considered/rfc-oop-obsolete.rst>`_
 
 
