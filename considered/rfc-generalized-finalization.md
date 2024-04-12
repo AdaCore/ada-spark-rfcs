@@ -37,7 +37,7 @@ existing code in many different ways. One such example is illustrated below:
 
 ```ada
 type T is tagged null record;
-type U is record;
+type U is null record;
 
 function F (X : T) return U;
 ```
@@ -115,10 +115,10 @@ The `Relaxed_Finalization` configuration value is `True` by default, which
 implies that:
 
 * The compiler has permission to perform no automatic finalization of heap
-  allocated objects: `Finalize` is only called when an object is implicitly
-  deallocated. As a consequence, no-runtime support is needed for the implicit
-  case, and no header will be maintained for this in heap-allocated controlled
-  objects.
+  allocated objects: `Finalize` is only called when an object is explicitly
+  deallocated, or when the pointed object is assigned a new value. As a
+  consequence, no-runtime support is needed for the implicit case, and no
+  header will be maintained for this in heap-allocated controlled objects.
 
   Heap-allocated objects allocated through a nested access type definition will
   hence **not** be deallocated either. The result is simply that memory will be
@@ -147,9 +147,14 @@ This aspect shall be explicitly defined only on:
 * Record types, tagged or not
 * Private types for which the full-view is a record type
 
+<<<<<<< Updated upstream
 Note in particular that it cannot be defined on a derived type.
 
 Any type that has a `Finalizable` aspect is a by-reference type.
+=======
+Any type that has a `Finalizable` aspect will automatically become a
+by-reference type.
+>>>>>>> Stashed changes
 
 The aspect is inherited by derived types. The compiler-generated calls to the
 user-defined operations should then be dispatching whenever it makes sense,
@@ -267,8 +272,9 @@ TBD.
 Rationale and alternatives
 ==========================
 
-The rationale for defining the `No_Raise` aspect in such a way will be put here
-because it's essentially linked to its use in Finalization. We think it's fundamental that:
+The rationale for defining the relaxation of errors in `Relaxed_Finalization`
+mode, and the `No_Raise` aspect in such a way will be put here. We think it's
+fundamental that:
 
 1. In development/testing setups, a finalizer raising an exception is as noisy
    as possible and crashes the application early
