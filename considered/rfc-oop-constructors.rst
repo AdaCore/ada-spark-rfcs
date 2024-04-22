@@ -941,6 +941,6 @@ write:
 
 .. code-block:: Ada
 
-   V : Child (D => True) := Child'Make (True); -- We can constrain Date
+   V : Child (D => True) := Child'Make (True); -- We can constrain D
 
 this would allow to create components of type Child.
