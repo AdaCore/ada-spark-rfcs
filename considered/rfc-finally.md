@@ -95,31 +95,39 @@ this.
 
 ### New keyword vs. existing keywords
 
-So far, the ARG has been very careful in not introducing new keywords
-gratuitously, if an existing keyword, or combination thereof, could be deemed
-"good enough". We've decided to break precedent here, evaluating that this
-strategy is not as useful today as it once was:
+The current version of the RFC introduces a new keyword, which has pros & cons.
 
-1. We have a very low migration cost, in this particular case, because naming a
-   variable `Finally` is very unlikely, unlike, for example, `Interface` back
-   when Ada 95 was designed (We didn't find an occurence in any codebase we
-   have access to).
+If we want to use only existing keywords:
 
-2. If we deem it necessary we can probably parse it as a reserved word,
-   allowing its use as an entity name.
+* A proposed alternative was `end with`, but `end ...` is generally used to
+  finish a block defining an entity in Ada, which makes it confusing.
 
-2. `finally` being the keyword used in virtually every other language makes it
-   very easy to discover/recognize, and is also one less thing to
-   learn/remember for every multi-lingual programmer. That in itself was an
-   important argument in the choice done in this RFC.
+* Another proposed alternative was `at end`, which seems workable.
 
-3. A proposed alternative was `end with`, but `end ...` is generally used to
-   finish a block defining an entity in Ada, which makes it confusing.
+Pros for using a new keyword:
 
-4. We don't have a lot of people migrating language versions, by virtue of our
-   market, and those who migrate are OK to dedicate some resources to
-   migrating, so we already decided a while back that we're not completely
-   against breaking things, if it makes sense.
+* We have a very low migration cost, in this particular case, because naming a
+  variable `Finally` is very unlikely. We didn't find an occurence in any
+  codebase we have access to.
+
+* `finally` being the keyword used in other languages makes it very easy to
+  discover/recognize, and is also one less thing to learn/remember for every
+  multi-lingual programmer.
+
+* We don't have a lot of people migrating language versions and those who
+  migrate are OK to dedicate some resources to migrating, so we already decided
+  a while back that we're not completely against breaking things, if it makes
+  sense.
+
+* Very easy to do an automatic migrator if needed.
+
+Cons:
+
+* One more keyword in Ada which already has more than fifty
+
+* It might be annoying for some people to have to change their code
+
+
 
 ## Prior art
 
