@@ -15,14 +15,17 @@ Guide-level explanation
 Primitives and Declarations
 ---------------------------
 
-Under this new model, primitives are declared within the lexical scope of their
-type. The first parameter of the primitive has to be of the type of the record.
-This allows the user to decide on the naming convention, as well as the mode of
-such parameter (in, out, in out, access, aliased). A record and
-a tagged record can have primitives declared both in the public and the private
-part. This is possibility is extended to other components as well. The existence
-of a private part needs to be specified in the public part of a package with
-the notation "with private". The following demonstrates the above:
+Record types can be marked with the aspect `Scoped_Primitives` (shortcut for
+`Scoped_Primitives => True`). This aspect allows to declare primitives within
+the lexical scope of the type. Under this new model, primitives are declared
+within the lexical scope of their type. The first parameter of the primitive has
+to be of the type of the record. This allows the user to decide on the naming
+convention, as well as the mode of such parameter (in, out, in out, access, aliased).
+A record and a tagged record can have primitives declared both in the public and
+the private part. This is possibility is extended to other components as well.
+The existence of a private part needs to be specified in the public part of a
+package with the notation "with private". The following demonstrates the above:
+
 
 .. code-block:: ada
 
@@ -31,25 +34,25 @@ the notation "with private". The following demonstrates the above:
          F : Integer;
 
          procedure P (Self : in out R; V : Integer);
-       end R
-       with private;
+       end record
+       with Scoped_Primitives, private;
 
       type T is tagged record
          F : Integer;
 
          procedure P (Self : in out T; V : Integer);
-      end T
-      with private;
+      end record
+      with Scoped_Primitives, private;
 
    private
 
        type R is record
          procedure P2 (Self : in out R; V : Integer);
-       end R;
+       end record with Scoped_Primitives;
 
        type T is class record
           procedure P2 (Self : in out T; V : Integer);
-       end T;
+       end record with Scoped_Primitives;
 
    end P;
 
@@ -59,13 +62,13 @@ the notation "with private". The following demonstrates the above:
          procedure P (Self : in out R; V : Integer) is
          begin
             Self.F := V;
-         end R;
+         end record with Scoped_Primitives;
 
          procedure P2 (Self : in out R; V : Integer) is
          begin
             Self.F := V + 1;
          end P2;
-       end R;
+       end record with Scoped_Primitiv;
 
        type body T is tagged record
          procedure P (Self : in out T; V : Integer) is
@@ -77,19 +80,13 @@ the notation "with private". The following demonstrates the above:
          begin
             Self.F := V + 1;
          end P2;
-       end T;
+       end record with Scoped_Primitives;
 
    end P;
 
 Primitives declared within a type can only be called via prefix notation. When
 primitives are declared in a scope, there can no longer be primitives declared
 ouside of the scope, such declarations are non-primitives.
-
-A new aspect is introduced, Scoped_Primitives, to allow to mark a type as
-following the scoped primitive model even if no explicit primitives are scoped.
-
-Once a tagged hierarchy is marked as receiving scoped primitives, it can no
-longer go back to the previous way of declaring primitives.
 
 Overriding and extensions
 -------------------------
@@ -101,11 +98,11 @@ Extension of class record types work similarly to tagged records:
    package P is
       type T1 is class record
          procedure P (Self : in out T1);
-      end T1;
+      end record with Scoped_Primitives;
 
       type T2 is new T1 with record
          procedure P (Self : in out T1);
-      end T2;
+      end record with Scoped_Primitives;
    end P;
 
 Primitives can be marked optionally overriding, following Ada 2005 rules.
@@ -122,7 +119,7 @@ operate as other interfaces (no concrete components or primitive):
    package P is
       type I is interface record
          procedure P (Self : in out I) is abstract;
-      end I;
+      end record with Scoped_Primitives;
    end P;
 
 Operators
@@ -136,12 +133,12 @@ Operators can be declared as primitives:
       type T1 is tagged record
          function "=" (Left, Right : T1) return Boolean;
          function "+" (Left, Right : T1) return T1;
-      end T1;
+      end record with Scoped_Primitives;
 
       type T2 is new T1 with record
          procedure "=" (Left : T2; Right : T1);
          function "+" (Left : T2, Right : T1) return T1;
-      end T1;
+      end record with Scoped_Primitives;
    end P;
 
 Note that when overriding an operator, only the first parameter changes to the
