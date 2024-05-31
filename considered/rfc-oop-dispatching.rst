@@ -18,7 +18,7 @@ Dispatching and Class Wide Views
 A new library / partition level pragma is introduced, Default_Dispatching_Calls.
 When active, calls to primitives are dispatching (when the tag can be
 determined statically, the compiler may optimize the call to be static) unless
-explicitelly marked as static (for example, through 'Super). E.g:
+explicitely marked as static (for example, through 'Super). E.g:
 
 .. code-block:: ada
 
@@ -58,27 +58,26 @@ when the role of the overriden primitive is to keep the state of the derived
 object consistant. It's also commonly the case in most OOP languages that
 dispatching is the default expected behavior and non dispatching the exception.
 
-This also fix a common confusion in Ada, where the dispatching parameter of A
+This also fixes a common confusion in Ada, where the dispatching parameter of A
 primitive is itself non-dispatching and requires so-called redispatching. The
-following code becomes then much more natural to write:
+following code illustrates the improvement:
 
 .. code-block:: ada
 
    package P is
-      type T1 is tagged record
-         procedure P (Self : in out T1);
+      type T1 is tagged null record;
 
-         procedure P2 (Self : in out T1);
-      end T1;
+      procedure P (Self : in out T1);
+
+      procedure P2 (Self : in out T1);
    end P;
 
    package P is
-      type body T1 is tagged record
-         procedure P (Self : in out T1) is
-         begin
-            Self.P2; -- Dispatching
-         end P;
-      end T1;
+      procedure P (Self : in out T1) is
+      begin
+         T1'Class (Self).P2; -- Dispatching in all cases
+         Self.P2; -- Only dispatching with Default_Dispatching_Calls (On)
+      end P;
    end P;
 
 
