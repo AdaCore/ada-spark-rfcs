@@ -1,38 +1,46 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: multiple_levels_of_assertions
+- Start Date: 2024-06-03
 - RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
 
 Summary
 =======
 
-This proposal introduces two concepts:
+This proposal introduces the concept of `level of assertion`, introduced by a
+new pragma. Assertions and ghost declarations can be associated with a
+previously declared level. Only assertions and ghost code associated with a
+level which is active are compiled into executable code.
 
-- A new pragma Assertion_Level which allows to name a specific assertion level
+In more details:
+
+- A new pragma ``Assertion_Level`` allows to name a specific assertion level
   and its dependencies.
-- An extension for the syntax of all assertions (preconditions,
-  postconditions, assertions...) that allows to designate assertions
-  as being related to a specific level.
+- Pragma ``Assertion_Policy`` is extended so that a level of assertion can
+  be associated with a policy (either standard ones ``Check`` and ``Ignore``
+  or GNAT-specific ones).
+- Most assertions (at the exception of ``Contract_Cases``) are extended so that
+  it is possible to associate a level to the assertion.
+- The ``Ghost`` aspect on ghost declarations is extended to allow specifying
+  a level for the declaration.
 
-Tools such as compilers, provers or static analysers will be able to be
-configured to enable or not certain assertion levels.
+The specification of levels should have no impact on static analysis or proof.
 
 Motivation
 ==========
 
 When using programming by contract extensively, it is often necessary to
-classify assertion for different purposes, and have this classification
+classify assertions for different purposes, and have this classification
 impacting run-time code generation. A very common case is to differenciate
-assertions that can be activated at run-time and generate tests from assertions
-code that cannot be possibly compiled (because it's too slow, needs too much
-memory or references entities that have no body) but is nonetheless useful
-for the purpose of proof.
+assertions that can be activated at run-time from assertions used to generate
+tests but cannot be possibly compiled (because it's too slow or needs too much
+memory) and from assertion used for proof (for the reasons just given, or
+because these assertions reference entities that have no body).
 
 Guide-level explanation
 =======================
 
-Multiple Ghost scopes
----------------------
+Assertion levels
+----------------
 
 A new pragma is introduced, ``Assertion_Level``, which takes an identifier as
 parameter. It can be used to defined custom assertion levels, for example:
@@ -45,7 +53,7 @@ package Some_Package is
 end Some_Package;
 ```
 
-The pragma `Assertion_Level` needs to be used at library level in a package
+The pragma ``Assertion_Level`` needs to be used at library level in a package
 specification.
 
 New identifiers are introduced in the package Standard, defined as follows:
@@ -54,23 +62,21 @@ New identifiers are introduced in the package Standard, defined as follows:
 package Standard is
    [...]
 
-   pragma Assertion_Level (Default);
    pragma Assertion_Level (Runtime);
    pragma Assertion_Level (Static);
 
    [...]
-end Ada.Ghost;
+end Standard;
 ```
 
-The Default assertion level is the one used in the absence of specific
-parametrization of assertions. Code marked "Runtime" should always be
+Code marked "Runtime" should always be
 executed under all compiler settings. Code marked "Static" should never
 be executed under any compiler setting.
 
-Assertion levels are scoped like regular variables. They can be prefixed by
+Assertion levels are scoped like regular names. They can be prefixed by
 their containing package. They need to be declared at the library level.
 
-Levels on Assertions
+Levels on assertions
 --------------------
 
 Assertions can be associated with specific level using the Ada arrow
@@ -90,33 +96,16 @@ procedure Sort (A : in out Some_Array)
                      A (I) <= A (I-1)));
 ```
 
-```Ada
-procedure Sort (A : in out Some_Array)
-   with Contract_Case =>
-      (Gold      =>
-          (Something      => (if A'Length > 0 then A (A'First) <= A (A'Last))
-           Something_Else => Bla),
-       Platinium => (for all I in A'First .. A'Last -1 =>
-                     A (I) <= A (I-1)));
-```
+Levels on ghost declarations
+----------------------------
 
-A given assertion can be provided for multiple assertion levels, for example:
-
-```Ada
-pragma Assert ([Gold, Platinium] => X > 5);
-```
-
-Levels on Entities
-------------------
-
-Entities can be associated with specific level of assertions. When that's the
-case, the level is given as a parameter of the Ghost argument. A given entity
-can be associated with more than one ghost scope. For example:
+Ghost declarations can be associated with a specific level of assertion. When that's the
+case, the level is given as a parameter of the Ghost argument. For example:
 
 ```Ada
 V : Integer with Ghost => Platinium;
 
-procedure Lemma with Ghost => [Static, Platinium];
+procedure Lemma with Ghost => Static;
 ```
 
 Dependencies between assertion levels
@@ -164,7 +153,7 @@ X1 : Integer with Ghost => Platinum;
 X2 : Integer := X1 with Ghost => Static;
 ```
 
-User can create ghost levels that can never be compiled by introducing a
+User can create assertion levels that can never be compiled into runtime code by introducing a
 dependency on `Static`:
 
 ```Ada
@@ -184,36 +173,181 @@ pragma Assertion_Policy (Gold => Check, Platinium => Ignore);
 Compiler options may also have an impact on the default policies.
 
 Note that activating or deactivating assertion levels have an impact on dependent
-ghost scopes as follows:
+assertion levels as follows:
 - Deactivating one assertion level will deactivate all assertion levels that are
   allowed to depend on it.
 - Activating one assertion level will activate all ghost scopes that it depends
   on.
 
+Effects of multiple pragmas ``Assertion_Policy``, or multiple associations in
+the same pragma ``Assertion_Policy``, are taken into account in order. So the
+following deactivates preconditions, except for those at ``Gold`` assertion
+level, as all assertions and ghost entities at ``Gold`` level are activated:
+
+```Ada
+pragma Assertion_Policy (Pre => Ignore);
+pragma Assertion_Policy (Gold => Check);
+```
+
+and similarly for:
+
+```Ada
+pragma Assertion_Policy (Pre => Ignore, Gold => Check);
+```
+
+while the following activates all assertions and ghost entities at ``Gold``
+level, except for preconditions, as all preconditions are deactivated:
+
+```Ada
+pragma Assertion_Policy (Gold => Check);
+pragma Assertion_Policy (Pre => Ignore);
+```
+
+and similarly for:
+
+```Ada
+pragma Assertion_Policy (Gold => Check, Pre => Ignore);
+```
+
 Reference-level explanation
 ===========================
 
-See above
+We should decide if GNAT RM or SPARK RM should be updated, or both.
+
+Rules for [pragma
+Assertion_Policy](https://docs.adacore.com/live/wave/gnat_rm/html/gnat_rm/gnat_rm/implementation_defined_pragmas.html#pragma-assertion-policy)
+should be amended to allow ``ASSERTION_LEVEL`` as another form of ``ASSERTION_KIND``.
+
+Pragma ``Assertion_Level`` should be described in GNAT RM.
+
+The rules for changing the grammar of all assertions should be added somewhere.
+
+Rules for [Ghost
+entities](https://docs.adacore.com/live/wave/spark2014/html/spark2014_rm/subprograms.html#ghost-entities)
+should be amended to allow the new syntax with an assertion level.
+
+In that section of SPARK RM, legality rule 20 should be amended as follows:
+
+> If the assertion policy applicable to the declaration of a Ghost entity is Ignore, and this ghost entity occurs within an assertion expression, then the assertion policy which governs the assertion expression shall [also] be Ignore. Note that the assertion policy applicable to the declaration of a Ghost entity may be associated either with an assertion level, if the entity has an associated assertion level, or with the Ghost assertion kind otherwise. The assertion level which governs the assertion expression may also be associated either with an assertion level, if the assertion has an associated assertion level, or with an assertion kind otherwise (e.g., Pre for a precondition expression, Assert for the argument of an Assert pragma).
+
+That way, all existing rules are applicable with minimal changes to the new
+model. Instead of Ghost governing all ghost entities, an assertion level might
+govern some ghost entities. Instead of a given assertion kind (say Pre)
+governing all corresponding assertions (say preconditions), an assertion level
+might govern some of these assertions.
+
+An additional rule which would make sense to complement the above rule 20 is
+that, if both the assertion and the ghost entity are governed by an assertion
+level, then it should be the same assertion level, or the assertion level of
+the assertion should depend on the assertion level of the ghost entity.  So
+assuming we have the following definition of assertion levels:
+
+```Ada
+pragma Assertion_Level (Silver);
+pragma Assertion_Level (Gold, Depends => Silver);
+```
+
+then the following is valid:
+
+```Ada
+X : Boolean with Ghost => Silver;
+pragma Assert (Silver => X);
+pragma Assert (Gold => X);
+```
+
+but the following is illegal:
+
+```Ada
+X : Boolean with Ghost => Gold;
+pragma Assert (Silver => X);
+```
+
+while the rule does not forbid the following case (which will be rejected by
+the compiler if assertion policies ``Silver => Ignore, Assert => Check`` is
+used):
+
+```Ada
+X : Boolean with Ghost => Silver;
+pragma Assert (X);
+```
+
+much like today we don't forbid the following case (which will be rejected by
+the compiler if assertion policies ``Ghost => Ignore, Assert => Check`` is
+used):
+
+```Ada
+X : Boolean with Ghost;
+pragma Assert (X);
+```
 
 Rationale and alternatives
 ==========================
 
-TBD
+Assertion levels can be approached today with a combination of static
+configuration to define the assertion levels, and if-expressions inside
+assertions. So to have the effect of:
+
+```Ada
+pragma Assertion_Level (Silver);
+pragma Assertion_Level (Gold, Depends => [Silver]);
+pragma Assertion_Policy (Gold => Ignore, Silver => Check);
+pragma Assert (Gold => X > 5, Silver => X > 0);
+```
+
+one can write:
+
+```Ada
+Silver : constant Boolean := True;
+Gold : constant Boolean := False;
+pragma Assert ((if Gold then X > 5) and then (if Silver then X > 0));
+```
+
+But this does not allow selectively including ghost declarations, unless one
+uses preprocessing.
+
+This also does not perform any checking that an assertion at ``Gold`` level
+cannot reference ``Silver``-level ghost entities, contrary to the current
+proposal.
 
 Drawbacks
 =========
 
-TBD
+This proposal adds a lot of complexity to the syntax of all assertions and
+ghost declarations, which will need to be supported in many tools for that
+feature to be usable.
 
 Prior art
 =========
 
-TBD
+JML (for Java) and ACSL (for C) behaviors bare some resemblance to assertion
+levels, in that they allow separate specification of intended functionality,
+but they cannot be separately selected when compiling the code.
+
+While it was envisioned at some previous point, in [its latest
+version](https://isocpp.org/files/papers/P2900R6.pdf), the proposed contracts
+for C++26 does not include `The ability to assign an assertion level to a
+contract assertion`.
 
 Unresolved questions
 ====================
 
-TBD
+The [Ghost
+aspect](https://docs.adacore.com/live/wave/spark2014/html/spark2014_rm/subprograms.html#ghost-entities)
+is currectly defined as a Boolean-valued representation aspect. This is
+incompatible with its use above to optionally specify an assertion level as in
+``Ghost => Silver``, as ``Silver`` here could also be interpreted as a Boolean
+value. A possibility is to instead use a new aspect to optionally specify an
+assertion level, as in:
+
+```Ada
+V : Integer with Ghost, Assertion_Level => Platinium;
+```
+
+The syntax change proposed for assertions is quite unusual for Ada, as it
+replaces a Boolean value by a choice between a Boolean value, and a non-empty
+list of associations (which does not include the parentheses). While parsing it
+should not be problematic, it remains to decide whether this is sufficiently in
+line with the rest of the language.
 
 Future possibilities
 ====================
