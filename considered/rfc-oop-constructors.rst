@@ -15,7 +15,7 @@ Guide-level explanation
 Constructors
 ------------
 
-Constructors are available to both tagged and non-tagged records.
+Constructors are available to both tagged and untagged records.
 
 Records and tagged records can declare constructors. A constructor
 looks like a primitive that has an in out parameter of the type as first
@@ -162,7 +162,7 @@ that apply to subprograms overall would apply here too.
 Copy Constructor Overload
 -------------------------
 
-Copy constructors overload are available to both tagged and non-tagged records.
+Copy constructors overload are available to both tagged and untagged records.
 
 A special constructor, a copy constructor, has two parameters: self, and a
 reference to an instance of the class. It's called when an object is
@@ -572,7 +572,7 @@ such subtyping can also be used for components:
       end record;
 
 In this version of the proposal, discriminant subtyping is only legal for
-non-tagged types. Considerations around type types are described in the future
+untagged types. Considerations around type types are described in the future
 possibilities section.
 
 Constructors and Type Predicates
