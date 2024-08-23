@@ -30,7 +30,7 @@ Guide-level explanation
 Overall Concept
 ---------------
 
-We introduce a new pragma `Shorcircuit_Operators` which is a library-level
+We introduce a new pragma `Shortcircuit_Operators` which is a library-level
 pragma governing the semantic of boolean operator in the unit where the pragma
 is used. For code compiled until Ada 2022, the value of this pragma is Off,
 On afterwards.
@@ -54,26 +54,26 @@ Overriden operators will evaluate both operands before being called.
 Unit consistency
 ----------------
 
-The pragma `Shorcircuit_Operators` needs to be consistent between the
+The pragma `Shortcircuit_Operators` needs to be consistent between the
 specification and the implementation of a library unit. In the case where
 there's no specification (e.g. a library unit subprogram body), then the
 value of the pragma in the body is the one of the unit.
 
-An the body of a unit may have an explicit value `Shorcircuit_Operators` as
+An the body of a unit may have an explicit value `Shortcircuit_Operators` as
 long as it's the same (explicit or implicit) of its specification.
 
 Static and Dynamic Semantics
 ----------------------------
 
-`Shorcircuit_Operators` impact both dynamic semantics and static semantics.
+`Shortcircuit_Operators` impact both dynamic semantics and static semantics.
 For example, in Ada, the following is illegal:
 
 ```ada
 X : constant := Boolean'Pos (False and ((1/0) /= 23));
 ```
 
-As we know statically that the static expression will be divided by 0. However,
-under `Shorcircuit_Operators (On)`, it becomes valid as the right-end side of
+as we know statically that the static expression will be divided by 0. However,
+under `Shortcircuit_Operators (On)`, it becomes valid as the right-end side of
 the expression will not be computed.
 
 Renamings
@@ -99,25 +99,25 @@ end P;
 package My_P is new P (Standard."and");
 ```
 
-In the body of the generic unit, the compiler would behave differently
-depending on wether "F" is shortcircuit or not. In order to maximise
-consistency, a boolean operator passed as a generic formal acts as if it were
-a wrapper function to that operator, systematically evaluating both operands
-when used within the generic implementation. In otherwords, it does not
-short-circuit.
+In order to maximise consistency, a boolean operator passed as a generic formal
+acts as if it were a wrapper function to that operator, systematically
+evaluating both operands when used within the generic implementation.
+In otherwords, it does not short-circuit. This avoid situations where, in the
+body of the generic unit, the compiler would behave differently depending on
+wether "F" is shortcircuit or not.
 
 Implicit inheritance of default expressions
 -------------------------------------------
 
 When developping an application mixing different mode of
-``Shorcircuit_Operators``, for example when including legacy software, the
+``Shortcircuit_Operators``, for example when including legacy software, the
 operator behavior is fixed at the time of writing. This has an impact for
 example in the case of default expressions. E.g.:
 
 ```ada
 
 package P1 is
-  pragma Shorcircuit_Operators (On);
+  pragma Shortcircuit_Operators (On);
 
   G : Integer;
 
@@ -130,7 +130,7 @@ end P1;
 with P1;
 
 package P2 is
-  pragma Shorcircuit_Operators (Off);
+  pragma Shortcircuit_Operators (Off);
 
   G : Integer;
 
@@ -140,7 +140,7 @@ end P2;
 ```
 
 T2 has an implicitely declared primitive F, which has a default expression
-using a and operator. As this is written under à ``Shorcircuit_Operators (On)``
+using a and operator. As this is written under à ``Shortcircuit_Operators (On)``
 package, the operator is still shortcircuit in the implicitely inherited
 subprogram. However, if the developper write in P2:
 
