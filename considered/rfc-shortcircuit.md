@@ -32,7 +32,7 @@ Overall Concept
 
 We introduce a new pragma `Shortcircuit_Operators` which is a library-level
 pragma governing the semantic of boolean operator in the unit where the pragma
-is used. For code compiled until Ada 2022, the value of this pragma is Off,
+is used. For code compiled until Ada 2022, the value of this pragma is False,
 On afterwards.
 
 When the pragma is in effect and has a true value, non-overriden `and` and `or`
@@ -73,7 +73,7 @@ X : constant := Boolean'Pos (False and ((1/0) /= 23));
 ```
 
 as we know statically that the static expression will be divided by 0. However,
-under `Shortcircuit_Operators (On)`, it becomes valid as the right-end side of
+under `Shortcircuit_Operators (True)`, it becomes valid as the right-end side of
 the expression will not be computed.
 
 Renamings
@@ -117,7 +117,7 @@ example in the case of default expressions. E.g.:
 ```ada
 
 package P1 is
-  pragma Shortcircuit_Operators (On);
+  pragma Shortcircuit_Operators (True);
 
   G : Integer;
 
@@ -130,7 +130,7 @@ end P1;
 with P1;
 
 package P2 is
-  pragma Shortcircuit_Operators (Off);
+  pragma Shortcircuit_Operators (False);
 
   G : Integer;
 
@@ -140,7 +140,7 @@ end P2;
 ```
 
 T2 has an implicitely declared primitive F, which has a default expression
-using a and operator. As this is written under à ``Shortcircuit_Operators (On)``
+using a and operator. As this is written under à ``Shortcircuit_Operators (True)``
 package, the operator is still shortcircuit in the implicitely inherited
 subprogram. However, if the developper write in P2:
 
