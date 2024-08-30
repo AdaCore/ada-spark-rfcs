@@ -89,10 +89,10 @@ General formal parameters may be compatible with short-circuit operators, e.g.:
 
 ```ada
 generic
-   with function "F" (L, R : Boolean) return Boolean;
+   with function F (L, R : Boolean) return Boolean;
 package P is
 
-   A := F (False, 1 / 0 > 1);
+   A : Boolean := F (False, 1 / 0 > 1);
 
 end P;
 
@@ -105,6 +105,24 @@ evaluating both operands when used within the generic implementation.
 In otherwords, it does not short-circuit. This avoid situations where, in the
 body of the generic unit, the compiler would behave differently depending on
 wether "F" is shortcircuit or not.
+
+Note that even in the case of a rename, the semantic of the F function in this
+example remains consistent, and this non-shortcircuit. In other words:
+
+```ada
+generic
+   with function F (L, R : Boolean) return Boolean;
+package P is
+
+   function F_Exp (L, R : Boolean) return Boolean renames F;
+
+end P;
+
+package My_P is new P (Standard."and");
+
+A : Boolean := Standard."and" (V1, V2); -- shortcicuit
+B : Boolean := My_P.F_Exp (V1, V2); -- non-shortcicuit
+```
 
 Implicit inheritance of default expressions
 -------------------------------------------
