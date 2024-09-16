@@ -15,12 +15,11 @@ Guide-level explanation
 Components declarations
 -----------------------
 
-A record and tagged record type can now have 3 declarative regions where fields
+A record and tagged record type can now have 2 declarative regions where fields
 can be declared:
 
 - the package public view
 - the package private view
-- the record private view
 
 A public view that allows for additional fields to be declared is denoted by
 `with private` after its declaration. The private view of a record type can
