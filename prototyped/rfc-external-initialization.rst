@@ -1,4 +1,4 @@
-- Feature Name: Embedding binary resource
+- Feature Name: External initialization aspect
 
 Summary
 =======
