@@ -102,6 +102,13 @@ Note that one of the consequence of using ghost fields is that overlays and
 unchecked conversion may fail at compile time. This is expected, and is a known
 limitation of ghost fields.
 
+Ghost fields are copied under assignment. Other component-wise operations are
+not impacted by ghostfield. For example, equality yields the same result even
+if ghost fields values are different, stream attributes do not stream ghost
+value, put_line does not output ghost fields, etc. This preserves the property
+that ghost code does not influence non-ghost code (with the exception of 'Size
+where the solution is described above).
+
 Ghost Parameters
 ----------------
 
