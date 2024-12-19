@@ -6,69 +6,85 @@
 Summary
 =======
 
-RM-3.5.4(9) imposes a symmetric base range for signed integer types. I would like
-to remove the need for a symmetric base range because it imposes the use of larger
-types to perform arithmetic operations, potentially burdening embedded
-applications with undesirable run-time needs and performance overhead.
+RM-3.5.4(9) mandates a symmetric base range for signed integer types. This
+requirement often necessitates the use of larger data types for arithmetic
+operations, potentially introducing undesirable run-time overhead and
+performance penalties, particularly in embedded systems.
+
+This proposal introduces a new aspect for type definitions to explicitly
+enforce the use of an unsigned base type, alleviating these issues.
 
 Motivation
 ==========
 
-You can define an unsigned 64-bit integer type containing values between 0 and
-2 ** 64 - 1 as:
+Currently, an unsigned 64-bit integer type can be defined in Ada as:
 
 .. code-block:: ada
 
   type Unsigned_64 is range 0 .. 2 ** 64 - 1 with Size => 64
 
-Currently, this type definition has a symmetric base range that does not fit within
-64-bit, meaning that arithmetic operations on the previously defined 64-bit type
-are performed in 128-bit. It is also misleading because the Size aspect would let
-the coder think that it would use 64-bit operations.
+However, this type implicitly assumes a symmetric base range that exceeds 64 bits.
+Consequently, arithmetic operations on such a type are executed using 128-bit
+operations. This is misleading, as the Size aspect suggests that operations would
+utilize only 64 bits.
 
-Using a larger type can harm the performance of the operation, and sometimes force
-the operation to be implemented in software (within a run-time library) instead of
-hardware. This is particularly unfortunate for embedded applications. For example,
-on a 64-bit hardware architecture, a 64-bit multiplication can be performed with a
-single hardware instruction, while a 128-bit multiplication needs a series of
-hardware instructions working on intermediate results.
+The use of larger types for arithmetic operations adversely affects performance
+and, in some cases, necessitates software-based implementations in run-time
+libraries instead of hardware operations. This issue is especially problematic fo
+embedded applications. For instance, on a 64-bit architecture, a 64-bit
+multiplication can be performed with a single hardware instruction, whereas a
+128-bit multiplication requires multiple instructions and intermediate steps.
+
+By allowing unsigned types with unsigned base ranges, we can ensure that arithmetic
+operations are performed with the expected size, reducing performance overhead.
+
+The following enhancement could be used to explicitly indicate this intention:
+
+.. code-block:: ada
+
+  type Uns_64 is range 0 .. 2 ** 64 - 1 with Size => 64, Unsigned_Base_Range => True
+
+This ensures that arithmetic operations are carried out using 64 bits. Overflow
+checking is based on the processor's carry state flag.
 
 Guide-level explanation
 =======================
 
-Defining an unsigned type using the expected range and its required number of bits
-is a sensible way to do it. It is also natural to expect arithmetic operations to
-be performed using the same number of bits (as in languages like C).
+Defining unsigned types with their expected ranges and bit widths should naturally
+result in arithmetic operations using the same bit width. This behavior aligns with
+the expectations of developers familiar with languages like C.
 
-Proper implementation of numeric overflow checking does not need to use a symmetric
-base range. Typical hardware signals numeric overflows on arithmetic operations with
-the processor carry state flag.
+Symmetric base ranges are advantageous for avoiding numeric overflows during
+intermediate calculations, when negative values arise from subtraction. However,
+symmetric ranges impose significant performance costs.
 
-Hence, the implementation of proper Ada semantics does not need to use a larger
-base range.
+Note that numeric overflow checking can be achieved without symmetric base ranges, as
+most hardware uses the processor's carry state flag to signal overflows.
+
+This proposal introduces a new explicit aspect for type declarations, which maintains
+upward compatibility while reducing run-time overhead.
 
 Reference-level explanation
 ===========================
 
-The proposed rewording for RM-3.5.4(9) would be the following:
-
-  A range_integer_type_definition defines an integer type whose base range includes
-  at least the values of the simple_expressions. A range_integer_type_definition also
-  defines a constrained first subtype of the type, with a range whose bounds are given
-  by the values of the simple_expressions, converted to the type being defined.
+For every subtype S of a signed integer type, S'Unsigned_Base_Range is an boolean
+attribute that indicates whether the base range is unsigned. The default falue is
+False.
 
 Rationale and alternatives
 ==========================
 
-Unsigned types could be defined using a modular type definition to prevent the
-symmetric base range instead. However, the semantics of the two integer type definitions
-are very different.
+An alternative to this proposal is defining unsigned types using modular type
+definitions to avoid symmetric base ranges. However, modular types have fundamentally
+different semantics compared to integer types, which may not align with the intended
+use case.
 
 Drawbacks
 =========
 
-None found, this change is backwards-compatible; implementations can continue to do what
-they currently do (define a symmetric base type for signed integer types).
+Using unsigned base ranges limits the applicability of these types in contexts where
+generic units expect regular signed integer types because potential assumptions on their
+base ranges are no longer valid.
 
 Prior art
 =========
