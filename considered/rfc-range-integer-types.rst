@@ -89,7 +89,11 @@ base ranges are no longer valid.
 Prior art
 =========
 
-This is the way unsigned types are defined in other languages, like C.
+In C, unsigned types have a range that excludes negative values. Arithmetic operations
+on such types use the same number of bits as the defined width of the type. While their
+semantics differ, for example, unsigned types in C wrap around on overflow instead of
+raising an exception, this behavior ensures consistent bit-width usage during
+calculations. This proposal aligns Ada's behavior with such established practices.
 
 Unresolved questions
 ====================
