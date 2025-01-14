@@ -91,11 +91,11 @@ record extension, for example:
    package P is
       type T1 is class record
          procedure P (Self : in out T1);
-      end record with Scoped_Primitives;
+      end record;
 
       type T2 is new T1 with class record
          procedure P (Self : in out T1);
-      end record with Scoped_Primitives;
+      end record;
    end P;
 
 Primitives can be marked optionally overriding, following Ada 2005 rules.
@@ -124,15 +124,15 @@ Operators can be declared as primitives:
 .. code-block:: ada
 
    package P is
-      type T1 is tagged record
+      type T1 is class record
          function "=" (Left, Right : T1) return Boolean;
          function "+" (Left, Right : T1) return T1;
-      end record with Scoped_Primitives;
+      end record;
 
-      type T2 is new T1 with record
+      type T2 is new T1 with class record
          procedure "=" (Left : T2; Right : T1);
          function "+" (Left : T2, Right : T1) return T1;
-      end record with Scoped_Primitives;
+      end record;
    end P;
 
 Note that when overriding an operator, only the first parameter changes to the
