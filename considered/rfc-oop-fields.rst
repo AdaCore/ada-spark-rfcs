@@ -68,6 +68,7 @@ For example, all of the following type declarations are legal:
       with private;
 
       type R3 is record
+         null;
       end record with private;  -- This record type has both public and private views empty
 
       -- Same as R1, R2, R3 in tagged type forms
@@ -88,6 +89,7 @@ For example, all of the following type declarations are legal:
       end record;
 
       type R2 is record
+         null;
       end record;
 
       type R3 is null record;  -- This record type has both public and private views empty
