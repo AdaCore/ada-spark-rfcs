@@ -53,6 +53,57 @@ For example:
 
 Visibilty rules of these fields are following the usual package-visibilty rules.
 
+It is possible to declare empty public or private views either with an empty `record end record` section, or the shorthands `null record` syntax.
+
+For example, all of the following type declarations are legal:
+
+.. code-block:: ada
+
+   package Legal is
+      type R1 is null record with private;  -- This syntax is supported for declaring an empty public view
+
+      type R2 is record
+         Pub : Integer;
+      end record
+      with private;
+
+      type R3 is record
+      end record with private;  -- This record type has both public and private views empty
+
+      -- Same as R1, R2, R3 in tagged type forms
+
+      type T1 is tagged null record with private;
+
+      type T2 is tagged record
+         Pub : Integer;
+      end record
+      with private;
+
+      type T3 is tagged null record with private;
+
+   private
+
+      type R1 is record
+         Priv : Integer;
+      end record;
+
+      type R2 is record
+      end record;
+
+      type R3 is null record;  -- This record type has both public and private views empty
+
+      type T1 is tagged record
+         Priv : Integer;
+      end record;
+
+      type T2 is tagged null record;
+
+      type T3 is tagged null record;
+
+   end Legal;
+
+As outlined in the example, it is legal to declare both public and private views as empty.
+
 Reference-level explanation
 ===========================
 
