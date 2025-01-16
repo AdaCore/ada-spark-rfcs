@@ -50,6 +50,7 @@ partial and full views, e.g.:
    end P;
 
 Fields that are private to a type can only be accessed if:
+
 - The field is visible from the package visibilty rules
 - The access in a primitive of that type, or a primitive of a derived type.
 
