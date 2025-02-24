@@ -45,6 +45,59 @@ explicitely marked as static (for example, through 'Super). E.g:
 
 Default_Dispatching_Calls is On by default on new version of the language.
 
+Multi-Parameter Dispatching
+---------------------------
+
+Under this new pragma Default_Dispatching_Calls, primitives with more than
+one controlling parameter behave in the following way:
+
+- If they're called on a dispatching call, then everything works as if all
+  controlling parameters were converted to class wide view. And indeed, in that
+  case, we would have dynamic tag check as you do today in Ada.
+
+- If it's a non-dispatching call, today that's through 'Super, then you will
+  statically select the primitive, and will need to be able to statically check
+  the static type of all parameters.
+
+For example:
+
+.. code-block:: ada
+
+   type Root is tagged null record;
+
+   procedure Prim (A, B : Root);
+
+   type Child is new Root with null record;
+
+   overriding procedure Prim (A, B : Child);
+
+   R1, R2 : Root;
+   C1, C2 : Child;
+
+   C1'Super.Prim (R2); -- static, legal
+   C1'Super.Prim (C2'Super); -- static, legal
+   C1'Super.Prim (C2); -- illegal, C2 is of the wrong type
+
+Note that this is a problem when integrating with current Ada, pedantic Flare
+does not support multi-parameter dispatching.
+
+Dispactching on Returned Types
+------------------------------
+
+A tag indeterminate disatching call is illegal (as it is the case today). For
+example:
+
+.. code-block:: ada
+
+     pragma Default_Dispatching_Calls;
+     type T is tagged ... ;
+     function Make return T; -- primitive
+     Obj1 : T'Class := ...
+     Obj2 : T'Class := Make; -- illegal
+   begin
+     Obj1 := Make; -- legal; use Obj1'Tag to dispatch
+
+
 Reference-level explanation
 ===========================
 
