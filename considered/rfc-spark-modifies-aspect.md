@@ -25,23 +25,23 @@ Guide-level explanation
 =======================
 
 It is possible to annotate subprograms with side-effects with a ``Modifies``
-aspect. This aspect splits the input space in a number of disjoint cases, and,
-for each case, lists the parts of objects that are both inputs and outputs of
-the subprogram that are modified by the subprogram. Other objects are
-necessarily left unchanged.
+aspect. This aspect provides a list of clauses, each specifying a set of objects
+that are modified by the program, possibly with an additional guard introduced
+by the ``when`` keyword. Objects not mentioned in one of these clauses, or
+objects only mentioned in clauses whose guard evaluates to False, are
+necessarily left unchanged by the subprogram.
 
 This allows users to easily specify that some of their outputs are left
 unchanged on some paths. Here is an example. The global variable ``G`` is only
-written by ``Write_G_If_B`` if its parameter ``B`` evaluates to True. Its
-``Modifies`` aspect states that ``Write_G_If_B`` does not modify anything if
-``B`` is False:
+written by ``Write_G_If_B`` if its parameter ``B`` evaluates to True. It is
+stated in its ``Modifies`` aspect:
 
 ```ada
    G : Integer;
 
    procedure Write_G_If_B (B : Boolean) with
      Global => (In_Out => G),
-     Modifies => (not B => null);
+     Modifies => G when not B;
 
    procedure Write_G_If_B (B : Boolean) is
    begin
@@ -71,7 +71,7 @@ are preserved by the call:
    end record;
 
    procedure Write_G1_F1 (X : in out RR) with
-     Modifies => (others => X.G1.F1);
+     Modifies => X.G1.F1;
 
    procedure Write_G1_F1 (X : in out RR) is
    begin
@@ -91,7 +91,7 @@ will be the input value of ``I`` and not its output value.
    end record;
 
    procedure Write_G1_I (X : in out AR; I : in out Positive) with
-     Modifies => (others => X.G1.F1 (I));
+     Modifies => (X.G1.F1 (I), I);
 
    procedure Write_G1_I (X : in out AR; I : in out Positive) is
    begin
@@ -108,28 +108,25 @@ aspect_mark is ``Modifies`` and the aspect_definition must follow the grammar of
 ``MODIFIES_SPECIFICATION``:
 
 ```
-MODIFIES_SPECIFICATION ::= (MODIFIES_ALTERNATIVE {, MODIFIES_ALTERNATIVE});
+MODIFIES_SPECIFICATION ::= (MODIFIES_CLAUSE {, MODIFIES_CLAUSE});
 
-MODIFIES_ALTERNATIVE ::= GUARD => MODIFIED_OBJECTS
+MODIFIES_CLAUSE ::= MODIFIED_OBJECTS { when GUARD }
 
-GUARD ::= boolean_EXPRESSION | others
+GUARD ::= boolean_EXPRESSION
 
-MODIFIED_OBJECTS ::= null | (MODIFIED_OBJECT {, MODIFIED_OBJECT})
+MODIFIED_OBJECTS ::= MODIFIED_OBJECT | (MODIFIED_OBJECT {, MODIFIED_OBJECT})
 
 MODIFIED_OBJECT ::=
     name
   | MODIFIED_OBJECT . all
   | MODIFIED_OBJECT . component_selector_name
-  | MODIFIED_OBJECT (expression [, expression])
+  | MODIFIED_OBJECT (expression {, expression})
 ```
 
-This aspect contains a list of alternatives made of a guard, and a list
-of names designating parts of mutable parameters or global objects. The
-alternatives should be disjoint, so that at most one guard evaluates to True at
-the beginning of a given call. The ``others`` modifier can be used as the guard
-of the last alternative. For a set of input, the alternative whose guard
-evaluates to True is said to be *enabled*. If no guard evaluates to True, the
-alternative with ``others`` as a guard is enabled if there is one.
+This aspect contains a list of clauses made of one or several modified objects
+and an optional guard. For a set of input, clauses without a guard and clauses
+whose guard evaluates to True are said to be *enabled*. There can be more than
+one enabled clause for a set of input.
 
 We say that an object is *unchanged* by a subprogram if its input and its output
 values match in the following way:
@@ -146,7 +143,7 @@ values match in the following way:
 
 For now, we propose to not support unchanged concurrent objects. Therefore,
 if a concurrent object is modified by a subprogram with a ``Modifies`` aspect,
-the object should always occur alone in all alternatives of the ``Modifies``
+the object should always occur alone without a guard in the ``Modifies``
 aspect. The implicit self reference of protected operation is always omitted.
 
 If a ``MODIFIED_OBJECT`` is a name, it shall denote an entire object or a
@@ -154,33 +151,28 @@ state abstraction that is an output of the subprogram. For example, it would not
 make sense to mention ``B`` in the ``Modifies`` aspect of ``Write_G_If_B``, as
 ``B`` is one of its inputs but not one of its outputs.
 
-If an alternative of a ``Modifies`` aspect is enabled for a subprogram call,
+If a clause of a ``Modifies`` aspect is enabled for a subprogram call,
 then the index expressions of its ``MODIFIED_OBJECTS`` are evaluated once and
 for all at the beginning of the call. This is examplified by ``Write_G1_I`` in
 the previous section. The handling here is similar to what is done for loops in
 Ada, where bounds and container objects are evaluated one and for all at the
 beginning of the loop.
 
-If an alternative of a ``Modifies`` aspect is enabled for a subprogram call,
+If a clause of a ``Modifies`` aspect is enabled for a subprogram call,
 then each element of the ``MODIFIED_OBJECTS`` shall denote an object both at
 the beginning and at the end of the call. In particular, discriminant-dependent
 components shall be present, and dereferenced pointers shall not be null.
 
-If an alternative of a ``Modifies`` aspect is enabled for a subprogram call,
-then, when the subprogram returns normally, all subcomponents reachable from
-objects that are outputs of the subprogram shall be unchanged but for thos
-e reachable from the evalutation of elements of the ``MODIFIED_OBJECTS`` list of
-the enabled clause.
-This means in particular that we do not require anything when no alternatives
-are enabled. It is the case for ``Write_G_If_B``. If ``B`` evaluates to True,
-there is no enabled alternative and all outputs of ``Write_G_If_B``, here ``G``
-only, might be modified by the call.
+When a subprogram annotated with a ``Modifies`` aspect returns normally, all
+subcomponents reachable from objects that are outputs of the subprogram shall be
+unchanged but for those reachable from the evalutation of elements of a
+``MODIFIED_OBJECTS`` list of an enabled clause.
 
 When a subprogram propagates an exception, its parameter that are not known to
 be passed by reference are exempted from the check. All subcomponents reachable
 from objects that are outputs of the subprogram except its parameters that might
 be passed by copy shall be unchanged but for those reachable from the
-evalutation of elements of the ``MODIFIED_OBJECTS`` list of the enabled clause.
+evalutation of elements of a ``MODIFIED_OBJECTS`` list of an enabled clause.
 
 Rationale and alternatives
 ==========================
@@ -190,13 +182,10 @@ ideal as the size of the contract could blow up with the number of components
 in the structure while ``Modifies`` contracts should stay proportional to the
 size of the code. Also, it would not work as well with tagged extensions.
 
-Another alternative would be to rather list objects in the ``Modifies`` aspect
-with an optional ``when`` condition. However, this would only make sense if
-objects can only be mentionned once. This is something that might depend on
-the value of the subprogram's inputs if the object contains index components.
-
-As a pathological exemple, let's consider a function that only sets elements I
-and J of an array A if they are not equal to 0:
+Another alternative would be to split the input space into (possibly disjoint)
+cases, like in contract cases. The constraint of disjointness can be a bit
+cumbersome in some cases, as demonstrated on below. However, it has the
+advantage of listing all potentially modified objects in a single list.
 
 ```ada
 procedure Set_If_Not_Zero (A : Int_Array; I, J : Index) with
@@ -206,25 +195,6 @@ procedure Set_If_Not_Zero (A : Int_Array; I, J : Index) with
      A (J) /= 0 and A (I) = 0 => A (J),
      A (J) = 0 and A (I) = 0 => null);
 ```
-
-Obviously this is painful. An alternative would be to rather list objects in the
-``Modifies`` aspect with an optional ``when`` condition.
-
-```ada
-procedure Set_If_Not_Zero (A : Int_Array; I, J : Index) with
-  Modifies =>
-    (A (I) when A (I) /= 0,
-     A (J) when A (J) /= 0);
-```
-
-In this version, we might be tempted to require that a single object can only
-occur once in the ``Modifies`` aspect, but they might not be practical, as can
-be seen on the example above, when index components are present.
-
-A possibility could be to allow duplication in this alternative version when
-there are indexed components (similarly to what is done for deep delta
-aggregates). This would allow harder to read forms with duplications that
-hopefully people would not write.
 
 Drawbacks
 =========
