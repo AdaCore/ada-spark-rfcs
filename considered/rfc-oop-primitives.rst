@@ -219,8 +219,48 @@ of the scope of a class record cannot be called though prefix notation. Notably:
       P2 (V); -- legal
 
 
-Deprecation of other prefix notations
--------------------------------------
+Discriminants
+-------------
+
+Disciminants of class record need to be repeated on both public and private
+declaration views, but not their body view (similar to e.g. protected types).
+E.g:
+
+.. code-block:: ada
+
+   package P is
+      type R (B : Boolean) is class record
+         F : Integer;
+
+         procedure Prim (Self : in out R; V : Integer);
+       end record
+       with private;
+
+   private
+
+       type R (B : Boolean) is class record
+         procedure Prim_2 (Self : in out R; V : Integer);
+       end record;
+
+   end P;
+
+   package body P is
+
+      type body R is record
+         procedure Prim (Self : in out R; V : Integer) is
+         begin
+            Self.F := V;
+         end record;
+
+         procedure Prim_2 (Self : in out R; V : Integer) is
+         begin
+            if Self.B then
+               Self.F := V + 1;
+            end if;
+         end Prim_2;
+       end record;
+
+   end P;
 
 
 Reference-level explanation
