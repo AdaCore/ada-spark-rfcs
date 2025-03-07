@@ -169,6 +169,60 @@ It is possible to also scope primitives in regular records:
 Declaring primities outside of regular records is still possible. It's not
 possible to declare primitives within a regular tagged record.
 
+Non-primitive scoped operations
+-------------------------------
+
+The only non-primitive operation allowed in a class record is a non primitive
+that has a class wide parameter of the enclosing type as the first paramter,
+e.g.:
+
+.. code-block:: ada
+
+   type R is class record
+      procedure P1 (Self : R'Class); -- legal
+
+      procedure P2 (X1 : Integer; Self : R); -- error
+
+      procedure P3 (X1 : Integer); -- error
+   end record;
+
+These class wide subprograms are called through prefix notation. They cannot
+however be overriden, and a derived class cannot redefine any subprogram of the
+same profile. E.g.:
+
+.. code-block:: ada
+
+   type C is new R with class record
+      procedure P1 (Self : C'Class); -- illegal
+
+      procedure P1 (Self : C); -- illegal
+
+      procedure P1 (Self : C'Class; I : Integer);
+      -- legal, this is a different profile
+   end record;
+
+Note that, as opposed to tagged types, class-wide subprogram declared outside
+of the scope of a class record cannot be called though prefix notation. Notably:
+
+.. code-block:: ada
+
+      type R is class record
+         procedure P1 (Self : R'Class);
+      end record;
+
+      procedure P2 (Self : R'Class);
+
+      V : R;
+   begin
+      V.P1; -- legal
+      V.P2; -- error
+      P2 (V); -- legal
+
+
+Deprecation of other prefix notations
+-------------------------------------
+
+
 Reference-level explanation
 ===========================
 
