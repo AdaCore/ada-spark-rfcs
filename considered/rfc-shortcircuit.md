@@ -169,6 +169,50 @@ function F (A : T2; B : Boolean := G /= 0 and G / 10 > 5);
 In that case, the operator will follow the semantic of the unit where it's
 written and will not be shortcircuit.
 
+Changes in 'Old constraints
+---------------------------
+
+The rule that 'Old cannot be on the right-endside of a short-circuit operator
+is lifted when it's in the context of a default short-circuit one. Notably,
+this was forbidden:
+
+```ada
+procedure X (A, B : in out Integer)
+with Post => A = A'Old and then B = B'Old;
+```
+
+But this is allowed:
+
+```ada
+pragma Shortcircuit_Operators (True);
+
+procedure X (A, B : in out Integer)
+with Post => A = A'Old and B = B'Old;
+```
+
+Note that this includes cases which used to be illegal and are now erroneous:
+
+```ada
+pragma Shortcircuit_Operators (True);
+
+type Arr is array (Integer range <>) of Integer;
+
+procedure X (I : in out Integer; A : in out Arr)
+with Post => I in A'Range and A (I)'Old = 0;
+-- I may be out of range when A is stored
+```
+
+In both cases, the code should be re-written to allow for the expression to be
+in bound. Here a potential re-write may be:
+
+```ada
+procedure X (I : in out Integer; A : in out Arr)
+with Post => I in A'Range and A'Old (I) = 0;
+```
+
+This very case only works if storing the array is reasonable, code refactoring
+may be necessary if it's not (but these refactoring requirements are not
+introduced by the semantic change).
 
 Reference-level explanation
 ===========================
