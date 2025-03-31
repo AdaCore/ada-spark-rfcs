@@ -45,6 +45,53 @@ explicitely marked as static (for example, through 'Super). E.g:
 
 Default_Dispatching_Calls is On by default on new version of the language.
 
+Note that the decision to dispatch or not is made at the point of the call, not
+the subprogram declaration. For example:
+
+.. code-block:: ada
+
+   package A is
+
+      pragma Default_Dispatching_Calls (Off);
+
+      type Root is tagged null record;
+
+      procedure P (Self : in out Root);
+
+      type Child is new Root with null record;
+
+      procedure P (Self : in out Root);
+
+   end A;
+
+   package body A is
+
+      [... some code ...]
+
+      procedure Something (X : Root) is
+      begin
+         X.P; -- NOT Dispatching
+      end Something;
+
+      [... some code ...]
+
+   end A;
+
+   package body B is
+
+      pragma Default_Dispatching_Calls (On);
+
+      [... some code ...]
+
+      procedure Something_Else (X : Root) is
+      begin
+         X.P; -- Dispatching
+      end Something_Else;
+
+      [... some code ...]
+
+   end B;
+
 Multi-Parameter Dispatching
 ---------------------------
 
@@ -62,6 +109,8 @@ one controlling parameter behave in the following way:
 For example:
 
 .. code-block:: ada
+
+   pragma Default_Dispatching_Calls (On);
 
    type Root is tagged null record;
 
@@ -89,7 +138,7 @@ example:
 
 .. code-block:: ada
 
-     pragma Default_Dispatching_Calls;
+     pragma Default_Dispatching_Calls (On);
      type T is tagged ... ;
      function Make return T; -- primitive
      Obj1 : T'Class := ...
@@ -97,6 +146,70 @@ example:
    begin
      Obj1 := Make; -- legal; use Obj1'Tag to dispatch
 
+
+Access to Subprograms
+---------------------
+
+Access to dispatching primitives are dispatching if their access is taken in
+a scope where Default_Dispatching_Calls is On. For example:
+.. code-block:: ada
+
+   package A is
+
+      pragma Default_Dispatching_Calls (Off);
+
+      type Root is tagged null record;
+
+      procedure P (Self : in out Root);
+
+      type Acc is access all procedure (Self : in out Root);
+
+      A_D : Acc;
+      A_ND : Acc;
+
+   end A;
+
+   package body B is
+
+      pragma Default_Dispatching_Calls (On);
+
+      [... some code ...]
+
+         A_D := A.P'Access; -- This will be dispatching.
+
+      [... some code ...]
+
+   end B;
+
+   package body C is
+
+      pragma Default_Dispatching_Calls (Off);
+
+      [... some code ...]
+
+         A_ND := A.P'Access; -- This will not be dispatching.
+
+      [... some code ...]
+
+   end C;
+
+   package body D is
+
+      [... some code ...]
+
+         A_D.all (Obj); -- This dispatches
+         A_ND.all (Obj); -- This doesn't dispatches
+
+      [... some code ...]
+
+   end D;
+
+In other words, the decision on how a call to an access to subprogram behaves
+is taken at the point where the access value is created (through 'Access). A
+potential implementation could be to have a wrapper generated to provide a
+different version of the subprogram depending on the context. Note that
+this means that subsequent usage of the 'Access attribute may not yield the
+same address, which is allowed.
 
 Reference-level explanation
 ===========================
