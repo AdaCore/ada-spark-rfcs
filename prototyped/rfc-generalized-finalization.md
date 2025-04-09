@@ -147,14 +147,8 @@ This aspect shall be explicitly defined only on:
 * Record types, tagged or not
 * Private types for which the full-view is a record type
 
-<<<<<<< Updated upstream
-Note in particular that it cannot be defined on a derived type.
-
-Any type that has a `Finalizable` aspect is a by-reference type.
-=======
 Any type that has a `Finalizable` aspect will automatically become a
 by-reference type.
->>>>>>> Stashed changes
 
 The aspect is inherited by derived types. The compiler-generated calls to the
 user-defined operations should then be dispatching whenever it makes sense,
