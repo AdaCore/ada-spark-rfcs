@@ -6,20 +6,20 @@
 Summary
 =======
 
-This proposal introduces the concept of `level of assertion`, introduced by a
+This proposal introduces the concept of ``level of assertion``, introduced by a
 new pragma. Assertions and ghost declarations can be associated with a
-previously declared level. Only assertions and ghost code associated with a
-level which is active are compiled into executable code.
+previously declared level. Only assertions and ghost code associated with
+an active level are compiled into executable code.
 
 In more details:
 
-- A new pragma ``Assertion_Level`` allows to name a specific assertion level
-  and its dependencies.
+- A new pragma ``Assertion_Level`` allows the definition of a specific assertion
+  level and its dependencies.
 - Pragma ``Assertion_Policy`` is extended so that a level of assertion can
-  be associated with a policy (either standard ones ``Check`` and ``Ignore``
+  be associated with a policy (either the standard ones ``Check`` and ``Ignore``
   or GNAT-specific ones).
-- Most assertions (at the exception of ``Contract_Cases``) are extended so that
-  it is possible to associate a level to the assertion.
+- Most assertions (with the exception of ``Contract_Cases``) are extended so
+  that a level can be associated with them.
 - The ``Ghost`` aspect on ghost declarations is extended to allow specifying
   a level for the declaration.
 
@@ -43,7 +43,7 @@ Assertion levels
 ----------------
 
 A new pragma is introduced, ``Assertion_Level``, which takes an identifier as
-parameter. It can be used to defined custom assertion levels, for example:
+a parameter. It can be used to define custom assertion levels, for example:
 
 ```Ada
 package Some_Package is
@@ -111,8 +111,8 @@ procedure Lemma with Ghost => Static;
 Dependencies between assertion levels
 -------------------------------------
 
-When declaring assertion levels, you can describe dependencies, in other word,
-what data can flow from one level of assertion to the other. This dependency is
+When declaring assertion levels, you can describe dependencies, in other words,
+what data can flow from one level of assertion to the other. Such a dependency is
 unidirectional. For example:
 
 ```Ada
@@ -120,8 +120,8 @@ pragma Assertion_Level (Silver);
 pragma Assertion_Level (Gold, Depends => [Silver]);
 ```
 
-The above means that Gold assertions may depend on Silver, but the reverse is
-not true.
+The above means that the ``Gold`` assertions may depend on ``Silver``, but the
+reverse is not true.
 
 Dependencies are transitive, e.g. in:
 
@@ -139,9 +139,9 @@ pragma Assertion_Level (Gold, Depends => [Silver]);
 pragma Assertion_Level (Platinum, Depends => [Silver, Gold]);
 ```
 
-By default, all assertions levels depends on `Runtime` level, and
-`Static` level depends on all assertions levels that doesn't
-explicitely or transitively depend on it (there are no circularities). The
+By default, all assertions levels depend on the ``Runtime`` level, and
+the ``Static`` level depends on all assertions levels that don't
+explicitly or transitively depend on it (there are no circularities). The
 following is valid:
 
 ```Ada
@@ -153,18 +153,18 @@ X1 : Integer with Ghost => Platinum;
 X2 : Integer := X1 with Ghost => Static;
 ```
 
-User can create assertion levels that can never be compiled into runtime code by introducing a
-dependency on `Static`:
+The user can create assertion levels that can never be compiled into runtime code
+by introducing a dependency on ``Static``:
 
 ```Ada
 pragma Assertion_Level (Silver_Static, Depends => [Static]);
 ```
 
-Activating / Deactivating Assertions
+Activating/Deactivating Assertions
 ------------------------------------
 
-Specific assertions code can be activated / deactivated through an extension of
-the Assertion_Policy pragma:
+Specific assertions code can be activated/deactivated through an extension of
+the ``Assertion_Policy`` pragma:
 
 ```Ada
 pragma Assertion_Policy (Gold => Check, Platinium => Ignore);
@@ -181,8 +181,8 @@ assertion levels as follows:
 
 Effects of multiple pragmas ``Assertion_Policy``, or multiple associations in
 the same pragma ``Assertion_Policy``, are taken into account in order. So the
-following deactivates preconditions, except for those at ``Gold`` assertion
-level, as all assertions and ghost entities at ``Gold`` level are activated:
+following deactivates preconditions, except for those at the ``Gold`` assertion
+level, as all assertions and ghost entities at the ``Gold`` level are activated:
 
 ```Ada
 pragma Assertion_Policy (Pre => Ignore);
@@ -195,7 +195,7 @@ and similarly for:
 pragma Assertion_Policy (Pre => Ignore, Gold => Check);
 ```
 
-while the following activates all assertions and ghost entities at ``Gold``
+while the following activates all assertions and ghost entities at the ``Gold``
 level, except for preconditions, as all preconditions are deactivated:
 
 ```Ada
@@ -319,14 +319,14 @@ feature to be usable.
 Prior art
 =========
 
-JML (for Java) and ACSL (for C) behaviors bare some resemblance to assertion
-levels, in that they allow separate specification of intended functionality,
-but they cannot be separately selected when compiling the code.
+JML (for Java) and ACSL (for C) contain features that resemble assertion
+levels in that they allow separated specifications of intended functionality,
+but the levels cannot be separately selected when compiling the code.
 
 While it was envisioned at some previous point, in [its latest
 version](https://isocpp.org/files/papers/P2900R6.pdf), the proposed contracts
-for C++26 does not include `The ability to assign an assertion level to a
-contract assertion`.
+for C++26 do not include the ability to assign an assertion level to a contract
+assertion
 
 Unresolved questions
 ====================
