@@ -152,6 +152,7 @@ Access to Subprograms
 
 Access to dispatching primitives are dispatching if their access is taken in
 a scope where Default_Dispatching_Calls is On. For example:
+
 .. code-block:: ada
 
    package A is
