@@ -71,7 +71,7 @@ With these arrays, slices always slide towards the lower bound. In particular, i
 
 .. code-block:: ada
 
-  type String is array (Positive range 0 .. <>) of Character;
+  type String is array (Natural range 0 .. <>) of Character;
   S : String := “Hello”
   P (S (1 .. 2));
   
@@ -93,7 +93,7 @@ Assigning from a type with a unconstrained lower bound to a type with a lower bo
   
   subtype Fixed_String is String (1 .. <>);
   S1 : String (2 .. 3) := "AB";
-  S2 : Fixed_String := S1; -- S2 bounda are 1 .. 2
+  S2 : Fixed_String := S1; -- S2 bounds are 1 .. 2
 
 It is an error to declare an object with a lower bound different than the one provided by its type. For example
 
@@ -106,14 +106,14 @@ It is an error to declare an object with a lower bound different than the one pr
   
 S3 should raise Contraint_Error - or potentially issue a compiler warning / error on obvious cases. 
 
-Note that this proposal should also be generalized to multi-dimentional arrays, where one or more of the lower bounds could be fixed, 
+Note that this proposal should also be generalized to multi-dimensional arrays, where one or more of the lower bounds could be fixed,
 for example:
 
 .. code-block:: ada
 
-  type Int_Matrix_1 is array (Positive range 0 .. <>, Positive range <>) of Integer;
-  type Int_Matrix_2 is array (Positive range <>, Positive range 0 .. <>) of Integer;
-  type Int_Matrix_3_ is array (Positive range 0 .. <>, Positive range 0 .. <>) of Integer;
+  type Int_Matrix_1 is array (Natural range 0 .. <>, Natural range <>) of Integer;
+  type Int_Matrix_2 is array (Natural range <>, Natural range 0 .. <>) of Integer;
+  type Int_Matrix_3 is array (Natural range 0 .. <>, Natural range 0 .. <>) of Integer;
 
 The behavior should be similar to the one of single-dimension array, including in particular subtyping, assignment and slicing/sliding.
 
