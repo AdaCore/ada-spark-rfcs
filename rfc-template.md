@@ -2,8 +2,7 @@
   That should be the same as the file name and will serve as a
   reference in tests and other documentation)
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC Issue: (leave this empty)
-- RFC status: (Proposed | Planning | Design | Ready for prototyping | Implementation | Prouction | Rejected)
+- Status: (Proposed | Planning | Design | Ready for prototyping | Implementation | Production | Rejected)
 
 Summary
 =======

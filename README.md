@@ -62,8 +62,8 @@ A RFC may be in one of the following states:
 
 * Proposed – a proposal from the initiator, waiting for go-ahead; 
 * Rejected – the discussions around the proposal concluded that the RFC will not be processed further;
-* Planning – the proposal has been considered interesting enough and it is selected for detailed design work. If the RFC wasn't created before the date in issue shall be propageated to a pull request at this stage;
-* Design – there is a team allocated to work on refinement of the RFC;
+* Planning – the proposal has been considered interesting enough, and it has been selected for detailed design work. If the RFC wasn't created before the date in issue, it shall be propagated to a pull request at this stage;
+* Design – there is a team allocated to work on the refinement of the RFC;
 * Ready for prototyping – the RFC is mature enough to start with the compiler support prototype;
 * Implementation – working on the tool support;
 * Production – the planned tool support is implemented.
