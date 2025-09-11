@@ -1,7 +1,9 @@
-- Feature Name: (fill me in with a unique ident, my_awesome_feature)
+- Feature ID: (fill me in with a unique ident, my_awesome_feature.
+  That should be the same as the file name and will serve as a
+  reference in tests and other documentation)
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: (leave this empty)
 - RFC Issue: (leave this empty)
+- RFC status: (Proposed | Planning | Design | Ready for prototyping | Implementation | Prouction | Rejected)
 
 Summary
 =======
@@ -64,6 +66,16 @@ Drawbacks
 =========
 
 Why should we *not* do this?
+
+Compatibility
+=============
+
+State clearly whether the change is backward compatible or not and suggest whether it should be part of the default feature set or available under a special switch.
+
+Open questions
+==============
+
+List the topics that still need clarifications, if any.
 
 Prior art
 =========
