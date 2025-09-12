@@ -145,7 +145,7 @@ Note that by-copy constructor are also called in assignments situations
    begin
       V1 := V2; -- calls destructor on V1, then copy from V2.
 
-A non-limited type always have a by constructor copy available, overloaded or
+A non-limited type always has a by-copy constructor available, overloaded or
 not.
 
 Super Constructor Call
@@ -188,8 +188,8 @@ Note that the constructor of an abstract type can be called here, for example:
       null;
    end Child'Constructor;
 
-When valuating values in the Super aspect, the constructed object does not
-exit yet. It is illegal to refer to this parameter in the aspect.
+When valuating values in the Super aspect, the object under construction does
+not exit yet. It is illegal to refer to its parameter in the aspect.
 
 Initialization Lists
 --------------------
@@ -210,7 +210,7 @@ Initialization of components can be done in two ways:
 - Through an ``Initialize`` aspect that can rely on constructor parameters.
 
 If the component is of a type that doesn't have a parameterless constructor, it
-has to be initialized by on of these two mechanism.
+has to be initialized by one of these two mechanism.
 
 Here's an example of using ``Initialize`` for such a case:
 
@@ -280,7 +280,7 @@ initialized as described at declaration time. For example:
    end C'Constructor;
 
    V1 : C := C'Make; -- Will print A FROM RECORD, B FROM RECORD
-   V2 : C := C'Make ("ATERNATE A"); -- Will print ATERNATE A, B FROM RECORD
+   V2 : C := C'Make ("ALTERNATE A"); -- Will print ALTERNATE A, B FROM RECORD
 
 Note for implementers - the objective of the semantic above is to make
 initialization as efficient as possible and to avoid undecessary processing.
@@ -322,7 +322,7 @@ object. The following for example will issue an error:
    end record;
 
    type Child is new Root with record
-      C : R;
+      C : Integer;
    end record;
 
    procedure Child'Constructor (Self : in out Child);
@@ -338,9 +338,9 @@ object. The following for example will issue an error:
       null;
    end Child'Constructor;
 
-When valuating values in the Initialize aspect, the constructed object does not
-exit yet. It is illegal to refer to this parameter in the aspect. The following
-is illegal:
+When valuating values in the Initialize aspect, the object under construction
+does not exist yet. It is illegal to refer to this parameter in the aspect.
+The following is illegal:
 
 .. code-block:: ada
 
@@ -413,7 +413,7 @@ constructors, the parent type discriminants are not set. For example:
 
    type Root (V : Integer) is tagged null record;
 
-   procedure Root'Constructor (Self : in out Child);
+   procedure Root'Constructor (Self : in out Root);
 
    -- note that we're not specifying Root discriminant as Root has a constructor
    type Child is new Root with null record;
@@ -523,7 +523,7 @@ such subtyping can also be used for components:
       end record;
 
 In this version of the proposal, discriminant subtyping is only legal for
-untagged types. Considerations around type types are described in the future
+untagged types. Considerations around tagged types are described in the future
 possibilities section.
 
 Constructors and Type Predicates
@@ -578,32 +578,40 @@ constructors are declared. Notably:
 - Requirement on parameterless and by copy constructors can be removed by
   marking them abstract.
 
-As for subsprograms, generic formal constructors are introduced with the `with`
+As for subprograms, generic formal constructors are introduced with the `with`
 reserved word. For example:
 
 .. code-block:: ada
 
    generic
       type T1 is tagged private;
-      --  Needs at least a parameterless and a by-copy constructor
+      --  Needs at least a parameterless and a by-copy constructor,
+      --  if T1 is by constructor.
 
       type T2 is tagged private;
       with T2'Constructor (Self : in out T2; V : Integer);
       --  No parameterless constructor expected, but a by-copy one
 
       type T3 is tagged private;
-      with T2'Constructor (Self : in out T2) is abstract;
+      with T3'Constructor (Self : in out T3) is abstract;
       --  No parameterless constructor expected, but a by-copy one
 
       type T4 is tagged private;
-      with T4'Constructor (Self : in out T2) is abstract;
-      with T4'Constructor (Self : in out T2; Src : T2) is abstract;
-      --  No parameterless constructor expected, but a by-copy one
+      with T4'Constructor (Self : in out T4) is abstract;
+      with T4'Constructor (Self : in out T4; Src : T4) is abstract;
+      --  Neither parameterless nor by-copy constructor expected
    package G is
-      V : T1; -- OK, we have parameterless constructor
-      V2 : T1 := V; -- OK, we have by-copy constructor
+     V11: T1; -- OK, we have parameterless constructor for T1
+     V12: T1 := V11; -- OK, we have by-copy constructor for T1
 
-      V3 : T4; -- NOK we don't have parameterless constructor for T4
+     V21: T2; -- NOK, no parameterless constructor expected for T2
+     V22: T2 := V21; -- OK, we have by-copy constructor for T2
+
+     V31: T3; -- NOK, no parameterless constructor expected for T3
+     V32: T3 := V31; -- OK, we have by-copy constructor for T3
+
+     V41: T4; -- NOK we don't have parameterless constructor for T4
+     V42: T4 := V41; -- NOK we don't have by-copy constructor for T4
    end G;
 
    package P is
@@ -625,9 +633,9 @@ reserved word. For example:
       --  All of these are OK, T1 provides all the necessary constructors
 
       package G2 is new G (
-         T1 => R2, -- Error, R2 doesn't have parametelress and by copy constructor
-         T2 => R2, -- Error, R2 doesn't have parametric and by copy constructor
-         T3 => R2, -- Error, R2 doesn't by copy constructor
+         T1 => R2, -- Error, R2 doesn't have parameterless and by-copy constructor
+         T2 => R2, -- Error, R2 doesn't have parametric and by-copy constructor
+         T3 => R2, -- Error, R2 doesn't have by-copy constructor
          T4 => R2 -- OK, no constructor expected here
       );
 
@@ -683,7 +691,7 @@ type by a "by constructor" tagged type, e.g.:
 
    procedure New_Child'Constructor (Self : in out New_Child; L1, L2 : Integer);
 
-In that case, any child of New_Child has to be a by-constructor type, ie it
+In that case, any child of New_Child has to be a by-constructor type, i.e.
 while it is possible to extend a "regular" tagged type by a "by constructor"
 tagged type, it is not possible to extend a "by constructor" tagged type by
 a regular one.
@@ -695,7 +703,7 @@ In certain situations, it's important to know if an object is considered
 initialized. For example, this can clarify wether passing a value of such object
 may lead to errors.
 
-An object value in a constructor is consisered initialized once the `Super` and
+An object value in a constructor is considered initialized once the `Super` and
 `Initialze` aspects have been computed. Formally, the role of the constructor
 is to establish further properties than the initialization.
 
@@ -729,7 +737,7 @@ operation. The discriminants may need to be valuated, the super constructor
 must be called. In some cases, the object memory is already allocated (think
 of the case of a component with an implicit constructor call).
 
-Having a constructor as a procedure also allows for expansion without undecessary
+Having a constructor as a procedure also allows for expansion without unnecessary
 copies:
 
 .. code-block:: ada
@@ -893,7 +901,7 @@ Consider the following hierarchy:
       null;
    end Root'Constructor;
 
-   type Child is new Root with null record with Constructor => Constr;
+   type Child is new Root with null record;
 
    procedure Child'Constructor (Self : in out Bla; C : Boolean)
       with Super => (C);
@@ -901,7 +909,7 @@ Consider the following hierarchy:
       null;
    end Child'Constructor;
 
-Child does not have any discrimininant. Root discriminant is set by its own
+Child does not have any discriminant. Root discriminant is set by its own
 constructor. There is currently no syntax allowing to subtype Child and provide
 a constrain to its discriminant.
 
