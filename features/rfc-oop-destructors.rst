@@ -12,20 +12,18 @@ Guide-level explanation
 =======================
 
 Record, tagged records and class records can declare destructors. The
-destructor is identifed by the `Destructor` attribute, e.g.:
+destructor is identifed by the `<type>'Destructor` attribute, e.g.:
 
 .. code-block:: ada
 
    package P is
       type T is tagged null record;
-      for T'Destructor use T_Destructor;
 
-      procedure T_Destructor (Self : in out T);
+      procedure T'Destructor (Self : in out T);
 
-      type T2 is new T with null record
-      with Destructor => T2_Destructor;
+      type T2 is new T with null record;
 
-      procedure T2_Destructor (Self : in out T2);
+      procedure T2'Destructor (Self : in out T2);
    end P;
 
 The destructor expands into a Finalizable type, and the runtime semantics can
@@ -43,30 +41,6 @@ The expansion is meant to allow the following:
 3. A destructor procedure can hence never be overriden via the `overriding`
    qualifier. We deem that it would be confusing wrt. the auto call parent
    semantics.
-
-.. attention:: The original example above was:
-
-   .. code-block:: ada
-
-       package P is
-          type T is tagged null record;
-          for T'Destructor use My_Destructor;
-
-          procedure My_Destructor (Self : in out T);
-
-          type T2 is new T with null record
-          with Destructor => My_Destructor;
-
-          procedure My_Destructor (Self : in out T2);
-       end P;
-
-    Which seems wrong whichever way you look at it because both destructors
-    have the same name. Either you want to disallow overriding the destructor
-    subprogram itself, either you want to allow overriding but disallow
-    respecification of the aspect.
-
-    The question being, which seems more natural ? I would say that we want to
-    forbid overriding the subprogram itself, and use the expansion shown below.
 
 Here is a proposed expansion for the example above:
 
@@ -114,16 +88,13 @@ Reference-level explanation
 Name resolution rules
 ---------------------
 
-* The ``Destructor`` aspect expects a procedure with a single parameter of the
+* The ``Destructor`` attribute expects a procedure with a single parameter of the
   type on which the aspect is defined.
 
 Legality rules
 --------------
 
-* It is forbidden to override a procedure specified as a value for the
-  `Destructor` aspect.
-
-* The `Destructor` aspect can be re-specified for types derived from a type
+* The `Destructor` attribute can be re-specified for types derived from a type
   that has a `Destructor` aspect.
 
 * The subprogram passed to the destructor aspect should have the ``in out``
