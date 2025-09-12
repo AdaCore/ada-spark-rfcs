@@ -34,7 +34,7 @@ can be used to make non dispatching calls. For example:
    end Call;
 
 Note that `'Super` being used to make non dispatching calls to primitives using
-the parent view, it is only available is said view is of a derived type (there'S
+the parent view, it is only available if said view is of a derived type (there'S
 no primitive to call otherwise).
 
 Reference-level explanation

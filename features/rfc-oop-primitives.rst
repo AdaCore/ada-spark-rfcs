@@ -14,13 +14,13 @@ Guide-level explanation
 Class objects
 -------------
 
-A new type of type is introduce, the `class` type. This type operates similarly
+A new type of type is introduced, the `class` type. This type operates similarly
 to tagged type (there are even situations where it can be derived from one)
 with a number of differences:
 
 - It's always a by-constructor type
 - It cannot have coextensions (so no access-type discriminants)
-- It primitives must follow the rules of First_Controlling_Parameter
+- Its primitives must follow the rules of First_Controlling_Parameter
 - It always follows the rules of Default_Dispatching_Calls
 - Primitives need to be declared within its scope - operations declared outside
   of its scope are not primitives.
@@ -55,7 +55,7 @@ bodies. The following demonstrates the above:
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;
-         end record;
+         end Prim;
 
          procedure Prim_2 (Self : in out R; V : Integer) is
          begin
@@ -72,7 +72,7 @@ bodies. The following demonstrates the above:
 
 Primitives declared within a type can only be called via prefix notation. When
 primitives are declared in a scope, there can no longer be primitives declared
-ouside of the scope, such declarations are non-primitives.
+outside of the scope, such declarations are non-primitives.
 
 Scoped primitives can be referred to with their fully qualified notation (for
 example, when using access to suprograms or renamings), for example here as
@@ -129,8 +129,8 @@ Operators can be declared as primitives:
       end record;
 
       type T2 is new T1 with class record
-         procedure "=" (Left : T2; Right : T1);
-         function "+" (Left : T2, Right : T1) return T1;
+         function "=" (Left : T2; Right : T1) return Boolean;
+         function "+" (Left : T2; Right : T1) return T1;
       end record;
    end P;
 
@@ -165,7 +165,7 @@ It is possible to also scope primitives in regular records:
 
    end P;
 
-Declaring primities outside of regular records is still possible. It's not
+Declaring primitives outside of regular records is still possible. It's not
 possible to declare primitives within a regular tagged record.
 
 Non-primitive scoped operations
@@ -221,7 +221,7 @@ of the scope of a class record cannot be called though prefix notation. Notably:
 Discriminants
 -------------
 
-Disciminants of class record need to be repeated on both public and private
+Discriminants of class record need to be repeated on both public and private
 declaration views, but not their body view (similar to e.g. protected types).
 E.g:
 

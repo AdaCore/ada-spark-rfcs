@@ -22,7 +22,7 @@ replace initialization. But the consequence is that there's no way to ensure
 that a given sequence of statement is putting an object in a consistent state
 at creation time (unlike traditional constructors).
 
-Second Adjust perform a post-copy update to a type. This causes a double issue,
+Second, Adjust perform a post-copy update to a type. This causes a double issue,
 first in terms of performance, as assignment may not need all components to be
 modified. But this also limits the control over assignment logic, as the user
 has no way to know what was the initial state of the object or what object
@@ -30,23 +30,23 @@ was initially copied from.
 
 Third, Ada allows partial assignment of objects through parent views. To
 some respect, this is also an issue, as the resulting object may be inconsistent,
-with only part updated, and potentially now way in Adjust to understand which
+with only part updated, and potentially no way in Adjust to understand which
 part was changed and which part was not.
 
 A related issue is the so called "Aggregate by extension" where a root object
 is copied into a child one with specific values provided by the aggregate,
 again here with no control over the consistency of values (not even in Adjust
-in the case of initialiation).
+in the case of initialization).
 
 To solve these issues, we propose to introduce a two step object update
 mechanism through a value duplication ('Clone) and post update adjustment
 ('Adjust).
 
 Note that this extra complexity is driven from the desire to support natively
-Ada constructions (aggregates, partial copie, etc) and improve compatibility
+Ada constructs (aggregates, partial copies, etc) and improve compatibility
 between classes and tagged types. Users can leverage default implementation if
 such level of control is unecessary. Some language extension may also allow
-to forbig aggregates and partial update on specific types (although this
+to forbid aggregates and partial update on specific types (although this
 introduces complexities in generics that now need to specify wether these
 restricted types are allowed or not).
 
@@ -92,7 +92,7 @@ calls clone operation of all the components one by one. The compiler is free to
 optimize to bitwise copies if clone operations are not user-defined.
 
 Calls to 'Clone are statically resolved when used on definite views, and
-dynamcially resolved on 'Class wide type. This is arguably a departure from the
+dynamically resolved on 'Class wide type. This is arguably a departure from the
 "all calls are dispatching" requirement from other aspects of the OOP design,
 but is required to allow partial copies of objects which are done today in
 various places Ada.
@@ -108,7 +108,7 @@ different from the legacy Ada Adjust primitive in that it has an argument
 refering to the initial value. Note that the From parameter of adjust is
 always typed after the root type of the tagged record hierarchy - indeed, the source
 object may be higher up in the derivation chain in the case of partial
-copy. This value value is provided for reference but is not expected to be
+copy. This value is provided for reference but is not expected to be
 modified.
 
 .. code-block:: ada
@@ -214,7 +214,7 @@ Partial Copy Assignments
 ------------------------
 
 Ada dynamically checks for tags compatibility in the context of two 'Class
-types, which can only be assigned if there are of the same type. However, if the
+types, which can only be assigned if they are of the same type. However, if the
 views are definite, the assignment is partial. For example:
 
 .. code-block:: ada
@@ -348,7 +348,7 @@ A few notes on the above sequences:
   destructor, adjust and clone attributes is somewhat heavy, as the aggregate
   needs to be fully initialized before cloned, then reclaimed. It's important
   to have self consistency here. However, developer may prefer to reserve
-  aggregate notation for types that do not require these constructions, and
+  aggregate notation for types that do not require these constructs, and
   the compiler should optimize the sequencing in these cases.
 
 Aggregate Assignments with Extension Copies
@@ -616,7 +616,7 @@ We looked at various ways to remove the need of temporaries, for example by
 introducing special constructors taking aggregate values as paramters. However,
 this quickly leads to the need of creating a lot of extra attributes for all
 situations. In light of the added complexity, and the fact that we can
-provide means to acheive desired optimization when needed, it didn't look like
+provide means to achieve desired optimization when needed, it didn't look like
 the right trade-off.
 
 Drawbacks
