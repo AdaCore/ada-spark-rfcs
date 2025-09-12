@@ -132,7 +132,7 @@ does not support multi-parameter dispatching.
 Dispactching on Returned Types
 ------------------------------
 
-A tag indeterminate disatching call is illegal (as it is the case today). For
+A tag indeterminate dispatching call is illegal (as it is the case today). For
 example:
 
 .. code-block:: ada
@@ -198,7 +198,7 @@ a scope where Default_Dispatching_Calls is On. For example:
       [... some code ...]
 
          A_D.all (Obj); -- This dispatches
-         A_ND.all (Obj); -- This doesn't dispatches
+         A_ND.all (Obj); -- This doesn't dispatch
 
       [... some code ...]
 
@@ -221,7 +221,7 @@ Rationale and alternatives
 It is a potential vulnerability not to call an overriden primitive. This may
 lead to an object to be in an state that has not been anticipated, in particular
 when the role of the overriden primitive is to keep the state of the derived
-object consistant. It's also commonly the case in most OOP languages that
+object consistent. It's also commonly the case in most OOP languages that
 dispatching is the default expected behavior and non dispatching the exception.
 
 This also fixes a common confusion in Ada, where the dispatching parameter of A

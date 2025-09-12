@@ -76,7 +76,8 @@ The destruction sequence works in the following way:
 
 - If a type has an explicit destructor, it is first called.
 - If a type has components hierarchy, wether or not it has an explicit
-  destructor, the destructor sequence is called on each components.
+  destructor, the destructor sequence is called on each components, in
+  reverse order of construction.
 - If a type is in a tagged hierarchy, wether or not it has an explicit
   destructor, the parent destructor sequence is called.
 
