@@ -1,7 +1,6 @@
 - Feature Name: Import Array from Address
 - Start Date: 2025-05-06
-- RFC PR: (leave this empty)
-- RFC Issue: (leave this empty)
+- Status: Proposed
 
 Summary
 =======
@@ -34,9 +33,9 @@ For example:
    V : Arr_Access := Arr_Access'Address_To_Access (Create_C_Array_Of_Int (10), 1, 10);
 ```
 
-This attribute is available for all arrays. Constrained array do not require
+This attribute is available for all arrays. Constrained arrays do not require
 boundaries to be provided. Multi-dimenstional arrays will need dimensions to
-be provided in order, and fixed lower bound only require one dimension. For
+be provided in order, and fixed lower bound only requires one dimension. For
 example:
 
 ```ada
@@ -62,8 +61,8 @@ example:
       (Create_C_Array_Of_Int (10), 10);
 ```
 
-Attribute parameters are named either First, Last (for the one dimension case)
-or First_n, Last_n (for the n dimensions case).
+Attribute parameters are named either First, Last (in case of one dimension)
+or First_n, Last_n (in case of n dimensions).
 
 Reference-level explanation
 ===========================
@@ -76,11 +75,11 @@ Rationale and alternatives
 
 The attribute could have been provided on arrays, and return an anonymous
 access type instead. To some respect, not presuming the type of the object
-and not requiring the creation of an explicit access type might be better.
-However, this brings all accessibility issues that don't really make sense
-when addressing external memory, and it's most likely that these will need
-to be converted away anyway. Note that is accessibilty is an issue, it's still
-possible instead to create a local array mapped to an address:
+and not requiring the creation of an explicit access type, might be better.
+However, this requires performing all accessinility checks that don't really
+make sense when addressing external memory. It's most likely that these checks
+will need to be disabled anyway. Note that if accessibilty checks are required,
+it is still possible to create a local array mapped to an address instead:
 
 ```ada
    type Arr is array (Integer range <>) of Integer;
@@ -95,19 +94,20 @@ possible instead to create a local array mapped to an address:
 Drawbacks
 =========
 
-This introduces a new "unsafe" construction in Ada, although well identify and
-easy to track / forbids.
+This introduces a new "unsafe" construction in Ada, although it is well identified
+and easy to track/forbid.
 
-This also adds more constraints on implementation. Some compilers implement
-access to arrays in a way that generates two pointers, one to data and one
-to bounds - which can then put at the same place when allocating for Ada. The
-issue then becomes the free operation - if all is allocated from Ada, it's
-possible to free both the data and the boundaries at the same time. However,
-in the example here, the address is externally provided and is not necessarily
-expected to be freed from the Ada side. Alternate implementation, such as
-putting the boundaries of the object in the pointer as opposed to indirectly
-refering to it, does fix this problem but requires in depth changes. Note that
-this is also necessary for other RFCs (such as access to array slice).
+This also adds more constraints on the implementation. Some compilers implement
+access to arrays in a way that generates two pointers, one to the data and
+another to the bounds, which can then be put in the same place when allocating
+memory for Ada. The issue then becomes the free operation - if all memory is
+allocated from Ada, it is possible to free both the data and the boundaries at
+the same time. However, in the example here, the address is externally provided
+and is not necessarily expected to be freed from the Ada side. An alternate
+implementation, such as putting the boundaries of the object in the pointer as
+opposed to indirectly referring to it, does fix this problem, but requires in-depth
+changes. Note that this is also necessary for other RFCs (such as access to array
+slice).
 
 Prior art
 =========
