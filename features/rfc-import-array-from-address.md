@@ -6,21 +6,21 @@ Summary
 =======
 
 This proposal introduces the possibility of dynamically creating an access to
-and Ada unconstrained array from an address and its boundaries.
+and Ada unconstrained array from an address and its bounds.
 
 Motivation
 ==========
 
 It is difficult today to create access to arrays created from outside of Ada,
 e.g. when coming from C, as there's no way to dynamically create their
-boundaries. This proposal will make it possible and simplify interfacing
+bounds. This proposal will make it possible and simplify interfacing
 between system data and other languages.
 
 Guide-level explanation
 =======================
 
 A new attribute is provided for arrays access types, `Address_To_Access`, which
-takes as parameter an address as well as the boundaries of the expected object.
+takes as parameter an address as well as the bounds of the expected object.
 For example:
 
 ```ada
@@ -34,7 +34,7 @@ For example:
 ```
 
 This attribute is available for all arrays. Constrained arrays do not require
-boundaries to be provided. Multi-dimenstional arrays will need dimensions to
+bounds to be provided. Multi-dimenstional arrays will need dimensions to
 be provided in order, and fixed lower bound only requires one dimension. For
 example:
 
@@ -101,10 +101,10 @@ This also adds more constraints on the implementation. Some compilers implement
 access to arrays in a way that generates two pointers, one to the data and
 another to the bounds, which can then be put in the same place when allocating
 memory for Ada. The issue then becomes the free operation - if all memory is
-allocated from Ada, it is possible to free both the data and the boundaries at
+allocated from Ada, it is possible to free both the data and the bounds at
 the same time. However, in the example here, the address is externally provided
 and is not necessarily expected to be freed from the Ada side. An alternate
-implementation, such as putting the boundaries of the object in the pointer as
+implementation, such as putting the bounds of the object in the pointer as
 opposed to indirectly referring to it, does fix this problem, but requires in-depth
 changes. Note that this is also necessary for other RFCs (such as access to array
 slice).
