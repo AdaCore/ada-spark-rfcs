@@ -6,7 +6,7 @@ Summary
 =======
 
 This proposal introduces the possibility of dynamically creating an access to
-and Ada unconstrained array from an address and its bounds.
+an Ada unconstrained array from an address and its bounds.
 
 Motivation
 ==========
@@ -28,13 +28,13 @@ For example:
    type Arr_Access is access all Arr;
 
    function Create_C_Array_Of_Int (Size : Integer) return System.Address;
-   pragma Import (C, Create_C_Array_Of_Int, "create_c_array_of_int);
+   pragma Import (C, Create_C_Array_Of_Int, "create_c_array_of_int");
 
    V : Arr_Access := Arr_Access'Address_To_Access (Create_C_Array_Of_Int (10), 1, 10);
 ```
 
 This attribute is available for all arrays. Constrained arrays do not require
-bounds to be provided. Multi-dimenstional arrays will need dimensions to
+bounds to be provided. Multidimensional arrays will need dimensions to
 be provided in order, and fixed lower bound only requires one dimension. For
 example:
 
@@ -76,7 +76,7 @@ Rationale and alternatives
 The attribute could have been provided on arrays, and return an anonymous
 access type instead. To some respect, not presuming the type of the object
 and not requiring the creation of an explicit access type, might be better.
-However, this requires performing all accessinility checks that don't really
+However, this requires performing all accessibility checks that don't really
 make sense when addressing external memory. It's most likely that these checks
 will need to be disabled anyway. Note that if accessibilty checks are required,
 it is still possible to create a local array mapped to an address instead:
@@ -86,7 +86,7 @@ it is still possible to create a local array mapped to an address instead:
    type Arr_Access is access all Arr;
 
    function Create_C_Array_Of_Int (Size : Integer) return System.Address;
-   pragma Import (C, Create_C_Array_Of_Int, "create_c_array_of_int);
+   pragma Import (C, Create_C_Array_Of_Int, "create_c_array_of_int");
 
    V : aliased Arr (1 .. 10) with Address => Create_C_Array_Of_Int (10);
 ```
