@@ -112,6 +112,9 @@ begin
         if E = 0 then
           C := C + 1;
         end if;
+
+        E_Loop_Index := Next (S, E_Loop_Index);
+
         pragma Loop_Invariant (C <= E_Loop_Index);
       end;
    end loop;
