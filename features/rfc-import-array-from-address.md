@@ -19,7 +19,7 @@ between system data and other languages.
 Guide-level explanation
 =======================
 
-A new attribute is provided for arrays access types, `Address_To_Access`, which
+A new attribute is provided for arrays access types, `From_Address`, which
 takes as parameter an address as well as the bounds of the expected object.
 For example:
 
@@ -30,7 +30,7 @@ For example:
    function Create_C_Array_Of_Int (Size : Integer) return System.Address;
    pragma Import (C, Create_C_Array_Of_Int, "create_c_array_of_int");
 
-   V : Arr_Access := Arr_Access'Address_To_Access (Create_C_Array_Of_Int (10), 1, 10);
+   V : Arr_Access := Arr_Access'From_Address (Create_C_Array_Of_Int (10), 1, 10);
 ```
 
 This attribute is available for all arrays. Constrained arrays do not require
@@ -51,13 +51,13 @@ example:
    function Create_C_Array_Of_Int (Size : Integer) return System.Address;
    pragma Import (C, Create_C_Array, "create_c_array_of_int);
 
-   V1 : Constrained_Array_Access := Constrained_Array_Access'Address_To_Access
+   V1 : Constrained_Array_Access := Constrained_Array_Access'From_Address
       (Create_C_Array_Of_Int (10));
 
-   V2 : 2D_Array_Access := 2D_Array_Access'Address_To_Access
+   V2 : 2D_Array_Access := 2D_Array_Access'From_Address
       (Create_C_Array_Of_Int (100), 1, 10, 1, 10);
 
-   V3 : FLB_Array_Access := FLB_Array_Access'Address_To_Access
+   V3 : FLB_Array_Access := FLB_Array_Access'From_Address
       (Create_C_Array_Of_Int (10), 10);
 ```
 
