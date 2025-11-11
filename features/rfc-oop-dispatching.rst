@@ -211,6 +211,47 @@ different version of the subprogram depending on the context. Note that
 this means that subsequent usage of the 'Access attribute may not yield the
 same address, which is allowed.
 
+'Specialized
+------------
+
+In some situation, in particular in the context of post conditions, we need to
+be able to implement "specialization" calls as opposed to dispatching. A
+specialized call. A specialized call can only be written on a class wide
+post-condition. It is always static, called after the static type of the
+parameter. Upon derivation, said postcondition is modified to call the derived
+specialized subprogram if any. For example:
+
+.. code-block:: ada
+
+   package P is
+      type Root is tagged null record;
+
+      function Is_Init (Self : Root) return Boolean is (True);
+
+      procedure Init (Self : out Root) is abstract with
+      Post'Class => Self'Specialized.Is_Init;
+
+      type Child is new Root with record
+         F : Integer;
+      end record;
+
+      function Is_Init (Self : Child) return Boolean is (Self.F >= 1);
+
+      procedure Init (Self : out Child);
+      -- Also inherits Post => Self'Specialized.Is_Init, but this time statically call the child Is_Init.
+   end P;
+
+   package body P is
+
+      procedure Init (Self : out Child) is
+      begin
+         Self'Super.Init;
+         Self.F := 1;
+      end Init;
+
+   end P;
+
+
 Reference-level explanation
 ===========================
 
