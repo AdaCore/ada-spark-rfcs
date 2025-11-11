@@ -157,7 +157,7 @@ It is possible to also scope primitives in regular records:
 
    package P is
 
-      type R is record
+      type R is class record
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
@@ -245,7 +245,7 @@ E.g:
 
    package body P is
 
-      type body R is record
+      type body R is class record
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;

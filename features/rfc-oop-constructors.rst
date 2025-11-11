@@ -474,6 +474,31 @@ call to the super constructor
 - the child type does not need to declare additional discriminant anymore just
 for the purpose of setting the parent ones.
 
+With discriminants, you may have situations where components are not available.
+In this case, the Initialization list need to only refer to components that are
+available for the discriminant provided - a constraint error is to be raised
+otherwise. For example:
+
+.. code-block:: ada
+
+   type Bla (V : Boolean) is record
+      case V is
+         when True =>
+            A : Integer;
+         when False =>
+            B : Integer;
+      end case;
+   end record;
+
+   procedure Bla'Constructor
+      with Initialize => (V => True, B => 10); -- Constraint Error
+   is
+      null;
+   end Bla'Constructor;
+
+This is consistent with discriminants used to constrain arrays (the value of the
+array would need to match the constrained component).
+
 Subtyping and Discriminants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
