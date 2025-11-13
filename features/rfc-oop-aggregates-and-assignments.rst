@@ -151,8 +151,7 @@ needs to be maintained equal to the parents.
 
    procedure Root'Clone (Self : Root; To : in out Root) is
    begin
-      Free (To.A);
-      To.A := new Integer'(Self.A.all);
+      To.A.all := Self.A.all;
    end Root'Clone;
 
    procedure Root'Adjust (Self : in out Root; From : Root) is
@@ -172,8 +171,7 @@ needs to be maintained equal to the parents.
    procedure Child'Clone (Self : Child; To : in out Child) is
    begin'
       Root (To) := Root (Self);
-      Free (To.B);
-      To.B := new Integer'(Self.B.all);
+      To.B.all := Self.B.all;
    end Child'Clone;
 
    procedure Child'Adjust (Self : in out Child; From : Root) is
