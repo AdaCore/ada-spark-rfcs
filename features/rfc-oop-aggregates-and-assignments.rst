@@ -564,6 +564,87 @@ Controlled types, which includes types derived from Ada.Finalization and types
 that are using the Finalizable aspect, are incompatible with constructors,
 destructors as well as clone and adjust attributes.
 
+Binary Clone
+------------
+
+In some situation, it may be effective to do a binary copy between the
+source and a target of an assignment. This can be done through a special
+attribute, 'Binary_Clone, who can only be used within a Clone attribute, on the
+To parameter. For example:
+
+.. code-block:: ada
+
+      type Rec is record
+         A : Integer;
+         B : Float;
+      end record;
+
+      procedure Rec'Clone (Self : Rec; To : in out Rec) is
+      begin
+         Rec'Binary_Clone (Self, To);
+      end Rec'Clone;
+
+The use of this attribute is very restrictive. It can only be invoked on the
+first and second parameter of a clone call.
+
+Mutable Variadic and Class Wide Types
+-------------------------------------
+
+Assignments can be done on mutable types, for example:
+
+.. code-block:: ada
+
+      type Rec (V : Boolean := False) is record
+         case V is
+            when True =>
+               A : Integer;
+
+            when False =>
+               B : Float;
+         end case;
+      end record;
+
+      type Root is tagged record
+         A : Integer;
+      end record with Size'Class => 64 * 4;
+
+      type Child is new Root with record
+         B : Integer;
+      end record;
+
+      Rec1 : Rec := Rec (True);
+      Rec2 : Rec := Rec (False);
+
+      C1 : Root'Class := Root'(others => <>);
+      C2 : Root'Class := Child'(others => <>);
+   begin
+
+      Rec1 := Rec2;    -- (1) Mutating object
+      C1 := Root (C2); -- (2) No mutation (C1 is still Root)
+      C1 := C2;        -- (3) Mutating object
+
+In both of these cases, the Clone function doesn't have the ability to mutate
+the type. There needs also a way to differenciate (2) and (3). In these cases,
+we need to (1) handle the the target object pre mutation,
+(2) mutate it to the target and (3) copy source to target.
+
+These situations can be resolved by using `'Binary_Clone` as described in the
+previous session. Note that the behavior of this attribute will depend on the
+actual context call - which could be implemented by the compiler by either a
+hidden parameter or a duplication of the clone attribute with a different
+Raw_Copy expansion. For example, if weh ave
+
+.. code-block:: ada
+
+   procedure Root'Clone (Self : Root; To : in out Rec) issue
+   begin
+      Root'Raw_Clone (Self, To);
+   end Clone;
+
+In the case (2), we're performing a non-mutable assignment, only the Root part
+of the assignment is modified, while is case (3) the object is mutated from a
+Root to a Child.
+
 Reference-level explanation
 ===========================
 
