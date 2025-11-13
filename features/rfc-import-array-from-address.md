@@ -49,7 +49,7 @@ example:
    type FLB_Array_Access is access all FLB_Array;
 
    function Create_C_Array_Of_Int (Size : Integer) return System.Address;
-   pragma Import (C, Create_C_Array, "create_c_array_of_int);
+   pragma Import (C, Create_C_Array, "create_c_array_of_int");
 
    V1 : Constrained_Array_Access := Constrained_Array_Access'From_Address
       (Create_C_Array_Of_Int (10));
@@ -78,7 +78,7 @@ access type instead. To some respect, not presuming the type of the object
 and not requiring the creation of an explicit access type, might be better.
 However, this requires performing all accessibility checks that don't really
 make sense when addressing external memory. It's most likely that these checks
-will need to be disabled anyway. Note that if accessibilty checks are required,
+will need to be disabled anyway. Note that if accessibility checks are required,
 it is still possible to create a local array mapped to an address instead:
 
 ```ada
