@@ -45,22 +45,22 @@ mechanism through a value duplication ('Clone) and post update adjustment
 Note that this extra complexity is driven from the desire to support natively
 Ada constructs (aggregates, partial copies, etc) and improve compatibility
 between classes and tagged types. Users can leverage default implementation if
-such level of control is unecessary. Some language extension may also allow
+such level of control is unnecessary. Some language extensions may also allow
 to forbid aggregates and partial update on specific types (although this
-introduces complexities in generics that now need to specify wether these
+introduces complexities in generics that now need to specify whether these
 restricted types are allowed or not).
 
 Also keep in mind that Ada Flare aggregates also need to account for types that
 have both public and private components.
 
-This RFC is about tagged record (and class records even if not explicitely
-mentionned). Simple records should also be studied when constructors are made
+This RFC is about tagged records (and class records even if not explicitly
+mentioned). Simple records should also be studied when constructors are made
 available to them.
 
 The additional capabilities need to be optimized as much as possible by the
 compiler. In particular - even if it's not a language mandate - the compiler
 should replace calls to Clone by binary copies and remove calls to Adjust when
-it knows there's no chance of calling an overriden subprogram.
+it knows there's no chance of calling an overridden subprogram.
 
 'Clone
 ------
@@ -95,7 +95,7 @@ Calls to 'Clone are statically resolved when used on definite views, and
 dynamically resolved on 'Class wide type. This is arguably a departure from the
 "all calls are dispatching" requirement from other aspects of the OOP design,
 but is required to allow partial copies of objects which are done today in
-various places Ada.
+various places in Ada.
 
 The invariant of the target object is not checked after a call to Clone, some
 parts may still be inconsistent and fixed later by Adjust.
@@ -103,9 +103,9 @@ parts may still be inconsistent and fixed later by Adjust.
 'Adjust
 -------
 
-'Adjust is a overridable attribute called after certain operations. It is
+'Adjust is an overridable attribute called after certain operations. It is
 different from the legacy Ada Adjust primitive in that it has an argument
-refering to the initial value. Note that the From parameter of adjust is
+referring to the initial value. Note that the From parameter of Adjust is
 always typed after the root type of the tagged record hierarchy - indeed, the source
 object may be higher up in the derivation chain in the case of partial
 copy. This value is provided for reference but is not expected to be
