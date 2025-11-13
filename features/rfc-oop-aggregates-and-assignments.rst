@@ -638,7 +638,7 @@ Raw_Copy expansion. For example, if weh ave
 
    procedure Root'Clone (Self : Root; To : in out Rec) issue
    begin
-      Root'Raw_Clone (Self, To);
+      Root'Binary_Clone (Self, To); -- will mutate To if needed
    end Clone;
 
 In the case (2), we're performing a non-mutable assignment, only the Root part
