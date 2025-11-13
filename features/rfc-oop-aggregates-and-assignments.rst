@@ -564,12 +564,12 @@ Controlled types, which includes types derived from Ada.Finalization and types
 that are using the Finalizable aspect, are incompatible with constructors,
 destructors as well as clone and adjust attributes.
 
-Binary Clone
-------------
+Raw Clone
+---------
 
-In some situation, it may be effective to do a binary copy between the
+In some situation, it may be effective to do a bit-by-bit copy between the
 source and a target of an assignment. This can be done through a special
-attribute, 'Binary_Clone, who can only be used within a Clone attribute, on the
+attribute, 'Raw_Clone, who can only be used within a Clone attribute, on the
 To parameter. For example:
 
 .. code-block:: ada
@@ -581,7 +581,7 @@ To parameter. For example:
 
       procedure Rec'Clone (Self : Rec; To : in out Rec) is
       begin
-         Rec'Binary_Clone (Self, To);
+         Rec'Raw_Clone (Self, To);
       end Rec'Clone;
 
 The use of this attribute is very restrictive. It can only be invoked on the
@@ -612,8 +612,8 @@ Assignments can be done on mutable types, for example:
          B : Integer;
       end record;
 
-      Rec1 : Rec := Rec (True);
-      Rec2 : Rec := Rec (False);
+      Rec1 : Rec := Rec'(True, 1);
+      Rec2 : Rec := Rec'(False, 1);
 
       C1 : Root'Class := Root'(others => <>);
       C2 : Root'Class := Child'(others => <>);
@@ -628,7 +628,7 @@ the type. There needs also a way to differenciate (2) and (3). In these cases,
 we need to (1) handle the the target object pre mutation,
 (2) mutate it to the target and (3) copy source to target.
 
-These situations can be resolved by using `'Binary_Clone` as described in the
+These situations can be resolved by using `'Raw_Clone` as described in the
 previous session. Note that the behavior of this attribute will depend on the
 actual context call - which could be implemented by the compiler by either a
 hidden parameter or a duplication of the clone attribute with a different
@@ -638,7 +638,7 @@ Raw_Copy expansion. For example, if weh ave
 
    procedure Root'Clone (Self : Root; To : in out Rec) issue
    begin
-      Root'Binary_Clone (Self, To); -- will mutate To if needed
+      Root'Raw_Clone (Self, To); -- will mutate To if needed
    end Clone;
 
 In the case (2), we're performing a non-mutable assignment, only the Root part
