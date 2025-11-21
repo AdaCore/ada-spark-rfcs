@@ -2,17 +2,13 @@
 - Start Date:
 - Status:
 
-Summary
-=======
+# Summary
 
-Motivation
-==========
+# Motivation
 
-Guide-level explanation
-=======================
+# Guide-level explanation
 
-Flare Versioning
-----------------
+## Flare Versioning
 
 The Ada/Flare language is activated at the unit level (spec and body). Flare
 can be turned on at the child package level, once that's the case all further
@@ -93,15 +89,13 @@ package P is
 end P;
 ```
 
-Features Enabled in Flare 0.1
------------------------------
+## Features Enabled in Flare 0.1
 
 The following list is the list of feature that will make the cut of the Flare
 0.1 version. As a version under the 0.x branch, further change may still
 introduce backward-incompatible changes in the pedantic Flare version.
 
-Control Flow
-^^^^^^^^^^^^
+### Control Flow
 
 [Continue](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-continue.md)
 
@@ -111,8 +105,7 @@ Control Flow
 
 [Local Declarations without Blocks](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/features/rfc-local-vars-without-block.md)
 
-Arrays
-^^^^^^
+### Arrays
 
 [Array Slice Access](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/array_slice_access.md)
 
@@ -127,8 +120,7 @@ Arrays
 [Goto/Return/Raise When](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-conditional-when-constructs.rst)
 
 
-Object Orientation
-^^^^^^^^^^^^^^^^^^
+### Object Orientation
 
 [Max Class Size](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-class-size.md)
 
@@ -150,8 +142,7 @@ Object Orientation
 
 [Attributes](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-oop-attributes.rst)
 
-Generics
-^^^^^^^^
+### Generics
 
 [Expression Functions as Default Formals](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-expression-functions-as-default-for-generic-formal-function-parameters.rst)
 
@@ -159,8 +150,7 @@ Generics
 
 [Structural Instantiation](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-structural-generic-instantiation.md)
 
-Contract-Based Programming
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+### Contract-Based Programming
 
 [Multiple Levels of Ghost](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-multiple_ghost_levels.md)
 
@@ -170,8 +160,7 @@ Contract-Based Programming
 
 [Deep Delta Aggregates](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-deep-delta-aggregates.md)
 
-Other
-^^^^^
+### Other
 
 [External Initialization](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-external-initialization.rst)
 
@@ -185,25 +174,14 @@ Other
 
 [Parenthesis for Non-Parameter Calls]()
 
-Reference-level explanation
-===========================
+## Reference-level explanation
 
+## Rationale and alternatives
 
-Rationale and alternatives
-==========================
+## Drawbacks
 
-Drawbacks
-=========
+## Prior art
 
+## Unresolved questions
 
-Prior art
-=========
-
-
-Unresolved questions
-====================
-
-
-Future possibilities
-====================
-
+## Future possibilities
