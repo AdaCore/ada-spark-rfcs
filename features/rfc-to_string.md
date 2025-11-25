@@ -116,9 +116,9 @@ package Flare.Strings.Text_Buffers is
    Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
    type Composite_Type is Ada_Type range Array_Type .. Task_Type;
 
-   type Root_Buffer_Type is abstract class;
+   type Root_Buffer_Type is abstract class record;
 
-   type Root_Formatter_Type is abstract class
+   type Root_Formatter_Type is abstract class record
       procedure Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
@@ -165,7 +165,7 @@ package Flare.Strings.Text_Buffers is
       );
    end Root_Formatter_Type with private;
 
-   type Root_Buffer_Type is abstract class
+   type Root_Buffer_Type is abstract class record
 
       --  The following function will use the underlying formatter
 
@@ -236,9 +236,6 @@ begin
    Put_Line (X'To_String); -- Will dispatch to Child'To_String.
 ```
 
-From_String Attribute
----------------------
-
 Default Formatters
 ------------------
 
@@ -268,6 +265,13 @@ package Flare.Strings.Text_Formatters is
 end Flare.Strings.Text_Formatters;
 ```
 
+Ada Compatibilty Mode
+---------------------
+
+`To_String` will be made available in Ada compatibility mode. For this,
+Ada.Strings.Text_Buffers will be augmented with the necessary tagged types,
+and Ada.Strings.Text_Formatters will be introduced with default implementations.
+
 Compatibilty with 'Img and 'Value
 ---------------------------------
 
@@ -296,3 +300,9 @@ Drawbacks
 Prior art
 =========
 
+Future possibilities
+====================
+
+A new attribute 'From_String associated with a Root_Parser_Type could be
+introduced. Parsing is more complicated than just formatting values, may deserve
+some additional design work.
