@@ -732,6 +732,87 @@ An object value in a constructor is considered initialized once the `Super` and
 `Initialze` aspects have been computed. Formally, the role of the constructor
 is to establish further properties than the initialization.
 
+Composing by-constructors types with non by-constructor types
+-------------------------------------------------------------
+
+By-constructor types can be included in types that are not build by
+constructors, for example legacy tagged types, non-tagged types or arrays, for
+example:
+
+.. code-block:: ada
+
+   type Root is tagged record
+      null;
+   end record;
+
+   procedure Root'Constructor (Self : in out Root; X : Integer);
+
+   type Non_Tagged is record
+      X : Root;
+   end record;
+
+   type Arr is array (Integer range <>) of Root;
+
+In this case, the rules are as follows:
+
+- [1] If the by-constructor type provides both a by-copy and a parameterless
+  constructor, it can be used freely in types that are not by constructor.
+  Parameterless is used in place of default initialization, and copy for
+  copies.
+- [2] If the by-constructor type does not provide by copy constructor, then it
+  can only be component of a limited type.
+- [3] If the by-constructor type does not provide parameterless constructor,
+  then it removes default initialization for the types it composes.
+
+[3] is important, as it allows in particular to have arrays of by-constructor
+types that don't provide parameterless constructor. However, it has several
+consequences. One of these consequences is that a private type cannot contain
+such non-parameterless types, otherwise the user would not know that there'S
+no default initialization available. E.g.:
+
+.. code-block:: ada
+
+      type Root is tagged record
+         null;
+      end record;
+
+      procedure Root'Constructor (Self : in out Root; X : Integer);
+
+      type Non_Tagged is private;
+
+   private
+
+      type Non_Tagged record
+        X : Root;
+        -- Illegal, a private type cannot have component without parameterless
+        -- constructors
+      end record;
+
+Further extensions of the language may allow to provide more specification to
+the private view to allow this - we may want to be able to write:
+
+.. code-block:: ada
+
+      type Non_Tagged is private;
+      procedure Non_Tagged'Constructor (Self : in out Non_Tagged) is abstract;
+
+This does require to describe how constructors are expressed on non-tagged
+types which is not part of this proposal.
+
+Note that the above also says that allocation of such object without a copy
+or aggregate is illegal. E.g.:
+
+. code-block:: ada
+
+      A : Non_Tagged; -- Illegal, no default initialization
+      B : Non_Tagged := (X => Root'Make (0)); -- Legal
+      C : Non_Tagged := A; -- Also legal
+
+      type Arr is array (Integer range <>) of Root;
+
+      D : Arr; -- Illegal
+      E : Arr := (others => Root'Make (1)); -- Legal
+
 Reference-level explanation
 ===========================
 
