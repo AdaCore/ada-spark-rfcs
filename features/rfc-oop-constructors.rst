@@ -15,7 +15,8 @@ Guide-level explanation
 Constructors
 ------------
 
-Constructors are available to both tagged and untagged records.
+Constructors are available to tagged types (constructor for non-tagged types
+will be described in a different RFC).
 
 Records and tagged records can declare constructors. A constructor
 looks like a primitive that has an in out parameter of the type as first
@@ -105,10 +106,115 @@ for a generic parameter or an access-to-subprogram. For example:
 In presence of multiple constructors, the rules of overloading resolution
 that apply to subprograms overall would apply here too.
 
+Composing by-constructors types with non by-constructor types
+-------------------------------------------------------------
+
+A by-constructor type is:
+- A tagged type that has an explicit constructor, or
+- A tagged type that is derived from a by-constructor type, or
+- A class type (not described in this RFC)
+
+By-constructor types can be included in types that are not build by
+constructors, for example legacy tagged types, non-tagged types or arrays, for
+example:
+
+.. code-block:: ada
+
+   type Root is tagged record
+      null;
+   end record;
+
+   procedure Root'Constructor (Self : in out Root; X : Integer);
+
+   type Non_Tagged is record
+      X : Root;
+   end record;
+
+   type Arr is array (Integer range <>) of Root;
+
+In this case, the rules are as follows:
+
+1. If the by-constructor type provides both a by-copy and a parameterless
+  constructor, it can be used freely in types that are not by constructor.
+  Parameterless is used in place of default initialization, and copy for
+  copies.
+2. If the by-constructor type does not provide by copy constructor, then it
+  can only be component of a limited type.
+3. If the by-constructor type does not provide parameterless constructor,
+  then it removes default initialization for the types it composes.
+
+3 is important, as it allows in particular to have arrays of by-constructor
+types that don't provide parameterless constructor. However, it has several
+consequences. One of these consequences is that a private type cannot contain
+such non-parameterless types, otherwise the user would not know that there'S
+no default initialization available. E.g.:
+
+.. code-block:: ada
+
+      type Root is tagged record
+         null;
+      end record;
+
+      procedure Root'Constructor (Self : in out Root; X : Integer);
+
+      type Non_Tagged is private;
+
+   private
+
+      type Non_Tagged record
+        X : Root;
+        -- Illegal, a private type cannot have component without parameterless
+        -- constructors
+      end record;
+
+Further extensions of the language may allow to provide more specification to
+the private view to allow this - we may want to be able to write:
+
+.. code-block:: ada
+
+      type Non_Tagged is private;
+      procedure Non_Tagged'Constructor (Self : in out Non_Tagged) is abstract;
+
+This does require to describe how constructors are expressed on non-tagged
+types which is not part of this proposal.
+
+Note that the above also says that allocation of such object without a copy
+or aggregate is illegal. E.g.:
+
+.. code-block:: ada
+
+      A : Non_Tagged; -- Illegal, no default initialization
+      B : Non_Tagged := (X => Root'Make (0)); -- Legal
+      C : Non_Tagged := A; -- Also legal
+
+      type Arr is array (Integer range <>) of Root;
+
+      D : Arr; -- Illegal
+      E : Arr := (others => Root'Make (1)); -- Legal
+
+The fact that a type doesn't provide default initialization is propagated to
+other types that used it to declare components (similar to limited types), e.g.:
+
+.. code-block::ada
+
+   type X is tagged record
+      null;
+   end record;
+
+   procedure X'Constructor (Self : in out X; V : Integer);
+
+   type C is record
+      F: X;
+   end record;
+   --  C is not by constructor, but doesn't have default initialization
+
+   type C2 is record
+      F2 : C;
+   end record
+   --  C2 is not by constructor, but doesn't have default initialization either
+
 Copy Constructor Overload
 -------------------------
-
-Copy constructors overload are available to both tagged and untagged records.
 
 A special constructor, a copy constructor, has two parameters: self, and a
 reference to an instance of the class. It's called when an object is
@@ -121,10 +227,10 @@ initialized from a copy. For example:
 
       procedure T1'Constructor (Self : in out T1; Source : T1);
 
-If not specified, a default copy constructor is automatically generated.
-The implicit copy constructor will call the parent copy constructor, then copy
-field by field its additional components, calling component copy constructors if
-necessary.
+For by-constructor types, if not specified, a default copy constructor is
+automatically generated. The implicit copy constructor will call the parent copy
+constructor, then copy field by field its additional components, calling
+component copy constructors if necessary.
 
 Note that, similar to the parameterless constructor, copy constructor may be
 explicitely or implicitely called:
@@ -344,7 +450,7 @@ The following is illegal:
 
 .. code-block:: ada
 
-   type Root is record
+   type Root is tagged record
       A, B : Integer;
    end record;
 
@@ -481,7 +587,7 @@ otherwise. For example:
 
 .. code-block:: ada
 
-   type Bla (V : Boolean) is record
+   type Bla (V : Boolean) is tagged record
       case V is
          when True =>
             A : Integer;
@@ -512,7 +618,7 @@ cannot however be used to create a value. For exmample:
 
 .. code-block:: ada
 
-   type Bla (V : Boolean) is record
+   type Bla (V : Boolean) is tagged record
       case V is
          when True =>
             A : Integer;
@@ -542,7 +648,7 @@ such subtyping can also be used for components:
       V2a : Arr2; -- Illegal, no default constructor
       V2b : Arr2 := (others => Bla'Make (True)); -- Legal
 
-      type R is record
+      type R is tagged record
          V1 : Bla;	 -- was already illegal
          V2 : Bla (True); -- legal, needs to be valuated by the constructor
       end record;
@@ -731,87 +837,6 @@ may lead to errors.
 An object value in a constructor is considered initialized once the `Super` and
 `Initialze` aspects have been computed. Formally, the role of the constructor
 is to establish further properties than the initialization.
-
-Composing by-constructors types with non by-constructor types
--------------------------------------------------------------
-
-By-constructor types can be included in types that are not build by
-constructors, for example legacy tagged types, non-tagged types or arrays, for
-example:
-
-.. code-block:: ada
-
-   type Root is tagged record
-      null;
-   end record;
-
-   procedure Root'Constructor (Self : in out Root; X : Integer);
-
-   type Non_Tagged is record
-      X : Root;
-   end record;
-
-   type Arr is array (Integer range <>) of Root;
-
-In this case, the rules are as follows:
-
-- [1] If the by-constructor type provides both a by-copy and a parameterless
-  constructor, it can be used freely in types that are not by constructor.
-  Parameterless is used in place of default initialization, and copy for
-  copies.
-- [2] If the by-constructor type does not provide by copy constructor, then it
-  can only be component of a limited type.
-- [3] If the by-constructor type does not provide parameterless constructor,
-  then it removes default initialization for the types it composes.
-
-[3] is important, as it allows in particular to have arrays of by-constructor
-types that don't provide parameterless constructor. However, it has several
-consequences. One of these consequences is that a private type cannot contain
-such non-parameterless types, otherwise the user would not know that there'S
-no default initialization available. E.g.:
-
-.. code-block:: ada
-
-      type Root is tagged record
-         null;
-      end record;
-
-      procedure Root'Constructor (Self : in out Root; X : Integer);
-
-      type Non_Tagged is private;
-
-   private
-
-      type Non_Tagged record
-        X : Root;
-        -- Illegal, a private type cannot have component without parameterless
-        -- constructors
-      end record;
-
-Further extensions of the language may allow to provide more specification to
-the private view to allow this - we may want to be able to write:
-
-.. code-block:: ada
-
-      type Non_Tagged is private;
-      procedure Non_Tagged'Constructor (Self : in out Non_Tagged) is abstract;
-
-This does require to describe how constructors are expressed on non-tagged
-types which is not part of this proposal.
-
-Note that the above also says that allocation of such object without a copy
-or aggregate is illegal. E.g.:
-
-. code-block:: ada
-
-      A : Non_Tagged; -- Illegal, no default initialization
-      B : Non_Tagged := (X => Root'Make (0)); -- Legal
-      C : Non_Tagged := A; -- Also legal
-
-      type Arr is array (Integer range <>) of Root;
-
-      D : Arr; -- Illegal
-      E : Arr := (others => Root'Make (1)); -- Legal
 
 Reference-level explanation
 ===========================
