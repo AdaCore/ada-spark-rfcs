@@ -144,19 +144,41 @@ package Flare.Strings.Text_Buffers is
          Buffer : in out Root_Buffer_Type;
          Item   : in     UTF_Encoding.UTF_16_Wide_String) is abstract;
 
-      procedure New_Line (Self : in out Root_Buffer_Type) is abstract;
+      procedure New_Line (
+         Self   : in out Root_Formatter_Type;
+         Buffer : in out Root_Buffer_Type) is abstract;
+
+      procedure Start
+         (Self   : in out Root_Formatter_Type;
+          Buffer : in out Root_Buffer_Type);
+
+      procedure Finish
+         (Self : in out Root_Formatter_Type;
+          Buffer : in out Root_Buffer_Type);
 
       procedure Open (
-         Self   : in out Root_Formatter_Type;
-         Buffer : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
-         Name   : String;
-         Kind   : Ada_Type;
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+         Type_Kind : Ada_Type;
+         Type_Name : String
+      );
+
+      procedure Open (
+         Self           : in out Root_Formatter_Type;
+         Buffer         : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+         Type_Kind      : Ada_Type;
+         Type_Name      : String;
+         Index_Kind     : Ada_Type;
+         Index_Name     : String;
+         Component_Kind : Ada_Type;
+         Component_Name : String
       );
 
       procedure List_Element (
-         Self   : in out Root_Formatter_Type;
-         Buffer : in out Root_Buffer_Type;
-         Name   : String := "";
+         Self         : in out Root_Formatter_Type;
+         Buffer       : in out Root_Buffer_Type;
+         Name         : String := "";
+         Is_Constrain : Boolean
       );
 
       procedure Close (
@@ -199,28 +221,7 @@ end Ada.Strings.Text_Buffers;
 ```
 
 `To_String` can be overriden by an attribute that takes a value and a buffer.
-Default To_String for records are using scoping to follow formatting. For
-example, this is the default implementation for Rec, assuming Rec is contained
-in a package P:
-
-```ada
-procedure Rec'To_String
-   (Self      : Rec;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
-is
-begin
-   Formatter.Open (Buffer, Record_Type, "P.Rec");
-
-   Formatter.List_Element (Buffer, "A");
-   Self.A'To_String (Buffer, Formatter);
-
-   Formatter.List_Element (Buffer, "B");
-   Self.B'To_String (Buffer, Formatter);
-
-   Formatter.Close (Buffer);
-end Rec'To_String;
-```
+Default To_String for records are using scoping to follow formatting.
 
 The overriden To_String is primitive of the type. When used on a tagged or class
 record, it will dispatch. Calling to string on a class wide view will dispatch
@@ -235,6 +236,207 @@ to the actual call. E.g.:
 begin
    Put_Line (X'To_String); -- Will dispatch to Child'To_String.
 ```
+
+Certain formatter require to do certain things at the start and the end of the
+buffer operation (for example prepend a size), which can be done in the Start
+and Finish primivites. Specific formatter may need to contain states and
+be instanciated (as opposed to the global objects demonstrated here).
+
+Default To_String for Records
+-----------------------------
+
+The default implementation of To_String for records (and other heteregeneous
+types will be as follows):
+
+- First call Formatter.Open on the type
+- Then Call Formatter.List element followed by To_String on each discriminant.
+- Then Call Formatter.List element followed by To_String on each component.
+- Last call Formatter.Close
+
+For example:
+
+```ada
+type Rec (D : Boolean) is record
+   A, B : Integer;
+
+   case D is
+      when True =>
+         C : Integer;
+
+      when False =>
+         E : Integer;
+   end case;
+end record;
+
+procedure Rec'To_String
+   (Self      : Rec;
+    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open (Buffer, Record_Type, "P.Rec");
+
+   Formatter.List_Element (Buffer, "D", True);
+
+   Formatter.List_Element (Buffer, "A", False);
+   Self.A'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "B", False);
+   Self.B'To_String (Buffer, Formatter);
+
+   if Self.D then
+      Formatter.List_Element (Buffer, "C", False);
+      Self.B'To_String (Buffer, Formatter);
+   else
+      Formatter.List_Element (Buffer, "D", False);
+      Self.B'To_String (Buffer, Formatter);
+   end if;
+
+   Formatter.Close (Buffer);
+end Rec'To_String;
+```
+
+Default To_String for Arrays
+----------------------------
+
+The default implementation of To_String for records (and other heteregeneous
+types will be as follows):
+
+- First call Formatter.Open on the type, also giving index and component types
+- Then Call Formatter.List element followed by To_String on each low then high bound.
+- Then for each component, hen Call Formatter.List element followed by To_String on the Index then Component
+- Last call Formatter.Close
+
+for example:
+
+```ada
+type Arr is array (Integer range <>) of Integer;
+
+procedure Arr'To_String
+   (Self      : Arr;
+    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open
+     (Buffer, Record_Type, "P.Arr",
+      Signed_Type, "Standard.Integer",
+      Signed_Type, "Standard.Integer");
+
+   Formatter.List_Element (Buffer, "First", True);
+   Self'First'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "Last", True);
+   Self'Last'To_String (Buffer, Formatter);
+
+   for I in Self'Range loop
+      Formatter.List_Element (Buffer, "", False);
+
+      I'To_String (Buffer, Formatter, False);
+      Self (I)'To_String (Buffer, Formatter, False);
+   end loop;
+
+   Formatter.Close (Buffer);
+end Arr'To_String;
+```
+
+In case of multi dimensional arrays, boundaries are passed in sequence,
+then both indexes are pushed to the buffer, e.g.:
+
+```ada
+type Arr is array (Integer range <>; Integer range <>) of Integer;
+
+procedure Arr'To_String
+   (Self      : Arr;
+    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open
+     (Buffer, Record_Type, "P.Arr",
+      Signed_Type, "Standard.Integer",
+      Signed_Type, "Standard.Integer");
+
+   Formatter.List_Element (Buffer, "First", True);
+   Self'First (1)'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "Last", True);
+   Self'Last (1)'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "First", True);
+   Self'First (2)'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "Last", True);
+   Self'Last (2)'To_String (Buffer, Formatter);
+
+   for I in Self'Range (1) loop
+      for J in Self'Range (2) loop
+         Formatter.List_Element (Buffer, "", False);
+
+         I'To_String (Buffer, Formatter, False);
+         J'To_String (Buffer, Formatter, False);
+         Self (I, J)'To_String (Buffer, Formatter, False);
+      end loop;
+   end loop;
+
+   Formatter.Close (Buffer);
+end Arr'To_String;
+```
+
+Default To_String for Arrays of Characters
+------------------------------------------
+
+One-dimention array of character have a special default To_String method - they
+don't output element by element with indices but instead output directly the
+entire value, e.g.:
+
+```ada
+procedure String'To_String
+   (Self      : String;
+    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open
+     (Buffer, Record_Type, "Standard.String",
+      Signed_Type,         "Standard.Integer",
+      Enumeration_Type,    "Standard.Character");
+
+   Formatter.List_Element (Buffer, "First", True);
+   Self'First'To_String (Buffer, Formatter);
+
+   Formatter.List_Element (Buffer, "Last", True);
+   Self'Last'To_String (Buffer, Formatter);
+
+   Formatter.Put (Buffer, Self);
+
+   Formatter.Close (Buffer);
+end String'To_String;
+```
+
+Default To_String for Elementary Types
+--------------------------------------
+
+The default implementation for elementary types is to first call open on that
+type, then translate the value into a string as is currently done with 'Image
+(without heading space for integers), then call close, e.g.:
+
+```ada
+procedure Integer'To_String
+   (Self      : Integer;
+    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open (Buffer, Signed_Type, "Standard.Integer");
+   Formatter.Put (Buffer, <code transforming Self to string>);
+   Formatter.Close (Buffer);
+end Integer'To_String;
+```
+
+One of the potential use case for providing this level of information on the
+elementary types is to allow the formatter to "reformat" number, for example,
+formating "1234" into "1,234".
 
 Default Formatters
 ------------------
@@ -265,6 +467,9 @@ package Flare.Strings.Text_Formatters is
 end Flare.Strings.Text_Formatters;
 ```
 
+To complete the specification, we will provide schema when relevant (e.g. JSON
+schema)
+
 Ada Compatibilty Mode
 ---------------------
 
@@ -293,9 +498,67 @@ Reference-level explanation
 Rationale and alternatives
 ==========================
 
+Two v.s. one argument for formatter and buffer
+----------------------------------------------
+
+An alternative design could be to have To_String only take one argument, a
+formatter that would contain a buffer, e.g.:
+
+```ada
+type Rec is record
+   A, B : Integer;
+end record;
+
+procedure Rec'To_String
+   (Self      : Rec;
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+is
+begin
+   Formatter.Open (Record_Type, "P.Rec");
+
+   Formatter.List_Element ("D", True);
+
+   Formatter.List_Element ("A", False);
+   Self.A'To_String (Formatter);
+
+   Formatter.List_Element ("B", False);
+   Self.B'To_String (Formatter);
+
+   Formatter.Close;
+end Rec'To_String;
+```
+
+However, this simplification on the implementer side increase complexity
+on the user side as one now needs to instanciate a formatter with a new
+object containing the buffer, e.g.:
+
+```ada
+type Rec is record
+   A, B : Integer;
+end record;
+
+V : Rec := (1, 2);
+
+Put_Line (V'To_String (Create_JSON_Structured_Formatter (Create_Buffer)));
+```
+
+In the current version, by default, the compiler is responsible for creating
+the buffer.
+
+Both designs can be worked with - it seemed however that the feature would
+be more commonly used on the user side than the implementer.
+
 Drawbacks
 =========
 
+Performance Considerations
+--------------------------
+
+There is a trade-off in this proposal in terms of complexity / efficiency.
+Notably, refering to types and components through strings as opposed to more
+complex data structure may lead to less efficient code when needed for e.g.
+comparisons. However, given the main use cases for this kind of construction
+(e.g. logging purposes), this trade-off seems adequate.
 
 Prior art
 =========
