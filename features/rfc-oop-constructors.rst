@@ -135,13 +135,13 @@ example:
 In this case, the rules are as follows:
 
 1. If the by-constructor type provides both a by-copy and a parameterless
-  constructor, it can be used freely in types that are not by constructor.
-  Parameterless is used in place of default initialization, and copy for
-  copies.
+   constructor, it can be used freely in types that are not by constructor.
+   Parameterless is used in place of default initialization, and copy for
+   copies.
 2. If the by-constructor type does not provide by copy constructor, then it
-  can only be component of a limited type.
+   can only be component of a limited type.
 3. If the by-constructor type does not provide parameterless constructor,
-  then it removes default initialization for the types it composes.
+   then it removes default initialization for the types it composes.
 
 3 is important, as it allows in particular to have arrays of by-constructor
 types that don't provide parameterless constructor. However, it has several
