@@ -1,6 +1,8 @@
 Feature Name: value_at_labels
+
 Start Date: 2025-10-30
-Status: Planning
+
+Status: Ready for implementation
 
 Summary
 =======
@@ -70,7 +72,7 @@ the ``'At`` attribute. Furthermore, if the ``'At`` attribute is enclosed by
 an accept_statement or a body, then the ``statement_identifier`` shall not
 be outside this enclosing construct. The preceding are the same rules as for
 ``goto`` statements; in addition, within the innermost sequence of statement
-enclosing both, the ``'At`` attribute shall occurs in a statement occurring
+enclosing both, the ``'At`` attribute shall occur in a statement occurring
 after the ``statement_identifier`` it references.
 
 For any given sequence of statement immediately enclosing two ``statement_identifier``s
