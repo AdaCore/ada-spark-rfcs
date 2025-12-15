@@ -1,6 +1,6 @@
 - Feature Name: Standard OOP model
 - Start Date:
-- Status: Design
+- Status: Ready for prototyping
 
 Summary
 =======
