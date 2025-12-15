@@ -2,7 +2,7 @@ Feature Name: value_at_labels
 
 Start Date: 2025-10-30
 
-Status: Ready for implementation
+Status: Ready for prototyping
 
 Summary
 =======
