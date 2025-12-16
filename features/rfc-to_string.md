@@ -17,8 +17,6 @@ The current type-to-string mechanism in Ada has a few shortcomings:
 - The new Ada 2022 Put_Image attribute provide some limited formating (notably
   through the identation functions of the Buffer) but doesn't go as far as
   allowing to format the output to standards such as JSON or YAML.
-- Ada 'Image is a bit awkward, called on a types, as opposed to GNAT-Specicif
-  'Img.
 
 The need to be able to output formatted format is particularly important for
 application that need to log data for e.g. debuging or other external purposes.
