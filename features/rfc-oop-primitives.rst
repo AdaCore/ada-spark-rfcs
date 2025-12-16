@@ -51,7 +51,7 @@ bodies. The following demonstrates the above:
 
    package body P is
 
-      type body R is record
+      type body R is class record
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;
