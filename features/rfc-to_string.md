@@ -69,7 +69,7 @@ will print:
 ```
 
 To_String can be used direclty as a procedure. In this case it needs to be
-provider with an instance of a new buffer type,
+provided with an instance of a new buffer type,
 Flare.Strings.Text_Buffers.Root_Buffer_Type, and an optional formatter.
 Similar to Ada,there are predefined buffer types provided by the language.
 E.g.:
