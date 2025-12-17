@@ -11,7 +11,7 @@ Motivation
 
 The current type-to-string mechanism in Ada has a few shortcomings:
 - Integers values are provided with a heading space
-- The new Ada 2022 Put_Image attribute is not discpatching, and confusing when
+- The new Ada 2022 Put_Image attribute is not dispatching, and confusing when
   using with class wide view (which will be a more visible problem with the
   new dispatching semantics)
 - The new Ada 2022 Put_Image attribute provide some limited formating (notably
