@@ -29,7 +29,7 @@ To_String Attribute
 
 'To_String (with its _Wide_String and _Wide_Wide_String counterpart) is provided
 in replacement of 'Image (and 'Img in GNAT specific extension).
-This attribute is used directly on a value, and by default operate like
+This attribute is used directly on a value, and by default operates like
 'Image, (with the exception that no leading space is present for
 numeric values) e.g.:
 
