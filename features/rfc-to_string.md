@@ -526,7 +526,7 @@ begin
 end Rec'To_String;
 ```
 
-However, this simplification on the implementer side increase complexity
+However, this simplification on the implementer side increases complexity
 on the user side as one now needs to instanciate a formatter with a new
 object containing the buffer, e.g.:
 
