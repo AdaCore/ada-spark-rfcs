@@ -36,6 +36,8 @@ numeric values) e.g.:
 ```ada
 I : Integer := 42;
 J : String := I'To_String;
+
+Put_Line (I);
 ```
 
 will print:
@@ -45,9 +47,10 @@ will print:
 ```
 
 To_String attribute can take an optional parameter of type
-`Flare.Strings.Text_Buffers.Root_Formatter_Type'Class`.
-A few derivations are provided by default, such as JSON_Formatter and
-YAML_Formatter. For example:
+`Flare.Strings.Text_Buffers.Root_Formatter_Type'Class`. By default, this
+parameter will be valuated by `Flare.Strings.Text_Formatters.Default_Formatter`
+(defined later). A few other derivations are provided, such as JSON_Formatter
+and YAML_Formatter. For example:
 
 ```ada
 type Rec is record
@@ -86,6 +89,26 @@ Buffer : Flare.Strings.Text_Buffers.Unbounded;
 V'To_String (Buffer, JSON_Structured_Formatter);
 ```
 
+To_String can also accept an extra parameter, `Format`, which may contain
+values indicating to the formatter additional parameters or condition default
+generation of formatting for e.g. elementary types. This string is here to
+prepare for additional extensions of the model but its format requires design
+on its own - which is outside of the scope of this proposal. E.g.:
+
+```ada
+--  The following is not part of the proposal but demonstrate future extension
+--  possiblities
+
+X : Float;
+V : String := X'To_String (Format => Root_Formatter_Parameter'Make (".2f"));
+--  assuming we include a format similar to python, asks for 2 decimals
+
+V : String := f"{X:.2f}"
+--  same as above, using formatted strings
+```
+
+By default, this received an empty string.
+
 `Flare.Strings.Text_Buffers.Root_Buffer_Type` is similar to
 `Ada.Strings.Text_Buffers.Root_Buffer_Type` except that it relies on a
 formatter to structure the output, as opposed to the indent primitives. E.g.:
@@ -116,72 +139,93 @@ package Flare.Strings.Text_Buffers is
 
    type Root_Buffer_Type is abstract class record;
 
+   type Root_Formatter_Parameters is abstract class record
+      --  Provided for future extensions - should contain various formating
+      --  parameters necessary for default formating.
+
+      procedure Root_Formatter_Parameters'Constructor
+         (Self   : in out Root_Formatter_Parameters;
+          Format : String);
+      --  Will support default formating format, for example ".2f" may mean
+      --  2 decimals for floating points if following Python formatting
+   end Root_Formatter_Parameters;
+
    type Root_Formatter_Type is abstract class record
       procedure Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Item   : in     String) is abstract;
+         Item   : in     String;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure Wide_Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Item   : in     Wide_String) is abstract;
+         Item   : in     Wide_String;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure Wide_Wide_Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Item   : in     Wide_Wide_String) is abstract;
+         Item   : in     Wide_Wide_String;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure Put_UTF_8 (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Item   : in     UTF_Encoding.UTF_8_String) is abstract;
+         Item   : in     UTF_Encoding.UTF_8_String;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure Wide_Put_UTF_16 (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Item   : in     UTF_Encoding.UTF_16_Wide_String) is abstract;
+         Item   : in     UTF_Encoding.UTF_16_Wide_String;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure New_Line (
          Self   : in out Root_Formatter_Type;
-         Buffer : in out Root_Buffer_Type) is abstract;
+         Buffer : in out Root_Buffer_Type;
+         Format : Root_Formatter_Parameters) is abstract;
 
       procedure Start
          (Self   : in out Root_Formatter_Type;
-          Buffer : in out Root_Buffer_Type);
+          Buffer : in out Root_Buffer_Type;
+          Format : Root_Formatter_Parameters);
 
       procedure Finish
-         (Self : in out Root_Formatter_Type;
+         (Self   : in out Root_Formatter_Type;
           Buffer : in out Root_Buffer_Type);
 
       procedure Open (
          Self      : in out Root_Formatter_Type;
-         Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+         Buffer    : in out Root_Buffer_Type;
          Type_Kind : Ada_Type;
-         Type_Name : String
+         Type_Name : String;
+         Format    : Root_Formatter_Parameters;
       );
 
       procedure Open (
          Self           : in out Root_Formatter_Type;
-         Buffer         : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+         Buffer         : in out Root_Buffer_Type;
          Type_Kind      : Ada_Type;
          Type_Name      : String;
          Index_Kind     : Ada_Type;
          Index_Name     : String;
          Component_Kind : Ada_Type;
-         Component_Name : String
+         Component_Name : String;
+         Format         : Root_Formatter_Parameters
       );
 
       procedure List_Element (
-         Self         : in out Root_Formatter_Type;
-         Buffer       : in out Root_Buffer_Type;
-         Name         : String := "";
-         Is_Constrain : Boolean
+         Self          : in out Root_Formatter_Type;
+         Buffer        : in out Root_Buffer_Type;
+         Name          : String := "";
+         Is_Constraint : Boolean;
+         Format        : Root_Formatter_Parameters
       );
 
       procedure Close (
          Self   : in out Root_Buffer_Type;
-         Buffer : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+         Buffer : in out Root_Buffer_Type;
       );
    end Root_Formatter_Type with private;
 
@@ -215,7 +259,7 @@ package Flare.Strings.Text_Buffers is
 
 private
    ... -- not specified by the language
-end Ada.Strings.Text_Buffers;
+end Flare.Strings.Text_Buffers;
 ```
 
 `To_String` can be overriden by an attribute that takes a value and a buffer.
@@ -269,25 +313,26 @@ end record;
 procedure Rec'To_String
    (Self      : Rec;
     Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open (Buffer, Record_Type, "P.Rec");
+   Formatter.Open (Buffer, Record_Type, "P.Rec", Format);
 
-   Formatter.List_Element (Buffer, "D", True);
+   Formatter.List_Element (Buffer, "D", True, Format);
 
-   Formatter.List_Element (Buffer, "A", False);
-   Self.A'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "A", False, Format);
+   Self.A'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "B", False);
-   Self.B'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "B", False, Format);
+   Self.B'To_String (Buffer, Formatter, Format);
 
    if Self.D then
-      Formatter.List_Element (Buffer, "C", False);
-      Self.B'To_String (Buffer, Formatter);
+      Formatter.List_Element (Buffer, "C", False, Format);
+      Self.B'To_String (Buffer, Formatter, Format);
    else
-      Formatter.List_Element (Buffer, "D", False);
-      Self.B'To_String (Buffer, Formatter);
+      Formatter.List_Element (Buffer, "D", False, Format);
+      Self.B'To_String (Buffer, Formatter, Format);
    end if;
 
    Formatter.Close (Buffer);
@@ -297,8 +342,7 @@ end Rec'To_String;
 Default To_String for Arrays
 ----------------------------
 
-The default implementation of To_String for records (and other heteregeneous
-types will be as follows):
+The default implementation of To_String for arrays:
 
 - First call Formatter.Open on the type, also giving index and component types
 - Then call Formatter.List element followed by To_String on each low then high bound.
@@ -313,25 +357,27 @@ type Arr is array (Integer range <>) of Integer;
 procedure Arr'To_String
    (Self      : Arr;
     Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
 is
 begin
    Formatter.Open
      (Buffer, Record_Type, "P.Arr",
       Signed_Type, "Standard.Integer",
-      Signed_Type, "Standard.Integer");
+      Signed_Type, "Standard.Integer",
+      Format);
 
-   Formatter.List_Element (Buffer, "First", True);
-   Self'First'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "First", True, Format);
+   Self'First'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "Last", True);
-   Self'Last'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "Last", True, Format);
+   Self'Last'To_String (Buffer, Formatter, Format);
 
    for I in Self'Range loop
-      Formatter.List_Element (Buffer, "", False);
+      Formatter.List_Element (Buffer, "", False, Format);
 
-      I'To_String (Buffer, Formatter, False);
-      Self (I)'To_String (Buffer, Formatter, False);
+      I'To_String (Buffer, Formatter, False, Format);
+      Self (I)'To_String (Buffer, Formatter, False, Format);
    end loop;
 
    Formatter.Close (Buffer);
@@ -347,33 +393,35 @@ type Arr is array (Integer range <>; Integer range <>) of Integer;
 procedure Arr'To_String
    (Self      : Arr;
     Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
 is
 begin
    Formatter.Open
      (Buffer, Record_Type, "P.Arr",
       Signed_Type, "Standard.Integer",
-      Signed_Type, "Standard.Integer");
+      Signed_Type, "Standard.Integer";
+      Format);
 
-   Formatter.List_Element (Buffer, "First", True);
-   Self'First (1)'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "First", True, Format);
+   Self'First (1)'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "Last", True);
-   Self'Last (1)'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "Last", True, Format);
+   Self'Last (1)'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "First", True);
-   Self'First (2)'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "First", True, Format);
+   Self'First (2)'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "Last", True);
-   Self'Last (2)'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "Last", True, Format);
+   Self'Last (2)'To_String (Buffer, Formatter, Format);
 
    for I in Self'Range (1) loop
       for J in Self'Range (2) loop
-         Formatter.List_Element (Buffer, "", False);
+         Formatter.List_Element (Buffer, "", False, Format);
 
-         I'To_String (Buffer, Formatter, False);
-         J'To_String (Buffer, Formatter, False);
-         Self (I, J)'To_String (Buffer, Formatter, False);
+         I'To_String (Buffer, Formatter, False, Format);
+         J'To_String (Buffer, Formatter, False, Format);
+         Self (I, J)'To_String (Buffer, Formatter, False, Format);
       end loop;
    end loop;
 
@@ -392,21 +440,23 @@ entire value, e.g.:
 procedure String'To_String
    (Self      : String;
     Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
 is
 begin
    Formatter.Open
      (Buffer, Record_Type, "Standard.String",
       Signed_Type,         "Standard.Integer",
-      Enumeration_Type,    "Standard.Character");
+      Enumeration_Type,    "Standard.Character",
+      Format);
 
-   Formatter.List_Element (Buffer, "First", True);
-   Self'First'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "First", True, Format);
+   Self'First'To_String (Buffer, Formatter, Format);
 
-   Formatter.List_Element (Buffer, "Last", True);
-   Self'Last'To_String (Buffer, Formatter);
+   Formatter.List_Element (Buffer, "Last", True, Format);
+   Self'Last'To_String (Buffer, Formatter, Format);
 
-   Formatter.Put (Buffer, Self);
+   Formatter.Put (Buffer, Self, Format);
 
    Formatter.Close (Buffer);
 end String'To_String;
@@ -423,10 +473,11 @@ type, then translate the value into a string as is currently done with 'Image
 procedure Integer'To_String
    (Self      : Integer;
     Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
+    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open (Buffer, Signed_Type, "Standard.Integer");
+   Formatter.Open (Buffer, Signed_Type, "Standard.Integer", Format);
    Formatter.Put (Buffer, <code transforming Self to string>);
    Formatter.Close (Buffer);
 end Integer'To_String;
@@ -474,6 +525,134 @@ Ada Compatibilty Mode
 `To_String` will be made available in Ada compatibility mode. For this,
 Ada.Strings.Text_Buffers will be augmented with the necessary tagged types,
 and Ada.Strings.Text_Formatters will be introduced with default implementations.
+
+The packages provided for Ada will look as follow:
+
+```ada
+package Ada.Strings.Text_Buffers is
+
+   type Ada_Type is
+      (Access_Type,
+       Enumeration_Type,
+       Signed_Type,
+       Modular_Type,
+       Float_Type,
+       Decimal_Type,
+       Ordinary_Type
+       Array_Type,
+       Record_Type,
+       Protected_Type,
+       Task_Type);
+
+   type Elementary_Type is Ada_Type range Access_Type .. Ordinary_Type;
+   type Scalar_Type is Elementary_Type range Enumeration_Type .. Ordinary_Type;
+   type Discrete_Type is Scalar_Type range Enumeration_Type .. Modular_Type;
+   type Integer_Type is Discrete_Type range Signed_Type .. Modular_Type;
+   type Real_Type is Scalar_Type range Float_Type .. Ordinary_Type;
+   Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
+   type Composite_Type is Ada_Type range Array_Type .. Task_Type;
+
+   type Root_Buffer_Type is abstract tagged record;
+
+   type Root_Formatter_Parameters is abstract tagged record
+      --  Provided for future extensions - should contain various formating
+      --  parameters necessary for default formating.
+
+      null;
+   end record;
+
+   function Create
+      (Self   : in out Root_Formatter_Parameters;
+       Format : String) return Root_Formatter_Parameters
+
+   type Root_Formatter_Type is abstract tagged record
+      null;
+   end record;
+
+   procedure Put (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Item   : in     String;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure Wide_Put (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Item   : in     Wide_String;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure Wide_Wide_Put (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Item   : in     Wide_Wide_String;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure Put_UTF_8 (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Item   : in     UTF_Encoding.UTF_8_String;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure Wide_Put_UTF_16 (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Item   : in     UTF_Encoding.UTF_16_Wide_String;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure New_Line (
+      Self   : in out Root_Formatter_Type;
+      Buffer : in out Root_Buffer_Type'Class;
+      Format : Root_Formatter_Parameters'Class) is abstract;
+
+   procedure Start
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Format : Root_Formatter_Parameters'Class);
+
+   procedure Finish
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class);
+
+   procedure Open (
+      Self      : in out Root_Formatter_Type;
+      Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+      Type_Kind : Ada_Type;
+      Type_Name : String;
+      Format    : Root_Formatter_Parameters'Class
+   );
+
+   procedure Open (
+      Self           : in out Root_Formatter_Type;
+      Buffer         : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+      Type_Kind      : Ada_Type;
+      Type_Name      : String;
+      Index_Kind     : Ada_Type;
+      Index_Name     : String;
+      Component_Kind : Ada_Type;
+      Component_Name : String;
+      Format         : Root_Formatter_Parameters'Class
+   );
+
+   procedure List_Element (
+      Self          : in out Root_Formatter_Type;
+      Buffer        : in out Root_Buffer_Type;
+      Name          : String := "";
+      Is_Constraint : Boolean;
+      Format        : Root_Formatter_Parameters'Class
+   );
+
+   procedure Close (
+      Self   : in out Root_Buffer_Type;
+      Buffer : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
+   );
+
+  --  Same Root_Buffer as today
+
+private
+   ... -- not specified by the language
+end Ada.Strings.Text_Buffers;
+```
+
 
 Compatibilty with 'Img and 'Value
 ---------------------------------
@@ -564,6 +743,12 @@ Prior art
 Future possibilities
 ====================
 
-A new attribute 'From_String associated with a Root_Parser_Type could be
-introduced. Parsing is more complicated than just formatting values, may deserve
-some additional design work.
+- A new attribute 'From_String associated with a Root_Parser_Type could be
+  introduced. Parsing is more complicated than just formatting values, may"
+  deserve some additional design work.
+
+- Format parameter has been introduce to prepare for future extension - its
+  default semantics need to be defined.
+
+- Interpolated strings (f"") should provides way to easily associate a formatter
+  and format parameters.
