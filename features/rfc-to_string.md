@@ -302,7 +302,7 @@ types will be as follows):
 
 - First call Formatter.Open on the type, also giving index and component types
 - Then Call Formatter.List element followed by To_String on each low then high bound.
-- Then for each component, hen Call Formatter.List element followed by To_String on the Index then Component
+- Then for each component, call Formatter.List element followed by To_String on the Index then Component
 - Last call Formatter.Close
 
 for example:
