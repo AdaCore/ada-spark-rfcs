@@ -2,96 +2,94 @@
 - Start Date: 2025-11-06
 - Status: Proposed
 
-Summary
-=======
+# Summary
 
-This RFC proposes to standardize and mandate the use of the designator name in the end statement for all block-like constructs. Currently, the repetition of the designator (e.g., `end My_Procedure;`) is optional for subprograms, packages, tasks, and protected types. This proposal makes this end designator mandatory in all such cases. As a key part of this standardization, this RFC also proposes to replace the inconsistent end record terminator for record type declarations. This construct will be deprecated in favor of the now-mandatory `end <designator>;` syntax (e.g., `end My_Record_Type;`).
+This RFC proposes to standardize the use of a single `end[ designator]` terminator for all declaration constructs that use an end designator, in pedantic Ada Flare.
 
-Motivation
-==========
+Currently, the repetition of the designator (for example, `end My_Procedure`) is optional for subprograms, packages, tasks, and protected types. Record type declarations, however, use a distinct and inconsistent terminator: `end record[ designator]`.
 
-The primary motivation for this change is to improve language consistency and code readability in long or nested code blocks, by explicitly linking the end of a block to its beginning.
+This RFC proposes to deprecate the special `end record[ designator]` syntax for record type declarations and replace it with the uniform `end[ designator];` syntax (for example, `end My_Record_Type;`).
 
-The current `end record` syntax is inconsistent with other block terminators. This proposal aligns record declarations with the termination syntax used by subprograms, packages, tasks, and protected types. This change would establish a clear rule: "If a construct has a name in its declaration, that name must be repeated at its end". This rule also finds precedent in Ada's named loops, where a loop's name must be repeated at its `end loop` termination.
+For backwards compatibility reasons, non-pedantic Ada Flare continues to accept the Ada 2022 syntax.
 
-In addition, the proposal is particularly well-suited for upcoming language features, such as `class record`s. In such a construct, the `class record body` could be substantially longer, containing the implementations of various methods.
+# Motivation
 
-Guide-level explanation
-=======================
+The primary motivation for this change is to improve language consistency and code readability in long or nested code blocks, by explicitly and uniformily linking the end of a construct to its beginning.
 
-For subprograms, packages, tasks, protected types, record types, class record types and named loops, their name must be repeated at the end. The old syntax, where the name was optional or a different keyword was used (like `end record`), is illegal.
+The current `end record[ designator]` syntax is inconsistent with other declaration terminators. This proposal aligns record declarations with the termination syntax used by subprograms, packages, tasks, and protected types.
 
-```ada
--- Old syntax, now illegal
-procedure My_Procedure is
-begin
-    null;
-end; -- No designator
+# Guide-level explanation
 
--- New syntax, mandatory
-procedure My_Procedure is
-begin
-    null;
-end My_Procedure; -- Designator is mandatory
-```
+The special `end record[ designator];` syntax is removed in pedantic Ada Flare and replaced by the generic `end[ designator];` syntax.
 
-The most significant change is to record declarations. The special `end record;` syntax has been removed from the language and replaced by the same universal `end <designator>;` rule.
+**Ada Syntax:**
 
 ```ada
--- Old syntax, now illegal
-type My_Record is record
+type My_Record_1 is record
     Foo : Unbounded_String;
     Bar : Natural;
-end My_Record;
+end record; -- mandatory 'record'
 
--- New syntax, mandatory
-type My_Record is record
-   Foo : Unbounded_String;
-   Bar : Natural;
-end My_Record; -- Designator is mandatory
+type My_Record_2 is record
+    Foo : Unbounded_String;
+    Bar : Natural;
+end record My_Record_2; -- mandatory 'record' and optional designator
 ```
 
+**Flare Syntax:**
 
-Reference-level explanation
-===========================
+```ada
+type My_Record_1 is record
+   Foo : Unbounded_String;
+   Bar : Natural;
+end; -- No designator
 
-Nothing specific at this stage.
+type My_Record_2 is record
+   Foo : Unbounded_String;
+   Bar : Natural;
+end My_Record_2; -- With optional designator
+```
 
-Rationale and alternatives
-==========================
+# Reference-level explanation
 
-An alternative was to only deprecate `end record;` in favor of an optional `end <record_name>;`. This was deemed a missed opportunity. While it would fix the end record inconsistency, it would not bring the benefits of making the designator mandatory everywhere.
+The grammar for record_definition (ARM 3.8) is changed to:
 
-Drawbacks
-=========
+```
+record_definition ::=
+  record
+    component_list
+  end[ record_identifier]
+  | null record
+```
 
-The primary drawbacks are related to backward compatibility and verbosity.
+# Rationale and alternatives
 
-For backward compatibility, see the Compatibility section below.
+An alternative approach would be to require the designator for all end terminators. This was considered in ealier drafts but rejected in order to preserve the existing Ada philosophy of optional designators for declaration constructs.
 
-Mandating the designator makes the code more verbose, as it will be required to type the designator at the end of every block. This is a trade-off and the benefit of improved readability and consistency is argued to outweigh the inconvenience of extra typing.
+# Drawbacks
 
-Compatibility
-=============
+The primary drawbacks are related to compatibility. See the Compatibility section below.
 
-This is a significant breaking change. All existing Ada code that currently uses the optional designator (or `end record`) would become non-compliant.
+# Compatibility
 
-Open questions
-==============
+Code using the new `end[ designator]` syntax for record type declarations will not compile with standard Ada 2022 compilers.
+
+In pedantic Ada Flare, the `end record[ designator]` form is rejected and only the generic terminator is accepted.
+
+In non-pedantic Ada Flare, both the Ada 2022 and the Ada Flare syntax remain valid to preserve backward compatibility.
+
+# Open questions
 
 None at this stage.
 
-Prior art
-=========
-
-Ada itself has named loops, (e.g., `Outer_Loop: loop ... end loop Outer_Loop;`) which already enforce the proposed pattern.
-
-Unresolved questions
-====================
+# Prior art
 
 None at this stage.
 
-Future possibilities
-====================
+# Unresolved questions
+
+None at this stage.
+
+# Future possibilities
 
 Nothing specific at this stage.
