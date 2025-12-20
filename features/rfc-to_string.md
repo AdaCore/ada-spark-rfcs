@@ -123,7 +123,7 @@ package Flare.Strings.Text_Buffers is
        Modular_Type,
        Float_Type,
        Decimal_Type,
-       Ordinary_Type
+       Ordinary_Fixed_Point_Type
        Array_Type,
        Record_Type,
        Protected_Type,
@@ -312,8 +312,8 @@ end record;
 
 procedure Rec'To_String
    (Self      : Rec;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
     Format    : Root_Formatter_Parameters)
 is
 begin
@@ -356,8 +356,8 @@ type Arr is array (Integer range <>) of Integer;
 
 procedure Arr'To_String
    (Self      : Arr;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
     Format    : Root_Formatter_Parameters)
 is
 begin
@@ -392,8 +392,8 @@ type Arr is array (Integer range <>; Integer range <>) of Integer;
 
 procedure Arr'To_String
    (Self      : Arr;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
     Format    : Root_Formatter_Parameters)
 is
 begin
@@ -439,8 +439,8 @@ entire value, e.g.:
 ```ada
 procedure String'To_String
    (Self      : String;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
     Format    : Root_Formatter_Parameters)
 is
 begin
@@ -472,8 +472,8 @@ type, then translate the value into a string as is currently done with 'Image
 ```ada
 procedure Integer'To_String
    (Self      : Integer;
-    Buffer    : Flare.Strings.Text_Buffers.Root_Buffer_Type;
-    Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
     Format    : Root_Formatter_Parameters)
 is
 begin
@@ -517,7 +517,7 @@ end Flare.Strings.Text_Formatters;
 ```
 
 To complete the specification, we will provide schema when relevant (e.g. JSON
-schema)
+schema).
 
 Ada Compatibilty Mode
 ---------------------
@@ -653,6 +653,31 @@ private
 end Ada.Strings.Text_Buffers;
 ```
 
+The default formatters will also be provided for the Ada compatibilty mode:
+
+```ada
+package Ada.Strings.Text_Formatters is
+
+   type Default_Formatter_Type is new Root_Formatter_Type with record
+      -- Implementation-Defined
+   end record;
+
+   Default_Formatter : Default_Formatter_Type;
+
+   type JSON_Formatter_Type is new Root_Formatter_Type with record
+      -- Implementation-Defined
+   end record;
+
+   JSON_Formatter : JSON_Formatter_Type;
+
+   type YAML_Formatter_Type is new Root_Formatter_Type with record
+      -- Implementation-Defined
+   end record;
+
+   YAML_Formatter : YAML_Formatter_Type;
+
+end Ada.Strings.Text_Formatters;
+```
 
 Compatibilty with 'Img and 'Value
 ---------------------------------
