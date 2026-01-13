@@ -28,18 +28,18 @@ type:
 
 In Ada for the moment, you cannot define this primitive without either making
 the return type class-wide, which is extremely inconvenient because the return
-type is now indefinite, or making `Self` class-wide, which is also
-inconvenient, because the `Child` function is still a primitive of `Tree_Node`
+type is now indefinite, or making ``Self`` class-wide, which is also
+inconvenient, because the ``Child`` function is still a primitive of ``Tree_Node``
 and will be derived for every subtype, even if you don't wish to.
 
-An alternative would be to define the `Child` function in a separate package,
+An alternative would be to define the ``Child`` function in a separate package,
 but:
 
 1. It is wildly inconvenient and unintuitive from an API design standpoint.
    There is no way to justify it except "Ada doesn't let me do what I need",
    which looks bad in a comment.
 
-2. You lose the ability to call the `Child` function with the dot-notation.
+2. You lose the ability to call the ``Child`` function with the dot-notation.
 
 Simplify dispatching
 --------------------
@@ -56,7 +56,7 @@ dispatches on the second parameter:
 
 The problem is that when you do that, you lose the ability to use the prefix
 notation for calls. Along with that, you lose the ability to call this
-primitive without `with`-ing the package in which it is defined.
+primitive without ``with``-ing the package in which it is defined.
 
 We think that dot notation, and the ability to use primitives without with-ing
 the defining package, are integral parts of idiomatic object-oriented
@@ -68,7 +68,7 @@ existent, so we feel it's OK to forbid them.
 Guide-level explanation
 =======================
 
-A new pragma / aspect is introduced for tagged types, "First_Controlling_Parameter"
+A new pragma / aspect is introduced for tagged types, ``First_Controlling_Parameter``
 which modifies the semantic of primitive / controlling parameter.
 
 When a tagged type is marked under this aspect, only subprograms that have the
@@ -101,13 +101,13 @@ For example:
     function F2 (V : Child) return Child;
     -- Primitive, but only controlling on the first parameter
 
-Note that `function F2 (V : Child) return Child;` differs from
-`function F2 (V : Child) return Child'Class;` in that the returned type is a
+Note that ``function F2 (V : Child) return Child;`` differs from
+``function F2 (V : Child) return Child'Class;`` in that the returned type is a
 definite type. It's also different from the legacy semantic which would force
 further derivations adding fields to override the function.
 
 For generic formals tagged types, you can specify whether the type has the
-`First_Controlling_Parameter` aspect on or not.
+``First_Controlling_Parameter`` aspect on or not.
 
 .. code-block:: ada
 
@@ -173,8 +173,8 @@ with regards to which subprograms will be considered primitives of the type:
 
 1. A subprogram will be considered a primitive of type ``T`` following the same
    rules as for regular tagged types, with the added rule that **the first
-   parameter of the subprogram needs to be a controlling parameter of type
-   ``T``** in order for the subprogram to be considered a primitive.
+   parameter of the subprogram needs to be a controlling parameter of type**
+   ``T`` in order for the subprogram to be considered a primitive.
 
 2. In addition, the return value won't ever be considered as being controlling.
    A primitive of a tagged type with the aspect defined can return a value of
