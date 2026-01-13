@@ -73,7 +73,7 @@ which modifies the semantic of primitive / controlling parameter.
 
 When a tagged type is marked under this aspect, only subprograms that have the
 first parameter of this type will be considered primitive.
-This pragma / aspect applies to all the hiearchy starting on this type.
+This pragma / aspect applies to all the hierarchy starting on this type.
 
 Primitives inherited do not change.
 
