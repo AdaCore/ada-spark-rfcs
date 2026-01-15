@@ -1,6 +1,6 @@
 - Feature Name: Inference of dependent types in generic instantiations
 - Start Date: 2023-03-03
-- Status: Design
+- Status: Production
 
 Summary
 =======
