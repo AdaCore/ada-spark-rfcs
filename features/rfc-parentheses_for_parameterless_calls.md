@@ -4,7 +4,7 @@
 
 # Summary
 
-This RFC proposes requiring empty parentheses () for calls to functions and procedures that take no parameters, in pedantic Ada Flare. This change aims to bring Flare in line with other languages, while providing developers the ability to explicitly distinguish between value access and computation.
+This RFC proposes requiring empty parentheses () for calls to functions, procedures, protected procedures, and task entries that take no parameters, in pedantic Ada Flare. This change aims to bring Flare in line with other languages, while providing developers the ability to explicitly distinguish between value access and computation.
 
 # Motivation
 
