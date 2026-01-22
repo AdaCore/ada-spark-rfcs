@@ -45,7 +45,7 @@ None at this stage.
 
 ## Impact on the Uniform Access Principle (UAP)
 
-The Uniform Access Principle (UAP) suggests that a user should not know if a value is stored (as a record component) or computed (as a function call). An advantage is that you are able to refactor a variable, constant or record component into a function without changing the call sites.
+The Uniform Access Principle (UAP) suggests that a user should not know if a value is stored (for instance, as a record component or static constant) or computed (as a function call). An advantage is that you are able to refactor a variable, constant or record component into a function without changing the call sites.
 
 Flare explicitly rejects this principle and creates a distinction between computation and storage.
 
