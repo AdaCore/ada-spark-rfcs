@@ -84,4 +84,4 @@ None at this stage.
 
 # Future possibilities
 
-Once () is mandatory for subprograms, a property concept could be introduced thorugh through a property aspect. This restores the UAP principle.
+Once () is mandatory for subprograms, a property concept could be introduced through a property aspect. This restores the UAP principle.
