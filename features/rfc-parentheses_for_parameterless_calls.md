@@ -12,7 +12,7 @@ The primary motivation is to improve language consistency and code readability a
 
 By allowing `My_Function ()`, Flare provides:
 
-1. A visual cues for possible side effects. It is often helpful to see at a glance that a name represents a "call" rather than a simple object access.
+1. Explicit distinction between execution and access. In Ada, `X := Y;` is ambiguous. `Y` could be an object held in memory or it could be a function call that executes complex logic. By requiring () for function cals and [] for array and composite types access, Flare clarifies the semantics of the operation.
 
 2. Familiarity with other languages. Most developers coming from C, C++, Rust, Java, or Python expect () for parameterless functions.
 
