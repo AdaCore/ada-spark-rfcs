@@ -57,6 +57,13 @@ Python provides a middle ground that Flare may adopt in the future (see the Futu
 
 The primary drawbacks are related to compatibility. See the Compatibility section below.
 
+Another drawback is related to function that return arrays. This proposal necessitates "chained parentheses" when accessing elements of a returned array or composite type:
+
+- Ada: `Element := Get_Array (1);`
+- Flare: `Element := Get_Array () (1);`
+
+However, this is improved by using square brackets for indexing: `Element := Get_Array () [1]`. It visually distinguishes the function call () from the index [].
+
 # Compatibility
 
 In pedantic Ada Flare, the use of `()` for parameterless subprogram calls is mandatory. Its abcense is rejected.
