@@ -114,7 +114,7 @@ By default, this received an empty string.
 formatter to structure the output, as opposed to the indent primitives. E.g.:
 
 ```ada
-package Flare.Strings.Text_Buffers is
+package Flare.Strings.Text_Formatters is
 
    type Ada_Type is
       (Access_Type,
@@ -136,8 +136,6 @@ package Flare.Strings.Text_Buffers is
    type Real_Type is Scalar_Type range Float_Type .. Ordinary_Type;
    Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
    type Composite_Type is Ada_Type range Array_Type .. Task_Type;
-
-   type Root_Buffer_Type is abstract class record;
 
    type Root_Formatter_Parameters is abstract class record
       --  Provided for future extensions - should contain various formating
@@ -199,26 +197,14 @@ package Flare.Strings.Text_Buffers is
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Kind : Ada_Type;
-         Type_Name : String;
+         Type_Name : UTF_Encoding.UTF_8_String;
          Format    : Root_Formatter_Parameters;
-      );
-
-      procedure Open (
-         Self           : in out Root_Formatter_Type;
-         Buffer         : in out Root_Buffer_Type;
-         Type_Kind      : Ada_Type;
-         Type_Name      : String;
-         Index_Kind     : Ada_Type;
-         Index_Name     : String;
-         Component_Kind : Ada_Type;
-         Component_Name : String;
-         Format         : Root_Formatter_Parameters
       );
 
       procedure List_Element (
          Self          : in out Root_Formatter_Type;
          Buffer        : in out Root_Buffer_Type;
-         Name          : String := "";
+         Name          : UTF_Encoding.UTF_8_String := "";
          Is_Constraint : Boolean;
          Format        : Root_Formatter_Parameters
       );
@@ -229,33 +215,11 @@ package Flare.Strings.Text_Buffers is
       );
    end Root_Formatter_Type with private;
 
-   type Root_Buffer_Type is abstract class record
+   type Default_Formatter_Type is new Root_Formatter_Type with class record
+      -- Implementation-Defined
+   end Default_Formatter_Type;
 
-      --  The following function will use the underlying formatter
-
-      procedure Put (
-         Self : in out Root_Buffer_Type;
-         Item : in     String) is abstract;
-
-      procedure Wide_Put (
-         Self : in out Root_Buffer_Type;
-         Item : in     Wide_String) is abstract;
-
-      procedure Wide_Wide_Put (
-         Self : in out Root_Buffer_Type;
-         Item : in     Wide_Wide_String) is abstract;
-
-      procedure Put_UTF_8 (
-         Self : in out Root_Buffer_Type;
-         Item : in     UTF_Encoding.UTF_8_String) is abstract;
-
-      procedure Wide_Put_UTF_16 (
-         Self : in out Root_Buffer_Type;
-         Item : in     UTF_Encoding.UTF_16_Wide_String) is abstract;
-
-      procedure New_Line (Self : in out Root_Buffer_Type) is abstract;
-
-   end Root_Buffer with private;
+   Default_Formatter : Default_Formatter_Type;
 
 private
    ... -- not specified by the language
@@ -320,6 +284,7 @@ begin
    Formatter.Open (Buffer, Record_Type, "P.Rec", Format);
 
    Formatter.List_Element (Buffer, "D", True, Format);
+   Self.D'To_String (Buffer, Formatter, Format);
 
    Formatter.List_Element (Buffer, "A", False, Format);
    Self.A'To_String (Buffer, Formatter, Format);
@@ -329,15 +294,80 @@ begin
 
    if Self.D then
       Formatter.List_Element (Buffer, "C", False, Format);
-      Self.B'To_String (Buffer, Formatter, Format);
+      Self.C'To_String (Buffer, Formatter, Format);
    else
-      Formatter.List_Element (Buffer, "D", False, Format);
-      Self.B'To_String (Buffer, Formatter, Format);
+      Formatter.List_Element (Buffer, "E", False, Format);
+      Self.E'To_String (Buffer, Formatter, Format);
    end if;
 
    Formatter.Close (Buffer);
 end Rec'To_String;
 ```
+
+Default To_String for Tagged Records and Classes
+------------------------------------------------
+
+For tagged records and classes, To_String will first open the child scope, then
+call its parent To_String, then add any constraints or components. For example:
+
+For example:
+
+```ada
+type Root is class record
+   A, B : Integer;
+end record;
+
+type Child is new Root with class record
+   C, D : Integer;
+end record;
+
+procedure Root'To_String
+   (Self      : Root;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
+is
+begin
+   Formatter.Open (Buffer, Record_Type, "P.Root", Format);
+
+   Formatter.List_Element (Buffer, "A", False, Format);
+   Self.A'To_String (Buffer, Formatter, Format);
+
+   Formatter.List_Element (Buffer, "B", False, Format);
+   Self.B'To_String (Buffer, Formatter, Format);
+
+   Formatter.Close (Buffer);
+end Root'To_String
+
+procedure Child'To_String
+   (Self      : Child;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
+is
+begin
+   Formatter.Open (Buffer, Record_Type, "P.Child", Format);
+
+   --  Static call to the parent
+   Self'Super'To_String (Buffer, Formatter, Format);
+
+   --  Now prints components
+
+   Formatter.List_Element (Buffer, "C", False, Format);
+   Self.A'To_String (Buffer, Formatter, Format);
+
+   Formatter.List_Element (Buffer, "D", False, Format);
+   Self.B'To_String (Buffer, Formatter, Format);
+
+   Formatter.Close (Buffer);
+end Child'To_String;
+```
+
+Child may be overriden, the implementer may decide to not call parent if needed.
+
+For the formatter, by default, components are provided in order. The formater
+also has the possibility of detecting whcih components belong to which type
+by tracking the Open/Close calls in a stack.
 
 Default To_String for Arrays
 ----------------------------
@@ -361,11 +391,7 @@ procedure Arr'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open
-     (Buffer, Record_Type, "P.Arr",
-      Signed_Type, "Standard.Integer",
-      Signed_Type, "Standard.Integer",
-      Format);
+   Formatter.Open (Buffer, Array_Type, "P.Arr", Format);
 
    Formatter.List_Element (Buffer, "First", True, Format);
    Self'First'To_String (Buffer, Formatter, Format);
@@ -397,11 +423,7 @@ procedure Arr'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open
-     (Buffer, Record_Type, "P.Arr",
-      Signed_Type, "Standard.Integer",
-      Signed_Type, "Standard.Integer";
-      Format);
+   Formatter.Open (Buffer, Array_Type, "P.Arr", Format);
 
    Formatter.List_Element (Buffer, "First", True, Format);
    Self'First (1)'To_String (Buffer, Formatter, Format);
@@ -428,6 +450,11 @@ begin
    Formatter.Close (Buffer);
 end Arr'To_String;
 ```
+
+Note that in the To_String calls to individual constriants, the formatter
+will receive the exact type of each bound (through their own Open call), so
+it is possible to reproduce exactly the shape of the array by capturing
+constraints first up until the first non constrain element is retreived.
 
 Default To_String for Arrays of Characters
 ------------------------------------------
@@ -487,49 +514,42 @@ One of the potential use case for providing this level of information on the
 elementary types is to allow the formatter to "reformat" number, for example,
 formating "1234" into "1,234".
 
-Default Formatters
-------------------
+Default To_String for Tasks and Protected Types
+-----------------------------------------------
 
-Flare.Strings.Text_Formatters provides a number of default formatters for users:
+Tasks will first display task ids, followed by discriminants if any:
 
 ```ada
-package Flare.Strings.Text_Formatters is
+procedure Some_Task_Type'To_String
+   (Self      : Some_Task_Type;
+    Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type;
+    Formatter : in out Flare.Strings.Text_Buffers.Root_Formatter_Type;
+    Format    : Root_Formatter_Parameters)
+is
+begin
+   Formatter.Open (Buffer, Task_Type, "P.Some_Task_Type", Format);
+   Formatter.Put (Buffer, <code providing task id>);
 
-   type Default_Formatter_Type is new Root_Formatter_Type with class record
-      -- Implementation-Defined
-   end Default_Formatter_Type;
+   --  Add here sequence of list / put
 
-   Default_Formatter : Default_Formatter_Type;
-
-   type JSON_Formatter_Type is new Root_Formatter_Type with class record
-      -- Implementation-Defined
-   end JSON_Formatter_Type;
-
-   JSON_Formatter : JSON_Formatter_Type;
-
-   type YAML_Formatter_Type is new Root_Formatter_Type with class record
-      -- Implementation-Defined
-   end YAML_Formatter_Type;
-
-   YAML_Formatter : YAML_Formatter_Type;
-
-end Flare.Strings.Text_Formatters;
+   Formatter.Close (Buffer);
+end Some_Task_Type'To_String;
 ```
 
-To complete the specification, we will provide schema when relevant (e.g. JSON
-schema).
+In the case of a protected type T, a call to the default implementation of
+T'To_String begins only one protected (read-only) action (similar to Put_Image).
 
 Ada Compatibilty Mode
 ---------------------
 
 `To_String` will be made available in Ada compatibility mode. For this,
-Ada.Strings.Text_Buffers will be augmented with the necessary tagged types,
-and Ada.Strings.Text_Formatters will be introduced with default implementations.
+Ada.Strings.Text_Formatters will be introduced with the necessary tagged types,
+and default implementations
 
 The packages provided for Ada will look as follow:
 
 ```ada
-package Ada.Strings.Text_Buffers is
+package Ada.Strings.Text_Formatters is
 
    type Ada_Type is
       (Access_Type,
@@ -551,8 +571,6 @@ package Ada.Strings.Text_Buffers is
    type Real_Type is Scalar_Type range Float_Type .. Ordinary_Type;
    Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
    type Composite_Type is Ada_Type range Array_Type .. Task_Type;
-
-   type Root_Buffer_Type is abstract tagged record;
 
    type Root_Formatter_Parameters is abstract tagged record
       --  Provided for future extensions - should contain various formating
@@ -617,26 +635,14 @@ package Ada.Strings.Text_Buffers is
       Self      : in out Root_Formatter_Type;
       Buffer    : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
       Type_Kind : Ada_Type;
-      Type_Name : String;
+      Type_Name : UTF_Encoding.UTF_8_String;
       Format    : Root_Formatter_Parameters'Class
-   );
-
-   procedure Open (
-      Self           : in out Root_Formatter_Type;
-      Buffer         : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
-      Type_Kind      : Ada_Type;
-      Type_Name      : String;
-      Index_Kind     : Ada_Type;
-      Index_Name     : String;
-      Component_Kind : Ada_Type;
-      Component_Name : String;
-      Format         : Root_Formatter_Parameters'Class
    );
 
    procedure List_Element (
       Self          : in out Root_Formatter_Type;
       Buffer        : in out Root_Buffer_Type;
-      Name          : String := "";
+      Name          : UTF_Encoding.UTF_8_String := "";
       Is_Constraint : Boolean;
       Format        : Root_Formatter_Parameters'Class
    );
@@ -646,35 +652,11 @@ package Ada.Strings.Text_Buffers is
       Buffer : in out Flare.Strings.Text_Buffers.Root_Buffer_Type'Class;
    );
 
-  --  Same Root_Buffer as today
-
-private
-   ... -- not specified by the language
-end Ada.Strings.Text_Buffers;
-```
-
-The default formatters will also be provided for the Ada compatibilty mode:
-
-```ada
-package Ada.Strings.Text_Formatters is
-
    type Default_Formatter_Type is new Root_Formatter_Type with record
       -- Implementation-Defined
    end record;
 
    Default_Formatter : Default_Formatter_Type;
-
-   type JSON_Formatter_Type is new Root_Formatter_Type with record
-      -- Implementation-Defined
-   end record;
-
-   JSON_Formatter : JSON_Formatter_Type;
-
-   type YAML_Formatter_Type is new Root_Formatter_Type with record
-      -- Implementation-Defined
-   end record;
-
-   YAML_Formatter : YAML_Formatter_Type;
 
 end Ada.Strings.Text_Formatters;
 ```
@@ -692,6 +674,16 @@ numeric values) e.g.:
 Formatted string (strings that start with an f) will exclusively use To_String
 (they already are doing something special to some extent as integers don't
 have heading space there).
+
+Mixed Tagged Type Hierarchies
+-----------------------------
+
+In mixed compatibilty mode, units compiled with extensions may be mixed with
+units not compiled with the extensions. If that's the case, only units with
+the extension do get To_String generated for them. In the case of hierarchy
+of classes, it is legal to have To_String introduced this way at any point
+in the hiearchy. All children of a type that support To_String also supports
+To_String.
 
 Reference-level explanation
 ===========================
@@ -777,3 +769,6 @@ Future possibilities
 
 - Interpolated strings (f"") should provides way to easily associate a formatter
   and format parameters.
+
+- Formatters for formats such as YAML, JSON and others can be provided to
+  additional libraries.
