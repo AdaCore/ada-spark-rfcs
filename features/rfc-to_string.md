@@ -116,6 +116,19 @@ formatter to structure the output, as opposed to the indent primitives. E.g.:
 ```ada
 package Flare.Strings.Text_Formatters is
 
+   type Root_Formatter_Parameters is abstract class record
+      --  Provided for future extensions - should contain various formating
+      --  parameters necessary for default formating.
+
+      procedure Root_Formatter_Parameters'Constructor
+         (Self   : in out Root_Formatter_Parameters;
+          Format : String);
+      --  Will support default formating format, for example ".2f" may mean
+      --  2 decimals for floating points if following Python formatting
+   end Root_Formatter_Parameters;
+
+   type Root_Formatter_Type is abstract class record
+
    type Ada_Type is
       (Access_Type,
        Enumeration_Type,
@@ -129,26 +142,238 @@ package Flare.Strings.Text_Formatters is
        Protected_Type,
        Task_Type);
 
-   type Elementary_Type is Ada_Type range Access_Type .. Ordinary_Type;
-   type Scalar_Type is Elementary_Type range Enumeration_Type .. Ordinary_Type;
-   type Discrete_Type is Scalar_Type range Enumeration_Type .. Modular_Type;
-   type Integer_Type is Discrete_Type range Signed_Type .. Modular_Type;
-   type Real_Type is Scalar_Type range Float_Type .. Ordinary_Type;
-   Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
-   type Composite_Type is Ada_Type range Array_Type .. Task_Type;
+      --  Elementary Types Support  --
 
-   type Root_Formatter_Parameters is abstract class record
-      --  Provided for future extensions - should contain various formating
-      --  parameters necessary for default formating.
+      procedure Put_Access (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : System.Address;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
 
-      procedure Root_Formatter_Parameters'Constructor
-         (Self   : in out Root_Formatter_Parameters;
-          Format : String);
-      --  Will support default formating format, for example ".2f" may mean
-      --  2 decimals for floating points if following Python formatting
-   end Root_Formatter_Parameters;
+      procedure Put_Enumeration (
+         Self       : in out Root_Formatter_Type;
+         Buffer     : in out Root_Buffer_Type;
+         Type_Name  : UTF_Encoding.UTF_8_String;
+         Value_Name : UTF_Encoding.UTF_8_String;
+         Value_Rep  : Interfaces.Integer_64;
+         Format     : Root_Formatter_Parameters;
+      ) is abstract;
 
-   type Root_Formatter_Type is abstract class record
+      procedure Put_Boolean (
+         Self   : in out Root_Formatter_Type;
+         Buffer : in out Root_Buffer_Type;
+         Value  : Boolean;
+         Format : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Integer_8 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Integer_8;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Integer_16 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Integer_16;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Integer_32 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Integer_32;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Integer_64 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Integer_64;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Unsigned_8 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Unsigned_8;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Unsigned_16 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Unsigned_16;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Unsigned_32 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Unsigned_32;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Unsigned_64 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Unsigned_64;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Unsigned_128 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.Unsigned_128;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Big_Integer (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Ada.Numerics.Big_Numbers.Big_Integers.Big_Integer;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Float_32 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.IEEE_Float_32;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Float_64 (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Interfaces.IEEE_Float_64;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Big_Real (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : Ada.Numerics.Big_Numbers.Big_Reals.Big_Real;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Decimal_Type (
+         Self          : in out Root_Formatter_Type;
+         Buffer        : in out Root_Buffer_Type;
+         Type_Name     : UTF_Encoding.UTF_8_String;
+         Integer_Value : Interfaces.Unsigned_64;
+         Decimal_Value : Interfaces.Unsigned_64;
+         Format        : Root_Formatter_Parameters;
+      ) is abstract;
+
+      procedure Put_Ordinary_Fixed_Point_Type (
+         Self          : in out Root_Formatter_Type;
+         Buffer        : in out Root_Buffer_Type;
+         Type_Name     : UTF_Encoding.UTF_8_String;
+         Integer_Value : Interfaces.Unsigned_64;
+         Decimal_Value : Interfaces.Unsigned_64;
+         Format        : Root_Formatter_Parameters;
+      ) is abstract;
+
+      --  Array Support  --
+
+      procedure Open_Array (
+         Self           : in out Root_Formatter_Type;
+         Buffer         : in out Root_Buffer_Type;
+         Type_Name      : UTF_Encoding.UTF_8_String;
+         Format         : Root_Formatter_Parameters;
+      );
+
+      procedure List_First (
+         Self           : in out Root_Formatter_Type;
+         Buffer         : in out Root_Buffer_Type;
+         Dimension      : Integer;
+         Format         : Root_Formatter_Parameters;
+      );
+
+      procedure List_Last (
+         Self           : in out Root_Formatter_Type;
+         Buffer         : in out Root_Buffer_Type;
+         Dimension      : Integer;
+         Format         : Root_Formatter_Parameters;
+      );
+
+      procedure List_Index (
+         Self          : in out Root_Formatter_Type;
+         Buffer        : in out Root_Buffer_Type;
+         Dimension     : Integer;
+         Format        : Root_Formatter_Parameters
+      );
+
+      procedure List_Component (
+         Self          : in out Root_Formatter_Type;
+         Buffer        : in out Root_Buffer_Type;
+         Format        : Root_Formatter_Parameters
+      );
+
+      --  Common for composite types  --
+
+      --  Record Support  --
+
+      procedure Open_Record (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Format    : Root_Formatter_Parameters;
+      );
+
+      procedure List_Discriminant (
+         Self   : in out Root_Formatter_Type;
+         Buffer : in out Root_Buffer_Type;
+         Format : Root_Formatter_Parameters;
+      );
+
+      procedure List_Component (
+         Self   : in out Root_Formatter_Type;
+         Buffer : in out Root_Buffer_Type;
+         Name   : UTF_Encoding.UTF_8_String;
+         Format : Root_Formatter_Parameters
+      );
+
+      --  Protected Support  --
+
+      procedure Open_Protected (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Format    : Root_Formatter_Parameters;
+      );
+
+      --  Also calls List_Discriminant and List_Component
+
+      --  Task Support  --
+
+      procedure Open_Task (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Format    : Root_Formatter_Parameters;
+      );
+
+      --  Also calls List_Discriminant
+
+      --  String printing support  --
+
       procedure Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
@@ -184,6 +409,8 @@ package Flare.Strings.Text_Formatters is
          Buffer : in out Root_Buffer_Type;
          Format : Root_Formatter_Parameters) is abstract;
 
+      --  Other flow indications --
+
       procedure Start
          (Self   : in out Root_Formatter_Type;
           Buffer : in out Root_Buffer_Type;
@@ -192,22 +419,6 @@ package Flare.Strings.Text_Formatters is
       procedure Finish
          (Self   : in out Root_Formatter_Type;
           Buffer : in out Root_Buffer_Type);
-
-      procedure Open (
-         Self      : in out Root_Formatter_Type;
-         Buffer    : in out Root_Buffer_Type;
-         Type_Kind : Ada_Type;
-         Type_Name : UTF_Encoding.UTF_8_String;
-         Format    : Root_Formatter_Parameters;
-      );
-
-      procedure List_Element (
-         Self          : in out Root_Formatter_Type;
-         Buffer        : in out Root_Buffer_Type;
-         Name          : UTF_Encoding.UTF_8_String := "";
-         Is_Constraint : Boolean;
-         Format        : Root_Formatter_Parameters
-      );
 
       procedure Close (
          Self   : in out Root_Buffer_Type;
