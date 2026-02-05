@@ -144,13 +144,24 @@ package Flare.Strings.Text_Formatters is
 
       --  Elementary Types Support  --
 
-      procedure Put_Access (
+      procedure Put_Address (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : System.Address;
          Format    : Root_Formatter_Parameters;
       ) is abstract;
+
+      procedure Put_Access (
+         Self      : in out Root_Formatter_Type;
+         Buffer    : in out Root_Buffer_Type;
+         Type_Name : UTF_Encoding.UTF_8_String;
+         Item      : System.Storage_Elements.Storage_Array;
+         Format    : Root_Formatter_Parameters;
+      ) is abstract;
+      --  Ada Access types may be a single address - they may also contain
+      --  more information depending on the implementation (e.g. bounds for
+      --  arrays), so we need to provide a byte array as input
 
       procedure Put_Enumeration (
          Self       : in out Root_Formatter_Type;
@@ -313,18 +324,13 @@ package Flare.Strings.Text_Formatters is
          Format         : Root_Formatter_Parameters;
       );
 
-      procedure List_Index (
-         Self          : in out Root_Formatter_Type;
-         Buffer        : in out Root_Buffer_Type;
-         Dimension     : Integer;
-         Format        : Root_Formatter_Parameters
-      );
-
-      procedure List_Component (
+      procedure List_Components (
          Self          : in out Root_Formatter_Type;
          Buffer        : in out Root_Buffer_Type;
          Format        : Root_Formatter_Parameters
       );
+      --  Following this, the formatter expect to receive a sequence of
+      -- {index(es), component value}
 
       --  Common for composite types  --
 
