@@ -75,7 +75,7 @@ be outside this enclosing construct. The preceding are the same rules as for
 enclosing both, the ``'At`` attribute shall occur in a statement occurring
 after the ``statement_identifier`` it references.
 
-For any given sequence of statement immediately enclosing two ``statement_identifier``s
+For any given sequence of statements immediately enclosing two ``statement_identifier``s
 ``L1`` and ``L2``, such that ``L1`` precedes ``L2``, if there is a ``goto`` statement
 targeting ``L2`` within a statement preceding ``L1`` in the sequence, then no ``'At``
 attribute shall reference ``L1``.
@@ -89,7 +89,7 @@ preserve the tag.
 
 The prefix of an ``'At`` attribute reference shall only reference entities
 visible at the location of the referenced ``statement_identifier``, or declared
-within the prefix itself. It shall not contains a ``'Loop_Entry`` reference
+within the prefix itself. It shall not contain a ``'Loop_Entry`` reference
 without an explicit loop name. If the prefix of an ``'At`` attribute reference contains
 another ``'At`` attribute reference, or a ``'Loop_Entry`` reference (with an explicit
 loop name) the inner reference shall be legal at the location of the
