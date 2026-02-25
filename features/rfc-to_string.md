@@ -8,23 +8,23 @@
 # Motivation
 
 The current type-to-string mechanism in Ada has a few shortcomings:
-- Integers values are provided with a heading space
-- The new Ada 2022 Put_Image attribute is not dispatching, and confusing when
-  using with class wide view (which will be a more visible problem with the
+- Integer values are provided with a leading space
+- The new Ada 2022 Put_Image attribute is non-dispatching and confusing when
+  used with a class-wide view (which will be a more visible problem with the
   new dispatching semantics)
-- The new Ada 2022 Put_Image attribute provide some limited formating (notably
-  through the identation functions of the Buffer) but doesn't go as far as
+- The new Ada 2022 Put_Image attribute provides some limited formatting (notably
+  through the indentation functions of the Buffer) but doesn't go as far as
   allowing to format the output to standards such as JSON or YAML.
 
-The need to be able to output formatted format is particularly important for
-application that need to log data for e.g. debuging or other external purposes.
+The need to output formatted data is particularly important for
+applications that need to log data for e.g. debugging or other external purposes.
 
 # Guide-level explanation
 
 ## To_String Attribute
 
-'To_String (with its _Wide_String and _Wide_Wide_String counterpart) is provided
-in replacement of 'Image (and 'Img in GNAT specific extension).
+'To_String (with its _Wide_String and _Wide_Wide_String counterparts) is provided
+as a replacement for 'Image (and 'Img in GNAT-specific extensions).
 This attribute is used directly on a value, and by default operates like
 'Image, (with the exception that no leading space is present for
 numeric values) e.g.:
@@ -44,7 +44,7 @@ will print:
 
 To_String attribute can take an optional parameter of type
 `Flare.Strings.Text_Buffers.Root_Formatter_Type'Class`. By default, this
-parameter will be valuated by `Flare.Strings.Text_Formatters.Default_Formatter`
+parameter will be set to `Flare.Strings.Text_Formatters.Default_Formatter`
 (defined later). A few other derivations are provided, such as JSON_Formatter
 and YAML_Formatter. For example:
 
@@ -67,10 +67,10 @@ will print:
 }
 ```
 
-To_String can be used direclty as a procedure. In this case it needs to be
+To_String can be used directly as a procedure. In this case it needs to be
 provided with an instance of a new buffer type,
 Flare.Strings.Text_Buffers.Root_Buffer_Type, and an optional formatter.
-Similar to Ada,there are predefined buffer types provided by the language.
+Similar to Ada, there are predefined buffer types provided by the language.
 E.g.:
 
 ```ada
@@ -86,14 +86,14 @@ V'To_String (Buffer, JSON_Structured_Formatter);
 ```
 
 To_String can also accept an extra parameter, `Format`, which may contain
-values indicating to the formatter additional parameters or condition default
+values indicating to the formatter additional parameters or controlling the default
 generation of formatting for e.g. elementary types. This string is here to
 prepare for additional extensions of the model but its format requires design
 on its own - which is outside of the scope of this proposal. E.g.:
 
 ```ada
 --  The following is not part of the proposal but demonstrate future extension
---  possiblities
+--  possibilities
 
 X : Float;
 V : String := X'To_String (Format => Root_Formatter_Parameter'Make (".2f"));
@@ -103,7 +103,7 @@ V : String := f"{X:.2f}"
 --  same as above, using formatted strings
 ```
 
-By default, this received an empty string.
+By default, this receives an empty string.
 
 `Flare.Strings.Text_Buffers.Root_Buffer_Type` is similar to
 `Ada.Strings.Text_Buffers.Root_Buffer_Type` except that it relies on a
@@ -113,30 +113,17 @@ formatter to structure the output, as opposed to the indent primitives. E.g.:
 package Flare.Strings.Text_Formatters is
 
    type Root_Formatter_Parameters is abstract class record
-      --  Provided for future extensions - should contain various formating
-      --  parameters necessary for default formating.
+      --  Provided for future extensions - should contain various formatting
+      --  parameters necessary for default formatting.
 
       procedure Root_Formatter_Parameters'Constructor
          (Self   : in out Root_Formatter_Parameters;
           Format : String);
-      --  Will support default formating format, for example ".2f" may mean
+      --  Will support default formatting format, for example ".2f" may mean
       --  2 decimals for floating points if following Python formatting
    end Root_Formatter_Parameters;
 
    type Root_Formatter_Type is abstract class record
-
-   type Ada_Type is
-      (Access_Type,
-       Enumeration_Type,
-       Signed_Type,
-       Modular_Type,
-       Float_Type,
-       Decimal_Type,
-       Ordinary_Fixed_Point_Type
-       Array_Type,
-       Record_Type,
-       Protected_Type,
-       Task_Type);
 
       --  Elementary Types Support  --
 
@@ -145,16 +132,16 @@ package Flare.Strings.Text_Formatters is
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : System.Address;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Access (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : System.Storage_Elements.Storage_Array;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
       --  Ada Access types may be a single address - they may also contain
       --  more information depending on the implementation (e.g. bounds for
       --  arrays), so we need to provide a byte array as input
@@ -165,119 +152,119 @@ package Flare.Strings.Text_Formatters is
          Type_Name  : UTF_Encoding.UTF_8_String;
          Value_Name : UTF_Encoding.UTF_8_String;
          Value_Rep  : Interfaces.Integer_64;
-         Format     : Root_Formatter_Parameters;
-      ) is abstract;
+         Format     : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Boolean (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Value  : Boolean;
-         Format : Root_Formatter_Parameters;
-      ) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Integer_8 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Integer_8;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Integer_16 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Integer_16;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Integer_32 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Integer_32;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Integer_64 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Integer_64;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Unsigned_8 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Unsigned_8;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Unsigned_16 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Unsigned_16;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Unsigned_32 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Unsigned_32;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Unsigned_64 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Unsigned_64;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Unsigned_128 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.Unsigned_128;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Big_Integer (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Ada.Numerics.Big_Numbers.Big_Integers.Big_Integer;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Float_32 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.IEEE_Float_32;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Float_64 (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Interfaces.IEEE_Float_64;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Big_Real (
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
          Item      : Ada.Numerics.Big_Numbers.Big_Reals.Big_Real;
-         Format    : Root_Formatter_Parameters;
-      ) is abstract;
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Decimal_Type (
          Self          : in out Root_Formatter_Type;
@@ -285,8 +272,8 @@ package Flare.Strings.Text_Formatters is
          Type_Name     : UTF_Encoding.UTF_8_String;
          Integer_Value : Interfaces.Unsigned_64;
          Decimal_Value : Interfaces.Unsigned_64;
-         Format        : Root_Formatter_Parameters;
-      ) is abstract;
+         Format        : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_Ordinary_Fixed_Point_Type (
          Self          : in out Root_Formatter_Type;
@@ -294,8 +281,8 @@ package Flare.Strings.Text_Formatters is
          Type_Name     : UTF_Encoding.UTF_8_String;
          Integer_Value : Interfaces.Unsigned_64;
          Decimal_Value : Interfaces.Unsigned_64;
-         Format        : Root_Formatter_Parameters;
-      ) is abstract;
+         Format        : Root_Formatter_Parameters)
+      is abstract;
 
       --  Array Support  --
 
@@ -303,34 +290,34 @@ package Flare.Strings.Text_Formatters is
          Self           : in out Root_Formatter_Type;
          Buffer         : in out Root_Buffer_Type;
          Type_Name      : UTF_Encoding.UTF_8_String;
-         Format         : Root_Formatter_Parameters;
-      );
+         Format         : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_First (
          Self           : in out Root_Formatter_Type;
          Buffer         : in out Root_Buffer_Type;
          Dimension      : Integer;
-         Format         : Root_Formatter_Parameters;
-      );
+         Format         : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_Last (
          Self           : in out Root_Formatter_Type;
          Buffer         : in out Root_Buffer_Type;
          Dimension      : Integer;
-         Format         : Root_Formatter_Parameters;
-      );
+         Format         : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_Components (
          Self          : in out Root_Formatter_Type;
          Buffer        : in out Root_Buffer_Type;
-         Format        : Root_Formatter_Parameters
-      );
+         Format        : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_Indexes_Components (
          Self          : in out Root_Formatter_Type;
          Buffer        : in out Root_Buffer_Type;
-         Format        : Root_Formatter_Parameters
-      );
+         Format        : Root_Formatter_Parameters)
+      is abstract;
       --  Following this, the formatter expect to receive a sequence of
       -- {index(es), component value}
 
@@ -342,22 +329,22 @@ package Flare.Strings.Text_Formatters is
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
-         Format    : Root_Formatter_Parameters;
-      );
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_Discriminant (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Name   : UTF_Encoding.UTF_8_String;
-         Format : Root_Formatter_Parameters;
-      );
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure List_Component (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Name   : UTF_Encoding.UTF_8_String;
-         Format : Root_Formatter_Parameters
-      );
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       --  Protected Support  --
 
@@ -365,8 +352,8 @@ package Flare.Strings.Text_Formatters is
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
-         Format    : Root_Formatter_Parameters;
-      );
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       --  Also calls List_Discriminant and List_Component
 
@@ -376,8 +363,8 @@ package Flare.Strings.Text_Formatters is
          Self      : in out Root_Formatter_Type;
          Buffer    : in out Root_Buffer_Type;
          Type_Name : UTF_Encoding.UTF_8_String;
-         Format    : Root_Formatter_Parameters;
-      );
+         Format    : Root_Formatter_Parameters)
+      is abstract;
 
       --  Also calls List_Discriminant
 
@@ -387,48 +374,55 @@ package Flare.Strings.Text_Formatters is
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Item   : in     String;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Wide_Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Item   : in     Wide_String;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Wide_Wide_Put (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Item   : in     Wide_Wide_String;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Put_UTF_8 (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Item   : in     UTF_Encoding.UTF_8_String;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Wide_Put_UTF_16 (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
          Item   : in     UTF_Encoding.UTF_16_Wide_String;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure New_Line (
          Self   : in out Root_Formatter_Type;
          Buffer : in out Root_Buffer_Type;
-         Format : Root_Formatter_Parameters) is abstract;
+         Format : Root_Formatter_Parameters)
+      is abstract;
 
       --  Other flow indications --
 
       procedure Open
          (Self   : in out Root_Formatter_Type;
           Buffer : in out Root_Buffer_Type;
-          Format : Root_Formatter_Parameters);
+          Format : Root_Formatter_Parameters)
+      is abstract;
 
       procedure Close (
          Self   : in out Root_Formatter_Type;
-         Buffer : in out Root_Buffer_Type;
-      );
+         Buffer : in out Root_Buffer_Type)
+      is abstract;
    end Root_Formatter_Type with private;
 
    type Default_Formatter_Type is new Root_Formatter_Type with class record
@@ -442,11 +436,11 @@ private
 end Flare.Strings.Text_Buffers;
 ```
 
-`To_String` can be overriden by an attribute that takes a value and a buffer.
-Default To_String for records are using scoping to follow formatting.
+`To_String` can be overridden by an attribute that takes a value and a buffer.
+The default To_String for records uses scoping to follow formatting.
 
-The overriden To_String is primitive of the type. When used on a tagged or class
-record, it will dispatch. Calling to string on a class wide view will dispatch
+The overridden To_String is a primitive of the type. When used on a tagged or class
+record, it will dispatch. Calling To_String on a class-wide view will dispatch
 to the actual call. E.g.:
 
 ```ada
@@ -461,12 +455,12 @@ begin
 
 ## Protocol
 
-When generating a call to To_String attributte function, the compiler is
+When generating a call to the To_String attribute function, the compiler is
 responsible for:
 
 - Creating an instance of Root_Buffer_Type
 - Calling Open on the formatter, buffer, and parameters (either default values
-  or the ones explicitally provided).
+  or the ones explicitly provided).
 - Calling To_String procedure on the element
 - Calling Close on the formatter, buffer and parameters
 - Using the buffer to convert to a string and returning that string.
@@ -478,14 +472,14 @@ this case.
 Each data type has a pre-defined protocol which governs the default generation
 for To_String attributes - user may override this default implementation (for
 example, hiding certain fields, or generating an array-like representation for
-a record). Not respecting the protocol is likely to cause failures in formatter
-but there's no specific checks (contracts could be added to help this).
+a record). Not respecting the protocol is likely to cause failures in the formatter,
+but there are no specific checks (contracts could be added to help with this).
 
 ### To_String for Elementary Types
 
-The default implementation for elementary types is call the the appropriate
-Put_ procedure that corresponds to this type. In the case of float and integers,
-if no matching procedure exist, Big_Int and Big_Float will be used instead. For example:
+The default implementation for elementary types is to call the appropriate
+Put_ procedure that corresponds to this type. In the case of floats and integers,
+if no matching procedure exists, Big_Int and Big_Float will be used instead. For example:
 
 ```ada
 procedure Integer'To_String
@@ -495,10 +489,6 @@ procedure Integer'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open (Buffer, Signed_Type, "Standard.Integer", Format);
-   Formatter.Put (Buffer, <code transforming Self to string>);
-   Formatter.Close (Buffer);
-
    Formatter.Put_Integer_32 (Buffer, "Standard.Integer", Integer_32 (Self), Format);
 end Integer'To_String;
 ```
@@ -508,7 +498,6 @@ The default implementation of To_String for arrays:
 
 - Call Formatter.Open_Array on the type
 - Call Formatter.List_First and Formatter.List_Last on each bound
-- Call Formatter.List_First and Formatter.List_Last on each bound
 - If the array is indexed by integer types:
    - Call List_Components
    - For each component, call To_String on that component
@@ -517,7 +506,7 @@ The default implementation of To_String for arrays:
    - For each component, call To_String on the index then on the component
 - Call Formatter.Close
 
-for example:
+For example:
 
 ```ada
 type Arr is array (Integer range <>) of Integer;
@@ -529,7 +518,7 @@ procedure Arr'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open_Array (Buffer, Array_Type, "P.Arr", Format);
+   Formatter.Open_Array (Buffer, "P.Arr", Format);
 
    Formatter.List_First (Buffer, 1, Format);
    Self'First'To_String (Buffer, Formatter, Format);
@@ -547,7 +536,7 @@ begin
 end Arr'To_String;
 ```
 
-In case of multi dimensional arrays, boundaries are passed in sequence,
+In the case of multidimensional arrays, boundaries are passed in sequence,
 then both indexes are pushed to the buffer, e.g.:
 
 ```ada
@@ -560,7 +549,7 @@ procedure Arr'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open_Array (Buffer, Array_Type, "P.Arr", Format);
+   Formatter.Open_Array (Buffer, "P.Arr", Format);
 
    Formatter.List_First (Buffer, 1, Format);
    Self'First (1)'To_String (Buffer, Formatter, Format);
@@ -588,9 +577,9 @@ end Arr'To_String;
 
 ### To_String for Arrays of Characters
 
-One-dimention array of character have a special default To_String method - they
-don't output element by element with indices but instead output directly the
-entire value, e.g.:
+One-dimensional arrays of characters have a special default To_String method - they
+don't output element by element with indices but instead output the
+entire value directly, e.g.:
 
 ```ada
 procedure String'To_String
@@ -614,7 +603,7 @@ begin
 end String'To_String;
 ```
 
-# To_String for Records
+## To_String for Records
 
 The default implementation of To_String for records:
 
@@ -670,12 +659,10 @@ begin
 end Rec'To_String;
 ```
 
-# To_String for Tagged Records and Classes
+## To_String for Tagged Records and Classes
 
 For tagged records and classes, To_String will first open the child scope, then
 call its parent To_String, then add any constraints or components. For example:
-
-For example:
 
 ```ada
 type Root is class record
@@ -693,7 +680,7 @@ procedure Root'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open_Record (Buffer, Record_Type, "P.Root", Format);
+   Formatter.Open_Record (Buffer, "P.Root", Format);
 
    Formatter.List_Component (Buffer, "A", Format);
    Self.A'To_String (Buffer, Formatter, Format);
@@ -711,7 +698,7 @@ procedure Child'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open_Record (Buffer, Record_Type, "P.Child", Format);
+   Formatter.Open_Record (Buffer, "P.Child", Format);
 
    --  Static call to the parent
    Self'Super'To_String (Buffer, Formatter, Format);
@@ -728,13 +715,13 @@ begin
 end Child'To_String;
 ```
 
-Child may be overriden, the implementer may decide to not call parent if needed.
+Child may be overridden; the implementer may decide not to call the parent if needed.
 
-For the formatter, by default, components are provided in order. The formater
-also has the possibility of detecting whcih components belong to which type
+For the formatter, by default, components are provided in order. The formatter
+also has the possibility of detecting which components belong to which type
 by tracking the Open/Close calls in a stack.
 
-# To_String for Tasks and Protected Types
+## To_String for Tasks and Protected Types
 
 Tasks will first display task ids, followed by discriminants if any:
 
@@ -746,7 +733,7 @@ procedure Some_Task_Type'To_String
     Format    : Root_Formatter_Parameters)
 is
 begin
-   Formatter.Open_Task (Buffer, Task_Type, "P.Some_Task_Type", Format);
+   Formatter.Open_Task (Buffer, "P.Some_Task_Type", Format);
    Formatter.Put (Buffer, <code providing task id>);
 
    --  Add here sequence of list / put
@@ -758,65 +745,339 @@ end Some_Task_Type'To_String;
 In the case of a protected type T, a call to the default implementation of
 T'To_String begins only one protected (read-only) action (similar to Put_Image).
 
-## Ada Compatibilty Mode
+## Ada Compatibility Mode
 
 `To_String` will be made available in Ada compatibility mode. For this,
-Ada.Strings.Text_Formatters will be introduced with the necessary tagged types,
-and default implementations
+Ada.Strings.Text_Formatters will be introduced with the necessary tagged types
+and default implementations.
 
-The packages provided for Ada will look as follow:
+The package provided for Ada will look as follows:
 
 ```ada
 package Ada.Strings.Text_Formatters is
 
-   type Ada_Type is
-      (Access_Type,
-       Enumeration_Type,
-       Signed_Type,
-       Modular_Type,
-       Float_Type,
-       Decimal_Type,
-       Ordinary_Type
-       Array_Type,
-       Record_Type,
-       Protected_Type,
-       Task_Type);
-
-   type Elementary_Type is Ada_Type range Access_Type .. Ordinary_Type;
-   type Scalar_Type is Elementary_Type range Enumeration_Type .. Ordinary_Type;
-   type Discrete_Type is Scalar_Type range Enumeration_Type .. Modular_Type;
-   type Integer_Type is Discrete_Type range Signed_Type .. Modular_Type;
-   type Real_Type is Scalar_Type range Float_Type .. Ordinary_Type;
-   Type Fixed_Type is Scalar_Type range Decimal_Type .. Ordinary_Type;
-   type Composite_Type is Ada_Type range Array_Type .. Task_Type;
-
    type Root_Formatter_Parameters is abstract tagged record
-      --  Provided for future extensions - should contain various formating
-      --  parameters necessary for default formating.
+      --  Provided for future extensions - should contain various formatting
+      --  parameters necessary for default formatting.
 
       null;
    end record;
 
    function Create
       (Self   : in out Root_Formatter_Parameters;
-       Format : String) return Root_Formatter_Parameters
+       Format : String) return Root_Formatter_Parameters is abstract;
 
    type Root_Formatter_Type is abstract tagged record
       null;
    end record;
 
-   --  Same list of primitives as the class version
+   --  Elementary Types Support  --
 
-   type Default_Formatter_Type is new Root_Formatter_Type with record
-      -- Implementation-Defined
-   end record;
+   procedure Put_Address
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : System.Address;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Access
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : System.Storage_Elements.Storage_Array;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+   --  Ada Access types may be a single address - they may also contain
+   --  more information depending on the implementation (e.g. bounds for
+   --  arrays), so we need to provide a byte array as input
+
+   procedure Put_Enumeration
+      (Self       : in out Root_Formatter_Type;
+       Buffer     : in out Root_Buffer_Type'Class;
+       Type_Name  : UTF_Encoding.UTF_8_String;
+       Value_Name : UTF_Encoding.UTF_8_String;
+       Value_Rep  : Interfaces.Integer_64;
+       Format     : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Boolean
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Value  : Boolean;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Integer_8
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Integer_8;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Integer_16
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Integer_16;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Integer_32
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Integer_32;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Integer_64
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Integer_64;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Unsigned_8
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Unsigned_8;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Unsigned_16
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Unsigned_16;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Unsigned_32
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Unsigned_32;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Unsigned_64
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Unsigned_64;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Unsigned_128
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.Unsigned_128;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Big_Integer
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Ada.Numerics.Big_Numbers.Big_Integers.Big_Integer;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Float_32
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.IEEE_Float_32;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Float_64
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Interfaces.IEEE_Float_64;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Big_Real
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Item      : Ada.Numerics.Big_Numbers.Big_Reals.Big_Real;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Decimal_Type
+      (Self          : in out Root_Formatter_Type;
+       Buffer        : in out Root_Buffer_Type'Class;
+       Type_Name     : UTF_Encoding.UTF_8_String;
+       Integer_Value : Interfaces.Unsigned_64;
+       Decimal_Value : Interfaces.Unsigned_64;
+       Format        : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Ordinary_Fixed_Point_Type
+      (Self          : in out Root_Formatter_Type;
+       Buffer        : in out Root_Buffer_Type'Class;
+       Type_Name     : UTF_Encoding.UTF_8_String;
+       Integer_Value : Interfaces.Unsigned_64;
+       Decimal_Value : Interfaces.Unsigned_64;
+       Format        : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   --  Array Support  --
+
+   procedure Open_Array
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_First
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Dimension : Integer;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_Last
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Dimension : Integer;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_Components
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_Indexes_Components
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+   --  Following this, the formatter expect to receive a sequence of
+   --  {index(es), component value}
+
+   --  Common for composite types  --
+
+   --  Record Support  --
+
+   procedure Open_Record
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_Discriminant
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Name   : UTF_Encoding.UTF_8_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure List_Component
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Name   : UTF_Encoding.UTF_8_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   --  Protected Support  --
+
+   procedure Open_Protected
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   --  Also calls List_Discriminant and List_Component
+
+   --  Task Support  --
+
+   procedure Open_Task
+      (Self      : in out Root_Formatter_Type;
+       Buffer    : in out Root_Buffer_Type'Class;
+       Type_Name : UTF_Encoding.UTF_8_String;
+       Format    : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   --  Also calls List_Discriminant
+
+   --  String printing support  --
+
+   procedure Put
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Item   : in     String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Wide_Put
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Item   : in     Wide_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Wide_Wide_Put
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Item   : in     Wide_Wide_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_UTF_8
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Item   : in     UTF_Encoding.UTF_8_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Wide_Put_UTF_16
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Item   : in     UTF_Encoding.UTF_16_Wide_String;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure New_Line
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   --  Other flow indications --
+
+   procedure Open
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class;
+       Format : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Close
+      (Self   : in out Root_Formatter_Type;
+       Buffer : in out Root_Buffer_Type'Class)
+   is abstract;
+
+   type Default_Formatter_Type is new Root_Formatter_Type with private;
 
    Default_Formatter : Default_Formatter_Type;
 
 end Ada.Strings.Text_Formatters;
 ```
 
-## Compatibilty with 'Img and 'Value
+## Compatibility with 'Img and 'Value
 
 The Ada 'Img, 'Image and 'Value attributes are deprecated (kept in
 compatibility mode) to favor the attributes, 'To_String and 'From_String
@@ -827,15 +1088,15 @@ numeric values) e.g.:
 
 Formatted string (strings that start with an f) will exclusively use To_String
 (they already are doing something special to some extent as integers don't
-have heading space there).
+have a leading space there).
 
 ## Mixed Tagged Type Hierarchies
 
-In mixed compatibilty mode, units compiled with extensions may be mixed with
+In mixed compatibility mode, units compiled with extensions may be mixed with
 units not compiled with the extensions. If that's the case, only units with
-the extension do get To_String generated for them. In the case of hierarchy
+the extension get To_String generated for them. In the case of a hierarchy
 of classes, it is legal to have To_String introduced this way at any point
-in the hiearchy. All children of a type that support To_String also supports
+in the hierarchy. All children of a type that support To_String also support
 To_String.
 
 # Reference-level explanation
@@ -843,7 +1104,7 @@ To_String.
 
 # Rationale and alternatives
 
-## Two v.s. one argument for formatter and buffer
+## Two vs. one argument for formatter and buffer
 
 An alternative design could be to have To_String only take one argument, a
 formatter that would contain a buffer, e.g.:
@@ -858,7 +1119,7 @@ procedure Rec'To_String
     Formatter : Flare.Strings.Text_Buffers.Root_Formatter_Type)
 is
 begin
-   Formatter.Open (Record_Type, "P.Rec");
+   Formatter.Open ("P.Rec");
 
    Formatter.List_Element ("D", True);
 
@@ -873,7 +1134,7 @@ end Rec'To_String;
 ```
 
 However, this simplification on the implementer side increases complexity
-on the user side as one now needs to instanciate a formatter with a new
+on the user side as one now needs to instantiate a formatter with a new
 object containing the buffer, e.g.:
 
 ```ada
@@ -897,8 +1158,8 @@ be more commonly used on the user side than the implementer.
 ## Performance Considerations
 
 There is a trade-off in this proposal in terms of complexity / efficiency.
-Notably, refering to types and components through strings as opposed to more
-complex data structure may lead to less efficient code when needed for e.g.
+Notably, referring to types and components through strings as opposed to more
+complex data structures may lead to less efficient code when needed for e.g.
 comparisons. However, given the main use cases for this kind of construction
 (e.g. logging purposes), this trade-off seems adequate.
 
@@ -907,13 +1168,13 @@ comparisons. However, given the main use cases for this kind of construction
 # Future possibilities
 
 - A new attribute 'From_String associated with a Root_Parser_Type could be
-  introduced. Parsing is more complicated than just formatting values, may"
+  introduced. Parsing is more complicated than just formatting values, and may
   deserve some additional design work.
 
-- Format parameter has been introduce to prepare for future extension - its
+- The Format parameter has been introduced to prepare for future extensions - its
   default semantics need to be defined.
 
-- Interpolated strings (f"") should provides way to easily associate a formatter
+- Interpolated strings (f"") should provide a way to easily associate a formatter
   and format parameters.
 
 - Formatters for formats such as YAML, JSON and others can be provided to
