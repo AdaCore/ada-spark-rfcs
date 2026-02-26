@@ -114,7 +114,7 @@ A by-constructor type is:
 - A tagged type that is derived from a by-constructor type, or
 - A class type (not described in this RFC)
 
-By-constructor types can be included in types that are not build by
+By-constructor types can be included in types that are not built by
 constructors, for example legacy tagged types, non-tagged types or arrays, for
 example:
 
@@ -146,7 +146,7 @@ In this case, the rules are as follows:
 3 is important, as it allows in particular to have arrays of by-constructor
 types that don't provide parameterless constructor. However, it has several
 consequences. One of these consequences is that a private type cannot contain
-such non-parameterless types, otherwise the user would not know that there'S
+such non-parameterless types, otherwise the user would not know that there's
 no default initialization available. E.g.:
 
 .. code-block:: ada
@@ -195,7 +195,7 @@ or aggregate is illegal. E.g.:
 The fact that a type doesn't provide default initialization is propagated to
 other types that used it to declare components (similar to limited types), e.g.:
 
-.. code-block::ada
+.. code-block:: ada
 
    type X is tagged record
       null;
