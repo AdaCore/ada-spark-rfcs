@@ -40,39 +40,21 @@ end P;
 ```
 
 When provided without arguments, the tool is instructed to select the most
-recent version available. A developer may also provide specific minimal version
-through string parameters. E.g.:
+recent version available. A developer may also provide a version with specific
+version-aware flare pragmas, e.g.:
 
 ```ada
-pragma Flare ("0.1");
+pragma Flare_0_1;
 
 package P is
-   --  This is Flare code, should be compiled with at least 0.1 version.
+   --  This is Flare code is compatible with Flare 0.1
 end P;
 ```
 
-Developers may also provide specific maximal version, e.g:
 
-```ada
-pragma Flare ("0.1", "0.2");
-
-package P is
-   --  This is Flare code, should be compiled for any version between 0.1
-   --  and 0.2.
-end P;
-```
-
-Versions can be provided with only major, or major + minor. When only a major
-version is provided, it means:
-- The smaller minor version for the lower bound
-- The largest minor version for the upper bound
-
-For example:
-
-- `pragma Flare ("0");`: Must be compliant with at least the `0.1` version of
-   the language
-- `pragma Flare ("0", "0");`: Must be compliant with any version in the "0"
-   branch.
+Versions can be provided with only major version numbers, e.g. `pragma
+Flare_1;`. An exception is the 0 major version, where a minor version must
+also be provided, e.g. `pragma Flare_0_1;`.
 
 These pragma define not only the subset of the language that is allowed, but
 also interpretation of semantics in case of changes.
@@ -81,7 +63,7 @@ Alternatively to the Flare language, a user can also request a package to
 be written with the Ada compatible subset of Flare, e.g.:
 
 ```ada
-pragma Flare_Compatible ("0.1");
+pragma Flare_Compatible_0_1;
 
 package P is
    --  This package accepts Ada semantics as well as non-backward incompatible
