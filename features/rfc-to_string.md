@@ -121,7 +121,7 @@ package Flare.Strings.Text_Formatters is
           Format : String);
       --  Will support default formatting format, for example ".2f" may mean
       --  2 decimals for floating points if following Python formatting
-   end Root_Formatter_Parameters;
+   end Root_Formatter_Parameters with private;
 
    type Root_Formatter_Type is abstract class record
 
@@ -427,9 +427,9 @@ package Flare.Strings.Text_Formatters is
 
    type Default_Formatter_Type is new Root_Formatter_Type with class record
       -- Implementation-Defined
-   end Default_Formatter_Type;
+   end Default_Formatter_Type with private;
 
-   Default_Formatter : Default_Formatter_Type;
+   Default_Formatter : constant Default_Formatter_Type;
 
 private
    ... -- not specified by the language
@@ -1072,7 +1072,7 @@ package Ada.Strings.Text_Formatters is
 
    type Default_Formatter_Type is new Root_Formatter_Type with private;
 
-   Default_Formatter : Default_Formatter_Type;
+   Default_Formatter : constant Default_Formatter_Type;
 
 end Ada.Strings.Text_Formatters;
 ```
