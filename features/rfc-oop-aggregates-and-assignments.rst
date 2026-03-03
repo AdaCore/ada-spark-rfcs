@@ -16,13 +16,13 @@ Aggregates and assignments share a few joint issues that make it worth combining
 into a single RFC. To understand, it's worth starting with the issues with the
 current semantics.
 
-First, in Ada, aggregates are a way to completely workaround calls of
+First, in Ada, aggregates are a way to completely work around calls of
 initialization. To some respect, this makes sense, aggregates are ways to
 replace initialization. But the consequence is that there's no way to ensure
 that a given sequence of statement is putting an object in a consistent state
 at creation time (unlike traditional constructors).
 
-Second, Adjust perform a post-copy update to a type. This causes a double issue,
+Second, Adjust performs a post-copy update to a type. This causes a double issue,
 first in terms of performance, as assignment may not need all components to be
 modified. But this also limits the control over assignment logic, as the user
 has no way to know what was the initial state of the object or what object
@@ -45,16 +45,16 @@ mechanism through a value duplication ('Clone) and post update adjustment
 Note that this extra complexity is driven from the desire to support natively
 Ada constructs (aggregates, partial copies, etc) and improve compatibility
 between classes and tagged types. Users can leverage default implementation if
-such level of control is unecessary. Some language extension may also allow
+such level of control is unnecessary. Some language extension may also allow
 to forbid aggregates and partial update on specific types (although this
-introduces complexities in generics that now need to specify wether these
+introduces complexities in generics that now need to specify whether these
 restricted types are allowed or not).
 
 Also keep in mind that Ada Flare aggregates also need to account for types that
 have both public and private components.
 
-This RFC is about tagged record (and class records even if not explicitely
-mentionned). Simple records should also be studied when constructors are made
+This RFC is about tagged record (and class records even if not explicitly
+mentioned). Simple records should also be studied when constructors are made
 available to them.
 
 The additional capabilities need to be optimized as much as possible by the
@@ -66,7 +66,7 @@ it knows there's no chance of calling an overriden subprogram.
 ------
 
 The attribute 'Clone can be defined for each tagged type. It describes how to
-copy (or clone) the value of a tagged type into a other one. For example:
+copy (or clone) the value of a tagged type into another one. For example:
 
 .. code-block:: ada
 
@@ -95,7 +95,7 @@ Calls to 'Clone are statically resolved when used on definite views, and
 dynamically resolved on 'Class wide type. This is arguably a departure from the
 "all calls are dispatching" requirement from other aspects of the OOP design,
 but is required to allow partial copies of objects which are done today in
-various places Ada.
+various places in Ada.
 
 The invariant of the target object is not checked after a call to Clone, some
 parts may still be inconsistent and fixed later by Adjust.
@@ -103,9 +103,9 @@ parts may still be inconsistent and fixed later by Adjust.
 'Adjust
 -------
 
-'Adjust is a overridable attribute called after certain operations. It is
+'Adjust is an overridable attribute called after certain operations. It is
 different from the legacy Ada Adjust primitive in that it has an argument
-refering to the initial value. Note that the From parameter of adjust is
+referring to the initial value. Note that the From parameter of adjust is
 always typed after the root type of the tagged record hierarchy - indeed, the source
 object may be higher up in the derivation chain in the case of partial
 copy. This value is provided for reference but is not expected to be
@@ -170,7 +170,7 @@ needs to be maintained equal to the parents.
    end Child'Constructor;
 
    procedure Child'Clone (Self : Child; To : in out Child) is
-   begin'
+   begin
       Root (To) := Root (Self);
       Free (To.B);
       To.B := new Integer'(Self.B.all);
@@ -268,7 +268,7 @@ Class-Wide Assignments
 ----------------------
 
 Class wide assignments lead to dispatching calls to 'Clone and 'Adjust, ensuring
-that the whole object is copied. They also require the two tags to be equals,
+that the whole object is copied. They also require the two tags to be equal,
 like today in Ada. Specifically:
 
 .. code-block:: ada
@@ -389,8 +389,8 @@ Delta aggregates create their initial value from a by-copy constructor:
       -- Tmp : Child := C1;
       -- Child'Constructor (Tmp, C1);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp);
+      -- Child'Clone (Tmp, C2);
+      -- Child'Adjust (C2, Tmp);
       -- Child'Destructor (Tmp);
 
 Aggregates with Private Parts or Default Values
@@ -471,7 +471,7 @@ of Ada.
 Aggregates and Initialization
 -----------------------------
 
-In the context of an initialization, aggregates, we're going first to create
+In the context of an initialization by aggregates, we first create
 a temporary object for the aggregate, and then use copy constructor to pass
 its value to the final object:
 
@@ -498,11 +498,11 @@ as other copy constructor calls, e.g.:
 .. code-block:: ada
 
    C : Child;
-   R : Root := Root (Child);
-   --  Root'Constructor (R, Root (Child));
+   R : Root := Root (C);
+   --  Root'Constructor (R, Root (C));
 
 In the context of an aggregate by extension that contains a copy, a call to
-Clone is necessary, simlar to assignment of the same form:
+Clone is necessary, similar to assignment of the same form:
 
 .. code-block:: ada
 
@@ -520,7 +520,7 @@ Aggregate Aspect
 
 The presence of constructors, destructors, clone and adjust attributes may
 significantly increase the complexity and footprint of assignment and aggregate
-usage. The compile may optimize these sequences if it has enough information,
+usage. The compiler may optimize these sequences if it has enough information,
 although it's not always clear if it can.
 
 It is possible to specify that a type hierarchy cannot provide any of these
@@ -533,7 +533,7 @@ This can be done through the Aggregate_Type aspect:
       A : access Integer;
    end record with Aggregate_Type;
 
-This aspect must be positionned on the root of a tagged type hierarchy.
+This aspect must be positioned on the root of a tagged type hierarchy.
 It forbids the introduction of user defined constructors, destructor, clone and
 adjust attributes in derivations. All record components of such types must
 also be Aggregate_Type types.
@@ -546,15 +546,15 @@ such types by adding the Aggregate_Type aspect in its definition:
 .. code-block:: ada
 
    generic
-      type Root is tagged private with Type_Aggregate;
-   package P
+      type Root is tagged private with Aggregate_Type;
+   package P is
 
       type Child is new Root with null record;
 
       procedure Child'Constructor (Self : Child); -- Illegal
 
 If the compiler is using a generic expansion model, it is free to optimize code
-if the actual is indeed a Type_Aggregate type, and generate the full sequences
+if the actual is indeed an Aggregate_Type type, and generate the full sequences
 in other cases.
 
 Controlled Types
@@ -624,25 +624,25 @@ Assignments can be done on mutable types, for example:
       C1 := C2;        -- (3) Mutating object
 
 In both of these cases, the Clone function doesn't have the ability to mutate
-the type. There needs also a way to differenciate (2) and (3). In these cases,
-we need to (1) handle the the target object pre mutation,
+the type. There also needs to be a way to differentiate (2) and (3). In these cases,
+we need to (1) handle the target object pre mutation,
 (2) mutate it to the target and (3) copy source to target.
 
 These situations can be resolved by using `'Raw_Clone` as described in the
-previous session. Note that the behavior of this attribute will depend on the
+previous section. Note that the behavior of this attribute will depend on the
 actual context call - which could be implemented by the compiler by either a
 hidden parameter or a duplication of the clone attribute with a different
-Raw_Copy expansion. For example, if weh ave
+Raw_Copy expansion. For example, if we have
 
 .. code-block:: ada
 
-   procedure Root'Clone (Self : Root; To : in out Rec) issue
+   procedure Root'Clone (Self : Root; To : in out Root) is
    begin
       Root'Raw_Clone (Self, To); -- will mutate To if needed
    end Clone;
 
 In the case (2), we're performing a non-mutable assignment, only the Root part
-of the assignment is modified, while is case (3) the object is mutated from a
+of the assignment is modified, while in case (3) the object is mutated from a
 Root to a Child.
 
 Reference-level explanation
@@ -694,7 +694,7 @@ And ensure that indeed Root is copied (you'd want to call := on Root) but that
 the actual object Child maintains consistency (you'd want to call := on Child).
 
 We looked at various ways to remove the need of temporaries, for example by
-introducing special constructors taking aggregate values as paramters. However,
+introducing special constructors taking aggregate values as parameters. However,
 this quickly leads to the need of creating a lot of extra attributes for all
 situations. In light of the added complexity, and the fact that we can
 provide means to achieve desired optimization when needed, it didn't look like
@@ -712,7 +712,7 @@ Unresolved questions
 Future possibilities
 ====================
 
-The introduction of borrow-checker capabililites as well as move semantics could
+The introduction of borrow-checker capabilities as well as move semantics could
 allow to optimize more cases. The various temporaries introduced in the
 expansion are short lived and could be moved instead of copied, saving one
 copy and one destructor operation.
