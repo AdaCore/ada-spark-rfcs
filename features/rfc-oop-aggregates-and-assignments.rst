@@ -130,6 +130,52 @@ calling Adjust.
 
 Invariants are checked after a call to Adjust.
 
+'Static_Clone
+-------------
+
+The 'Static_Clone attribute calls a specific type's Clone directly, with no
+Adjust and no invariant check afterward. The name follows the existing
+terminology in this proposal: Clone calls are described as "static" (resolved
+at compile time on a specific type's view) as opposed to the "dispatching"
+Adjust calls. 'Static_Clone makes this static-call-only semantics explicitly
+available to the developer.
+
+.. code-block:: ada
+
+      R1, R2 : Root;
+   begin
+      Root'Static_Clone (R1, R2);  -- calls Root'Clone, no Adjust
+
+This can be used in any context where the developer needs to perform a clone
+operation without the full assignment protocol, for example when building
+composite operations that need fine-grained control over the copy sequence.
+
+This is particularly useful within Clone attribute bodies, where it allows
+chaining to the parent type's Clone. Using a regular assignment for this
+(e.g. ``Root (To) := Root (Self)``) would trigger the full Clone + Adjust
+sequence, causing a spurious Adjust on a half-cloned object. 'Static_Clone
+avoids this:
+
+.. code-block:: ada
+
+   procedure Child'Clone (Self : Child; To : in out Child) is
+   begin
+      Root'Static_Clone (Self, To);  -- calls Root'Clone, no Adjust
+      Free (To.B);
+      To.B := new Integer'(Self.B.all);
+   end Child'Clone;
+
+When used to chain to a parent's Clone, the call is optional, not mandatory.
+The developer may choose to skip it and handle the parent components
+differently (e.g. using 'Raw_Clone for the entire object, or manually cloning
+individual fields). This follows the same convention as most other languages
+with similar mechanisms, where chaining to the parent's copy logic is expected
+but not enforced.
+
+Because 'Static_Clone is visible in the source code, it serves as a natural
+review point: static analysis tools can verify that Clone bodies either invoke
+'Static_Clone on the parent or explicitly handle all parent components.
+
 Base code for the Examples
 --------------------------
 
@@ -171,7 +217,7 @@ needs to be maintained equal to the parents.
 
    procedure Child'Clone (Self : Child; To : in out Child) is
    begin
-      Root (To) := Root (Self);
+      Root'Static_Clone (Self, To);
       Free (To.B);
       To.B := new Integer'(Self.B.all);
    end Child'Clone;
@@ -233,7 +279,7 @@ thing can be observed in parameters:
 
 .. code-block:: ada
 
-      procedure Something (A, B : Root) is
+      procedure Something (A : in out Root; B : Root) is
       begin
          A := B;
          --  Root'Clone (B, A);
@@ -273,7 +319,7 @@ like today in Ada. Specifically:
 
 .. code-block:: ada
 
-   procedure P (V, W : R'Class) is
+   procedure P (V, W : Root'Class) is
    begin
       V := W;
       --  if V'Tag = W'Tag then
@@ -623,7 +669,7 @@ Assignments can be done on mutable types, for example:
       C1 := Root (C2); -- (2) No mutation (C1 is still Root)
       C1 := C2;        -- (3) Mutating object
 
-In both of these cases, the Clone function doesn't have the ability to mutate
+In all of these cases, the Clone function doesn't have the ability to mutate
 the type. There also needs to be a way to differentiate (2) and (3). In these cases,
 we need to (1) handle the target object pre mutation,
 (2) mutate it to the target and (3) copy source to target.
@@ -639,7 +685,7 @@ Raw_Copy expansion. For example, if we have
    procedure Root'Clone (Self : Root; To : in out Root) is
    begin
       Root'Raw_Clone (Self, To); -- will mutate To if needed
-   end Clone;
+   end Root'Clone;
 
 In the case (2), we're performing a non-mutable assignment, only the Root part
 of the assignment is modified, while in case (3) the object is mutated from a
