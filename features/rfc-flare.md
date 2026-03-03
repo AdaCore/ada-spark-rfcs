@@ -24,12 +24,12 @@ allowed to introduce backward-incompatible changes.
 The version of Flare described in this document is Flare 0.1.
 
 Outside of specific constraints in the source code, a tool or a compiler
-may decide on wether or not a unit is Flare, and what version. This may be
+may decide on whether or not a unit is Flare, and what version. This may be
 a default, a flag, a file extension or any other indication that said tool
 may use.
 
 A unit can be marked Flare introducing the pragma Flare either on its
-specification, or implemetation if there's no specification. E.g.:
+specification, or implementation if there's no specification. E.g.:
 
 ```ada
 pragma Flare;
@@ -65,7 +65,7 @@ end P;
 Versions can be provided with only major, or major + minor. When only a major
 version is provided, it means:
 - The smaller minor version for the lower bound
-- The largest mintor version for the upper bound
+- The largest minor version for the upper bound
 
 For example:
 
@@ -91,8 +91,8 @@ end P;
 
 ## Features Enabled in Flare 0.1
 
-The following list is the list of feature that will make the cut of the Flare
-0.1 version. As a version under the 0.x branch, further change may still
+The following list is the list of features that will make the cut of the Flare
+0.1 version. As a version under the 0.x branch, further changes may still
 introduce backward-incompatible changes in the pedantic Flare version.
 
 ### Control Flow
@@ -101,9 +101,9 @@ introduce backward-incompatible changes in the pedantic Flare version.
 
 [Finally](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-finally.md)
 
-[Predefined Short Circuits Operators](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-finally.mdfeatures/rfc-shortcircuit.md)
+[Predefined Short Circuits Operators](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-shortcircuit.md)
 
-[Local Declarations without Blocks](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/features/rfc-local-vars-without-block.md)
+[Local Declarations without Blocks](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-local-vars-without-block.md)
 
 ### Arrays
 
