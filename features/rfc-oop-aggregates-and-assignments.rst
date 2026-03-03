@@ -16,7 +16,7 @@ Aggregates and assignments share a few joint issues that make it worth combining
 into a single RFC. To understand, it's worth starting with the issues with the
 current semantics.
 
-First, in Ada, aggregates are a way to completely workaround calls of
+First, in Ada, aggregates are a way to completely work around calls of
 initialization. To some respect, this makes sense, aggregates are ways to
 replace initialization. But the consequence is that there's no way to ensure
 that a given sequence of statements puts an object in a consistent state
@@ -307,7 +307,7 @@ Class-Wide Assignments
 ----------------------
 
 Class wide assignments lead to dispatching calls to 'Clone and 'Adjust, ensuring
-that the whole object is copied. They also require the two tags to be equals,
+that the whole object is copied. They also require the two tags to be equal,
 like today in Ada. Specifically:
 
 .. code-block:: ada
@@ -665,25 +665,25 @@ Assignments can be done on mutable types, for example:
       C1 := C2;        -- (3) Mutating object
 
 In both of these cases, the Clone function doesn't have the ability to mutate
-the type. There needs also a way to differenciate (2) and (3). In these cases,
-we need to (1) handle the the target object pre mutation,
+the type. There also needs to be a way to differentiate (2) and (3). In these cases,
+we need to (1) handle the target object pre mutation,
 (2) mutate it to the target and (3) copy source to target.
 
 These situations can be resolved by using `'Raw_Clone` as described in the
-previous session. Note that the behavior of this attribute will depend on the
+previous section. Note that the behavior of this attribute will depend on the
 actual context call - which could be implemented by the compiler by either a
 hidden parameter or a duplication of the clone attribute with a different
-Raw_Copy expansion. For example, if weh ave
+Raw_Copy expansion. For example, if we have
 
 .. code-block:: ada
 
-   procedure Root'Clone (Self : Root; To : in out Rec) issue
+   procedure Root'Clone (Self : Root; To : in out Root) is
    begin
       Root'Raw_Clone (Self, To); -- will mutate To if needed
    end Clone;
 
 In the case (2), we're performing a non-mutable assignment, only the Root part
-of the assignment is modified, while is case (3) the object is mutated from a
+of the assignment is modified, while in case (3) the object is mutated from a
 Root to a Child.
 
 Reference-level explanation
