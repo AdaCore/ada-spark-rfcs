@@ -51,7 +51,6 @@ package P is
 end P;
 ```
 
-
 Versions can be provided with only major version numbers, e.g. `pragma
 Flare_1;`. An exception is the 0 major version, where a minor version must
 also be provided, e.g. `pragma Flare_0_1;`.
@@ -63,13 +62,15 @@ Alternatively to the Flare language, a user can also request a package to
 be written with the Ada compatible subset of Flare, e.g.:
 
 ```ada
-pragma Flare_Compatible_0_1;
+pragma Flare_Extensions_0_1;
 
 package P is
    --  This package accepts Ada semantics as well as non-backward incompatible
    --  Flare capabilities, starting with 0.1.
 end P;
 ```
+
+The current Flare versions are based of a subset of the Ada 2022 language.
 
 ## Features Enabled in Flare 0.1
 
