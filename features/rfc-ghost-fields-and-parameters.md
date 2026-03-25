@@ -61,7 +61,7 @@ type Pair is record
    X, Y : Integer;
    Area : Integer with Ghost;  --  ghost component
 end record
-   with Ghost_Size    => 12 * 8,
+   with Ghost_Size  => 12 * 8,
       Concrete_Size => 8 * 8;
 
 S1 : Integer := Pair'Size;          -- 8 or 12 bytes
@@ -139,6 +139,116 @@ Ghost variable and can only be used in the context of ghost code.
 Controlling parameters cannot be marked as being ghost (as the tag of the object
 is always needed at run-time to resolve dispatching).
 
+Ghost Code Levels
+------------------
+
+Specific ghost levels can be specified on components. Ghost levels on components
+govern for which kind of entities these components can be applied, following
+the same dependencies as for other ghost entities with specific levels. However,
+only two representations can be given to a given type: a "ghost" one that
+includes all entities that depend directly or indirectly on "Runtime", and
+a concrete one for only concrete entities. Entities that depend on "Static" are
+never compiled. For example:
+
+```Ada
+type Rec is record
+   A, B : Integer with Ghost => Runtime;
+   C : Integer with Ghost => Static;
+   D : Integer;
+end record
+   with Ghost_Size  => 12 * 8,
+      Concrete_Size => 8 * 8;
+```
+
+Ghost levels can also be provided to subprograms:
+
+```Ada
+procedure P (V : Integer with Ghost => Gold)
+```
+
+Subprograms and types assertion policies are governed by the assertion policy
+of their declaration and impose constraints on the policy where they
+are used. The compiler only compiles them once, either following the specific
+assertion policy declared in the code, or driven by outside means such as
+compiler switches or global pragma files.
+
+An entity compiled with a given assertion level can only be used in a section
+that depends on this level.
+
+For example:
+
+```Ada
+pragma Assertion_Level (Silver);
+pragma Assertion_Level (Gold, Depends => [Silver]);
+pragma Assertion_Level (Platinum, Depends => [Silver, Gold]);
+```
+
+```Ada
+pragma Assertion_Policy (Platinum);
+
+type Rec is record
+   Inc : Integer := 0 with Ghost => Gold; -- this is active here
+end record;
+
+procedure Do_Something (V : Rec) is
+begin
+   V := V + 1;
+end Do_Something;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Gold);
+   X.Inc := @ + 1; -- legal, we have the same policy
+end;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Platinum);
+   X.Inc := @ + 1; -- legal, Platinum depends on Gold
+end;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Silver);
+   X.Inc := @ + 1; -- illegal, Silver does not depend (activate) Gold
+end;
+```
+
+This is necessary for consistency of behavior, for example:
+
+```ada
+procedure Do_Something (X : Rec) is
+begin
+   pragma Assertion_Policy (Silver);
+   -- if we allow this, we don't compile this statement
+   X.Inc := @ + 1;
+end Do_Something;
+```
+
+This would cause an unexpected issue:
+
+```
+pragma Assertion_Policy (Gold);
+
+X : Rec;
+S : Integer := X.Inc;
+
+Do_Something (X);
+pragma Assert (Gold => X.Inc = S + 1);
+-- wrong at runtime if Do_Something is not compiled with at least gold
+```
+
+Note that the restriction on ghost fields and parameters do impose constraints
+with libraries that may need to be recompiled to serve into different contexts.
 
 Reference-level explanation
 ===========================
