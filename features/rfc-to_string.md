@@ -270,9 +270,9 @@ package Flare.Strings.Text_Formatters is
          Self              : in out Root_Formatter_Type;
          Buffer            : in out Root_Buffer_Type;
          Type_Name         : UTF_Encoding.UTF_8_String;
-         Value             : Interfaces.Unsigned_8;
-         Scope_Numerator   : Interfaces.Unsigned_8;
-         Scope_Denominator : Interfaces.Unsigned_8;
+         Value             : Interfaces.Integer_8;
+         Scope_Numerator   : Interfaces.Integer_8;
+         Scope_Denominator : Interfaces.Integer_8;
          Format            : Root_Formatter_Parameters)
       is abstract;
 
@@ -280,9 +280,9 @@ package Flare.Strings.Text_Formatters is
          Self              : in out Root_Formatter_Type;
          Buffer            : in out Root_Buffer_Type;
          Type_Name         : UTF_Encoding.UTF_8_String;
-         Value             : Interfaces.Unsigned_16;
-         Scope_Numerator   : Interfaces.Unsigned_16;
-         Scope_Denominator : Interfaces.Unsigned_16;
+         Value             : Interfaces.Integer_16;
+         Scope_Numerator   : Interfaces.Integer_16;
+         Scope_Denominator : Interfaces.Integer_16;
          Format            : Root_Formatter_Parameters)
       is abstract;
 
@@ -290,9 +290,9 @@ package Flare.Strings.Text_Formatters is
          Self              : in out Root_Formatter_Type;
          Buffer            : in out Root_Buffer_Type;
          Type_Name         : UTF_Encoding.UTF_8_String;
-         Value             : Interfaces.Unsigned_32;
-         Scope_Numerator   : Interfaces.Unsigned_32;
-         Scope_Denominator : Interfaces.Unsigned_32;
+         Value             : Interfaces.Integer_32;
+         Scope_Numerator   : Interfaces.Integer_32;
+         Scope_Denominator : Interfaces.Integer_32;
          Format            : Root_Formatter_Parameters)
       is abstract;
 
@@ -300,9 +300,19 @@ package Flare.Strings.Text_Formatters is
          Self              : in out Root_Formatter_Type;
          Buffer            : in out Root_Buffer_Type;
          Type_Name         : UTF_Encoding.UTF_8_String;
-         Value             : Interfaces.Unsigned_64;
-         Scope_Numerator   : Interfaces.Unsigned_64;
-         Scope_Denominator : Interfaces.Unsigned_64;
+         Value             : Interfaces.Integer_64;
+         Scope_Numerator   : Interfaces.Integer_64;
+         Scope_Denominator : Interfaces.Integer_64;
+         Format            : Root_Formatter_Parameters)
+      is abstract;
+
+      procedure Put_Fixed_Point_128 (
+         Self              : in out Root_Formatter_Type;
+         Buffer            : in out Root_Buffer_Type;
+         Type_Name         : UTF_Encoding.UTF_8_String;
+         Value             : Interfaces.Integer_128;
+         Scope_Numerator   : Interfaces.Integer_128;
+         Scope_Denominator : Interfaces.Integer_128;
          Format            : Root_Formatter_Parameters)
       is abstract;
 
@@ -447,7 +457,7 @@ package Flare.Strings.Text_Formatters is
       is abstract;
    end Root_Formatter_Type with private;
 
-   Default_Formatter : constant Default_Formatter_Type'Class;
+   Default_Formatter : constant Root_Formatter_Type'Class;
 
 private
    ... -- not specified by the language
@@ -934,9 +944,9 @@ package Ada.Strings.Text_Formatters is
       (Self              : in out Root_Formatter_Type;
        Buffer            : in out Root_Buffer_Type'Class;
        Type_Name         : UTF_Encoding.UTF_8_String;
-       Value             : Interfaces.Unsigned_8;
-       Scope_Numerator   : Interfaces.Unsigned_8;
-       Scope_Denominator : Interfaces.Unsigned_8;
+       Value             : Interfaces.Integer_8;
+       Scope_Numerator   : Interfaces.Integer_8;
+       Scope_Denominator : Interfaces.Integer_8;
        Format            : Root_Formatter_Parameters'Class)
    is abstract;
 
@@ -944,9 +954,9 @@ package Ada.Strings.Text_Formatters is
       (Self              : in out Root_Formatter_Type;
        Buffer            : in out Root_Buffer_Type'Class;
        Type_Name         : UTF_Encoding.UTF_8_String;
-       Value             : Interfaces.Unsigned_16;
-       Scope_Numerator   : Interfaces.Unsigned_16;
-       Scope_Denominator : Interfaces.Unsigned_16;
+       Value             : Interfaces.Integer_16;
+       Scope_Numerator   : Interfaces.Integer_16;
+       Scope_Denominator : Interfaces.Integer_16;
        Format            : Root_Formatter_Parameters'Class)
    is abstract;
 
@@ -954,9 +964,9 @@ package Ada.Strings.Text_Formatters is
       (Self              : in out Root_Formatter_Type;
        Buffer            : in out Root_Buffer_Type'Class;
        Type_Name         : UTF_Encoding.UTF_8_String;
-       Value             : Interfaces.Unsigned_32;
-       Scope_Numerator   : Interfaces.Unsigned_32;
-       Scope_Denominator : Interfaces.Unsigned_32;
+       Value             : Interfaces.Integer_32;
+       Scope_Numerator   : Interfaces.Integer_32;
+       Scope_Denominator : Interfaces.Integer_32;
        Format            : Root_Formatter_Parameters'Class)
    is abstract;
 
@@ -964,11 +974,22 @@ package Ada.Strings.Text_Formatters is
       (Self              : in out Root_Formatter_Type;
        Buffer            : in out Root_Buffer_Type'Class;
        Type_Name         : UTF_Encoding.UTF_8_String;
-       Value             : Interfaces.Unsigned_64;
-       Scope_Numerator   : Interfaces.Unsigned_64;
-       Scope_Denominator : Interfaces.Unsigned_64;
+       Value             : Interfaces.Integer_64;
+       Scope_Numerator   : Interfaces.Integer_64;
+       Scope_Denominator : Interfaces.Integer_64;
        Format            : Root_Formatter_Parameters'Class)
    is abstract;
+
+   procedure Put_Fixed_Point_128
+      (Self              : in out Root_Formatter_Type;
+       Buffer            : in out Root_Buffer_Type'Class;
+       Type_Name         : UTF_Encoding.UTF_8_String;
+       Value             : Interfaces.Integer_128;
+       Scope_Numerator   : Interfaces.Integer_128;
+       Scope_Denominator : Interfaces.Integer_128;
+       Format            : Root_Formatter_Parameters'Class)
+   is abstract;
+
 
    --  Array Support  --
 
@@ -1110,7 +1131,7 @@ package Ada.Strings.Text_Formatters is
        Buffer : in out Root_Buffer_Type'Class)
    is abstract;
 
-   Default_Formatter : constant Default_Formatter_Type'Class;
+   Default_Formatter : constant Root_Formatter_Type'Class;
 
 end Ada.Strings.Text_Formatters;
 ```
