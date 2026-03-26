@@ -266,22 +266,44 @@ package Flare.Strings.Text_Formatters is
          Format    : Root_Formatter_Parameters)
       is abstract;
 
-      procedure Put_Decimal_Type (
-         Self          : in out Root_Formatter_Type;
-         Buffer        : in out Root_Buffer_Type;
-         Type_Name     : UTF_Encoding.UTF_8_String;
-         Integer_Value : Interfaces.Unsigned_64;
-         Decimal_Value : Interfaces.Unsigned_64;
-         Format        : Root_Formatter_Parameters)
+      procedure Put_Fixed_Point_8 (
+         Self              : in out Root_Formatter_Type;
+         Buffer            : in out Root_Buffer_Type;
+         Type_Name         : UTF_Encoding.UTF_8_String;
+         Value             : Interfaces.Unsigned_8;
+         Scope_Numerator   : Interfaces.Unsigned_8;
+         Scope_Denominator : Interfaces.Unsigned_8;
+         Format            : Root_Formatter_Parameters)
       is abstract;
 
-      procedure Put_Ordinary_Fixed_Point_Type (
-         Self          : in out Root_Formatter_Type;
-         Buffer        : in out Root_Buffer_Type;
-         Type_Name     : UTF_Encoding.UTF_8_String;
-         Integer_Value : Interfaces.Unsigned_64;
-         Decimal_Value : Interfaces.Unsigned_64;
-         Format        : Root_Formatter_Parameters)
+      procedure Put_Fixed_Point_16 (
+         Self              : in out Root_Formatter_Type;
+         Buffer            : in out Root_Buffer_Type;
+         Type_Name         : UTF_Encoding.UTF_8_String;
+         Value             : Interfaces.Unsigned_16;
+         Scope_Numerator   : Interfaces.Unsigned_16;
+         Scope_Denominator : Interfaces.Unsigned_16;
+         Format            : Root_Formatter_Parameters)
+      is abstract;
+
+      procedure Put_Fixed_Point_32 (
+         Self              : in out Root_Formatter_Type;
+         Buffer            : in out Root_Buffer_Type;
+         Type_Name         : UTF_Encoding.UTF_8_String;
+         Value             : Interfaces.Unsigned_32;
+         Scope_Numerator   : Interfaces.Unsigned_32;
+         Scope_Denominator : Interfaces.Unsigned_32;
+         Format            : Root_Formatter_Parameters)
+      is abstract;
+
+      procedure Put_Fixed_Point_64 (
+         Self              : in out Root_Formatter_Type;
+         Buffer            : in out Root_Buffer_Type;
+         Type_Name         : UTF_Encoding.UTF_8_String;
+         Value             : Interfaces.Unsigned_64;
+         Scope_Numerator   : Interfaces.Unsigned_64;
+         Scope_Denominator : Interfaces.Unsigned_64;
+         Format            : Root_Formatter_Parameters)
       is abstract;
 
       --  Array Support  --
@@ -425,11 +447,7 @@ package Flare.Strings.Text_Formatters is
       is abstract;
    end Root_Formatter_Type with private;
 
-   type Default_Formatter_Type is new Root_Formatter_Type with class record
-      -- Implementation-Defined
-   end Default_Formatter_Type with private;
-
-   Default_Formatter : constant Default_Formatter_Type;
+   Default_Formatter : constant Default_Formatter_Type'Class;
 
 private
    ... -- not specified by the language
@@ -912,22 +930,44 @@ package Ada.Strings.Text_Formatters is
        Format    : Root_Formatter_Parameters'Class)
    is abstract;
 
-   procedure Put_Decimal_Type
-      (Self          : in out Root_Formatter_Type;
-       Buffer        : in out Root_Buffer_Type'Class;
-       Type_Name     : UTF_Encoding.UTF_8_String;
-       Integer_Value : Interfaces.Unsigned_64;
-       Decimal_Value : Interfaces.Unsigned_64;
-       Format        : Root_Formatter_Parameters'Class)
+   procedure Put_Fixed_Point_8
+      (Self              : in out Root_Formatter_Type;
+       Buffer            : in out Root_Buffer_Type'Class;
+       Type_Name         : UTF_Encoding.UTF_8_String;
+       Value             : Interfaces.Unsigned_8;
+       Scope_Numerator   : Interfaces.Unsigned_8;
+       Scope_Denominator : Interfaces.Unsigned_8;
+       Format            : Root_Formatter_Parameters'Class)
    is abstract;
 
-   procedure Put_Ordinary_Fixed_Point_Type
-      (Self          : in out Root_Formatter_Type;
-       Buffer        : in out Root_Buffer_Type'Class;
-       Type_Name     : UTF_Encoding.UTF_8_String;
-       Integer_Value : Interfaces.Unsigned_64;
-       Decimal_Value : Interfaces.Unsigned_64;
-       Format        : Root_Formatter_Parameters'Class)
+   procedure Put_Fixed_Point_16
+      (Self              : in out Root_Formatter_Type;
+       Buffer            : in out Root_Buffer_Type'Class;
+       Type_Name         : UTF_Encoding.UTF_8_String;
+       Value             : Interfaces.Unsigned_16;
+       Scope_Numerator   : Interfaces.Unsigned_16;
+       Scope_Denominator : Interfaces.Unsigned_16;
+       Format            : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Fixed_Point_32
+      (Self              : in out Root_Formatter_Type;
+       Buffer            : in out Root_Buffer_Type'Class;
+       Type_Name         : UTF_Encoding.UTF_8_String;
+       Value             : Interfaces.Unsigned_32;
+       Scope_Numerator   : Interfaces.Unsigned_32;
+       Scope_Denominator : Interfaces.Unsigned_32;
+       Format            : Root_Formatter_Parameters'Class)
+   is abstract;
+
+   procedure Put_Fixed_Point_64
+      (Self              : in out Root_Formatter_Type;
+       Buffer            : in out Root_Buffer_Type'Class;
+       Type_Name         : UTF_Encoding.UTF_8_String;
+       Value             : Interfaces.Unsigned_64;
+       Scope_Numerator   : Interfaces.Unsigned_64;
+       Scope_Denominator : Interfaces.Unsigned_64;
+       Format            : Root_Formatter_Parameters'Class)
    is abstract;
 
    --  Array Support  --
@@ -1070,9 +1110,7 @@ package Ada.Strings.Text_Formatters is
        Buffer : in out Root_Buffer_Type'Class)
    is abstract;
 
-   type Default_Formatter_Type is new Root_Formatter_Type with private;
-
-   Default_Formatter : constant Default_Formatter_Type;
+   Default_Formatter : constant Default_Formatter_Type'Class;
 
 end Ada.Strings.Text_Formatters;
 ```
