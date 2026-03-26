@@ -784,20 +784,15 @@ The package provided for Ada will look as follows:
 ```ada
 package Ada.Strings.Text_Formatters is
 
-   type Root_Formatter_Parameters is abstract tagged record
+   type Root_Formatter_Parameters is abstract tagged private;
       --  Provided for future extensions - should contain various formatting
       --  parameters necessary for default formatting.
-
-      null;
-   end record;
 
    function Create
       (Self   : in out Root_Formatter_Parameters;
        Format : String) return Root_Formatter_Parameters is abstract;
 
-   type Root_Formatter_Type is abstract tagged record
-      null;
-   end record;
+   type Root_Formatter_Type is abstract tagged private;
 
    --  Elementary Types Support  --
 
