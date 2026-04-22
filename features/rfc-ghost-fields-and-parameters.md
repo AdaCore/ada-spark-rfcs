@@ -172,8 +172,11 @@ are used. The compiler only compiles them once, either following the specific
 assertion policy declared in the code, or driven by outside means such as
 compiler switches or global pragma files.
 
-An entity compiled with a given assertion level can only be used in a section
-that depends on this level.
+An entity that contains ghost fields or parameters depends on the corresponding
+ghost fields and parameters levels. As soon as such dependency is established,
+it can only be used with a consistent activation of policy - ie it's not
+possible to use said entities in a piece of code with the corresponding
+assertion deactivated and another one activated.
 
 For example:
 
@@ -188,7 +191,7 @@ pragma Assertion_Policy (Platinum);
 
 type Rec is record
    Inc : Integer := 0 with Ghost => Gold; -- this is active here
-end record;
+end record; -- This type depends on the Gold ghost level
 
 procedure Do_Something (V : Rec) is
 begin
@@ -249,6 +252,47 @@ pragma Assert (Gold => X.Inc = S + 1);
 
 Note that the restriction on ghost fields and parameters do impose constraints
 with libraries that may need to be recompiled to serve into different contexts.
+
+For types, ghost code levels extend by compositon, for example:
+
+```Ada
+type Rec is record
+   A, B : Integer with Ghost => Runtime;
+   C : Integer with Ghost => Static;
+   D : Integer;
+end record; -- Depends on Runtime and Static
+
+type Containter is record
+   R : Rec;
+end record; -- Depends also on Runtime and Static
+```
+
+Code completion can introduce ghost level dependence. In this case however,
+the specification must allow for such introduction with the Ghost_Depend
+aspect so that so the user knows that he needs consistent assertion policy.
+
+```Ada
+   type Rec is private with Ghost_Depend => (Runtime, Static);
+private
+   type Rec is record
+      A, B : Integer with Ghost => Runtime;
+      C : Integer with Ghost => Static;
+      D : Integer;
+   end record; -- Depends on Runtime and Static
+```
+
+For generics, compatibilty of the code will be established at instantiation
+time as it's possible to instanciate a generic with types that have
+ghost depends assertions not visible at generic declaration. Note that this
+introduces risks when generic units implementers chose to configure locally
+assertion policities - issues will be detected at compile time, but may be
+unforseen at generic implementation time.
+
+Ghost parameters are involved in subprogram conformance. To be comformant,
+subprograms need to have the same list of ghost parameters, with the
+exact same ghost level associated with them. This governs what considered
+to be an overload / override, and how to get access to subprograms as well
+as generic formals.
 
 Reference-level explanation
 ===========================
