@@ -42,6 +42,8 @@ explicitly marked as static (for example, through 'Super). E.g:
 
    V.P; -- dispatching
 
+   P (V); -- also dispatching
+
 Default_Dispatching_Calls is On by default on new versions of the language.
 
 Note that the decision to dispatch or not is made at the point of the call, not
