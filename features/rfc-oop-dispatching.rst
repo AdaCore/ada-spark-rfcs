@@ -14,7 +14,10 @@ Guide-level explanation
 Dispatching and Class Wide Views
 --------------------------------
 
-A new library / partition level pragma is introduced, Default_Dispatching_Calls.
+A new library-level / partition level pragma is introduced, Default_Dispatching_Calls.
+A given library unit can either be on or off - it is not possible to adjust the
+granuarity at a finer level.
+
 When active, calls to primitives are dispatching (when the tag can be
 determined statically, the compiler may optimize the call to be static) unless
 explicitly marked as static (for example, through 'Super). E.g:
