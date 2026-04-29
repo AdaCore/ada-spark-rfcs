@@ -83,6 +83,15 @@ for Pair use record
 end record;
 ```
 
+There are only two layout provided for any record, one without ghost code
+enabled, and one with ghost code - even if there can be different levels of
+ghost code for different fields, and some may not be activated at the same time.
+The ghost size and layout takes the largest ghost case where all is active.
+
+Ghost components and parameters that are of a level derived from Static never
+contribute to the ghost size or layout. This allows for example to have static
+ghost components of arbitrary large size.
+
 Ghost components do not participate in the default equality, so that two
 ``Pair`` objects which only differ in their ``Area`` component should be
 equal:
@@ -288,11 +297,10 @@ introduces risks when generic units implementers chose to configure locally
 assertion policities - issues will be detected at compile time, but may be
 unforseen at generic implementation time.
 
-Ghost parameters are involved in subprogram conformance. To be comformant,
-subprograms need to have the same list of ghost parameters, with the
-exact same ghost level associated with them. This governs what considered
-to be an overload / override, and how to get access to subprograms as well
-as generic formals.
+For two profiles to be mode conformant, an additional requirement must be met.
+If any pair of corresponding parameters disagree with respect to either the
+(Boolean-valued) ghost property itself or, if both are ghost parameters, their
+associated assertion levels, then the two profiles are not mode conformant.
 
 Reference-level explanation
 ===========================
