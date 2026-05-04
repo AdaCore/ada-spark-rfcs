@@ -161,7 +161,7 @@ It is possible to also scope primitives in regular records:
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
-       end record;
+      end record;
 
    end P;
 
@@ -232,14 +232,14 @@ E.g:
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
-       end record
-       with private;
+      end record
+      with private;
 
    private
 
-       type R (B : Boolean) is class record
-         procedure Prim_2 (Self : in out R; V : Integer);
-       end record;
+     type R (B : Boolean) is class record
+        procedure Prim_2 (Self : in out R; V : Integer);
+     end record;
 
    end P;
 
