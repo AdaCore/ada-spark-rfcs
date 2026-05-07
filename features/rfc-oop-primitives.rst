@@ -51,7 +51,7 @@ bodies. The following demonstrates the above:
 
    package body P is
 
-      type body R is class record
+      type body R is
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;
@@ -69,6 +69,11 @@ bodies. The following demonstrates the above:
       end Not_A_Prim;
 
    end P;
+
+Note that the body section of a class type uses the form ``type body <name> is
+... end <name>;`` and does not repeat ``class record`` nor the extension clause
+of the parent type - the body only completes the primitives declared in the
+spec.
 
 Primitives declared within a type can only be called via prefix notation. When
 primitives are declared in a scope, there can no longer be primitives declared
@@ -94,6 +99,29 @@ record extension, for example:
 
       type T2 is new T1 with class record
          procedure P (Self : in out T2);
+      end T2;
+   end P;
+
+The corresponding bodies, including the body of the derived type, also use the
+``type body <name> is ... end <name>;`` form. Neither ``class record`` nor the
+``new T1 with`` extension clause are repeated:
+
+.. code-block:: ada
+
+   package body P is
+      type body T1 is
+         procedure P (Self : in out T1) is
+         begin
+            null;
+         end P;
+      end T1;
+
+      type body T2 is
+         overriding
+         procedure P (Self : in out T2) is
+         begin
+            null;
+         end P;
       end T2;
    end P;
 
@@ -247,7 +275,7 @@ E.g:
 
    package body P is
 
-      type body R is class record
+      type body R is
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;
