@@ -200,11 +200,30 @@ It is possible to also scope primitives in regular records:
 Declaring primitives outside of regular records is still possible. It's not
 possible to declare primitives within a regular tagged record.
 
+Class-wide types and the ``'Class`` attribute
+---------------------------------------------
+
+The term *class* in this RFC names a kind of type declaration. It is distinct
+from Ada's existing notion of *class-wide* types, which describes the
+indefinite type rooted at a specific type and covering that type along with
+all of its descendants. The two concepts coexist: for a class type ``T``,
+``T'Class`` denotes the class-wide type rooted at ``T``, with the same meaning
+as for tagged types.
+
+Because primitive calls on class types dispatch by default
+(Default_Dispatching_Calls), the ``'Class`` attribute is needed much less
+often than with tagged types. It is still required in order to:
+
+- declare a variable, parameter, component, or formal of an indefinite type
+  that can hold any descendant of ``T`` (e.g. ``X : T'Class := ...``),
+- perform membership tests, such as ``X in T'Class``,
+- declare class-wide subprograms (see below).
+
 Non-primitive scoped operations
 -------------------------------
 
 The only non-primitive operation allowed in a class record is a non-primitive
-that has a class wide parameter of the enclosing type as the first parameter,
+that has a class-wide parameter of the enclosing type as the first parameter,
 e.g.:
 
 .. code-block:: ada
@@ -217,7 +236,7 @@ e.g.:
       procedure P3 (X1 : Integer); -- error
    end R;
 
-These class wide subprograms are called through prefix notation. They cannot
+These class-wide subprograms are called through prefix notation. They cannot
 however be overridden, and a derived class cannot redefine any subprogram of
 the same profile. E.g.:
 
