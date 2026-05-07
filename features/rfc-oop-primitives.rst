@@ -15,7 +15,7 @@ Class objects
 -------------
 
 A new type of type is introduced, the `class` type. This type operates similarly
-to tagged type (there are even situations where it can be derived from one)
+to tagged types (there are even situations where it can be derived from one)
 with a number of differences:
 
 - It's always a by-constructor type
@@ -36,16 +36,16 @@ bodies. The following demonstrates the above:
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
-       end record
+       end R
        with private;
 
-       procedure Not_A_Prim (Self : in out V);
+       procedure Not_A_Prim (Self : in out R);
 
    private
 
        type R is class record
          procedure Prim_2 (Self : in out R; V : Integer);
-       end record;
+       end R;
 
    end P;
 
@@ -61,9 +61,9 @@ bodies. The following demonstrates the above:
          begin
             Self.F := V + 1;
          end Prim_2;
-       end record;
+       end R;
 
-      procedure Not_A_Prim (Self : in out V) is
+      procedure Not_A_Prim (Self : in out R) is
       begin
          null;
       end Not_A_Prim;
@@ -75,13 +75,13 @@ primitives are declared in a scope, there can no longer be primitives declared
 outside of the scope, such declarations are non-primitives.
 
 Scoped primitives can be referred to with their fully qualified notation (for
-example, when using access to suprograms or renamings), for example here as
+example, when using access to subprograms or renamings), for example here as
 ``P.R.Prim``.
 
 Overriding and extensions
 -------------------------
 
-Extension of class record types work similarly to tagged records, with the
+Extension of class record types works similarly to tagged records, with the
 addition of the word class to make it clear that we're denoting a class
 record extension, for example:
 
@@ -90,29 +90,29 @@ record extension, for example:
    package P is
       type T1 is class record
          procedure P (Self : in out T1);
-      end record;
+      end T1;
 
       type T2 is new T1 with class record
-         procedure P (Self : in out T1);
-      end record;
+         procedure P (Self : in out T2);
+      end T2;
    end P;
 
 Primitives can be marked optionally overriding, following Ada 2005 rules.
-Inheritance model is single interitance of a class, multiple inheritance of
+Inheritance model is single inheritance of a class, multiple inheritance of
 interfaces.
 
 Interfaces
 ----------
 
 Interfaces can now be specified with "class interface", but otherwise
-operate as other interfaces (no concrete components or primitive):
+operate as other interfaces (no concrete components or primitives):
 
 .. code-block:: ada
 
    package P is
       type I is class interface
          procedure P (Self : in out I) is abstract;
-      end record;
+      end I;
    end P;
 
 Operators
@@ -126,12 +126,12 @@ Operators can be declared as primitives:
       type T1 is class record
          function "=" (Left, Right : T1) return Boolean;
          function "+" (Left, Right : T1) return T1;
-      end record;
+      end T1;
 
       type T2 is new T1 with class record
          function "=" (Left : T2; Right : T1) return Boolean;
          function "+" (Left : T2; Right : T1) return T1;
-      end record;
+      end T2;
    end P;
 
 Note that when overriding an operator, only the first parameter changes to the
@@ -140,11 +140,12 @@ current class type.
 Inheritance from regular tagged types
 -------------------------------------
 
-A class record from a tagged record or a regular interface. A class interface
-can inherit from a regular interface. The opposite is not possible. For this
-to be legal, the tagged record or regular interface inherited from should:
+A class record can inherit from a tagged record or a regular interface. A class
+interface can inherit from a regular interface. The opposite is not possible.
+For this to be legal, the tagged record or regular interface inherited from
+should:
 
-- Only have primitives which one controlling parameter which is the first one
+- Only have primitives with one controlling parameter which is the first one
 - Have no controlling results
 - Have no access discriminants
 
@@ -161,7 +162,7 @@ It is possible to also scope primitives in regular records:
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
-       end record;
+       end R;
 
    end P;
 
@@ -171,8 +172,8 @@ possible to declare primitives within a regular tagged record.
 Non-primitive scoped operations
 -------------------------------
 
-The only non-primitive operation allowed in a class record is a non primitive
-that has a class wide parameter of the enclosing type as the first paramter,
+The only non-primitive operation allowed in a class record is a non-primitive
+that has a class wide parameter of the enclosing type as the first parameter,
 e.g.:
 
 .. code-block:: ada
@@ -183,11 +184,11 @@ e.g.:
       procedure P2 (X1 : Integer; Self : R); -- error
 
       procedure P3 (X1 : Integer); -- error
-   end record;
+   end R;
 
 These class wide subprograms are called through prefix notation. They cannot
-however be overriden, and a derived class cannot redefine any subprogram of the
-same profile. E.g.:
+however be overridden, and a derived class cannot redefine any subprogram of
+the same profile. E.g.:
 
 .. code-block:: ada
 
@@ -198,16 +199,17 @@ same profile. E.g.:
 
       procedure P1 (Self : C'Class; I : Integer);
       -- legal, this is a different profile
-   end record;
+   end C;
 
-Note that, as opposed to tagged types, class-wide subprogram declared outside
-of the scope of a class record cannot be called though prefix notation. Notably:
+Note that, as opposed to tagged types, class-wide subprograms declared outside
+of the scope of a class record cannot be called through prefix notation.
+Notably:
 
 .. code-block:: ada
 
       type R is class record
          procedure P1 (Self : R'Class);
-      end record;
+      end R;
 
       procedure P2 (Self : R'Class);
 
@@ -232,14 +234,14 @@ E.g:
          F : Integer;
 
          procedure Prim (Self : in out R; V : Integer);
-       end record
+       end R
        with private;
 
    private
 
        type R (B : Boolean) is class record
          procedure Prim_2 (Self : in out R; V : Integer);
-       end record;
+       end R;
 
    end P;
 
@@ -249,7 +251,7 @@ E.g:
          procedure Prim (Self : in out R; V : Integer) is
          begin
             Self.F := V;
-         end record;
+         end Prim;
 
          procedure Prim_2 (Self : in out R; V : Integer) is
          begin
@@ -257,7 +259,7 @@ E.g:
                Self.F := V + 1;
             end if;
          end Prim_2;
-       end record;
+       end R;
 
    end P;
 
