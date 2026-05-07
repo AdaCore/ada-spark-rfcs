@@ -76,6 +76,23 @@ Note that the body section of a class type uses the form ``type body <name> is
 of the parent type - the body only completes the primitives declared in the
 spec.
 
+Primitives can also be defined directly in the spec using expression functions,
+as elsewhere in Ada. For example:
+
+.. code-block:: ada
+
+   type C is class record
+      I : Integer;
+      procedure Set (Self : in out C; V : Integer);
+      function Get (Self : C) return Integer is (Self.I);
+   end C;
+
+The body section of a class type follows the same rule as a package body: it
+is mandatory if and only if at least one primitive declared in the spec
+requires completion. If every primitive is fully defined in the spec (for
+example, all of them are expression functions, or there are none), the
+``type body <name> is ... end <name>;`` section must be omitted.
+
 Primitives declared within a type can only be called via prefix notation. With
 class types, primitives can only be declared in the scope of the type.
 Subprograms declared outside of the type scope that take an instance of the type
@@ -131,6 +148,18 @@ The corresponding bodies, including the body of the derived type, also use the
 Primitives can be marked optionally overriding, following Ada 2005 rules.
 Inheritance model is single inheritance of a class, multiple inheritance of
 interfaces.
+
+A class record extension that does not add any new component or primitive can
+be written using the ``with null class record`` form, mirroring
+``with null record`` for tagged types:
+
+.. code-block:: ada
+
+   type C is class record
+      ...
+   end C;
+
+   type R is new C with null class record;
 
 Interfaces
 ----------
