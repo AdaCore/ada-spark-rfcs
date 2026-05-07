@@ -216,6 +216,15 @@ e.g.:
       procedure P3 (X1 : Integer); -- error
    end R;
 
+The rationale is the following: ``P1`` is a non-dispatching operation that
+still has a clear link to ``R`` and can be called through prefix notation on
+any value of ``R'Class``, while also having access to the type's private
+components. ``P2`` does relate to ``R`` but, because the controlling parameter
+is not in first position, it cannot be invoked via prefix notation, which
+defeats the point of scoping it inside the type. ``P3`` has no parameter
+referring to ``R`` at all and therefore has no reason to live in the type's
+scope.
+
 These class-wide subprograms are called through prefix notation. They cannot
 however be overridden, and a derived class cannot redefine any subprogram of
 the same profile. E.g.:
