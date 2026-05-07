@@ -14,20 +14,21 @@ Guide-level explanation
 Class objects
 -------------
 
-A new type of type is introduced, the `class` type. This type operates similarly
-to tagged types (there are even situations where it can be derived from one)
-with a number of differences:
+A new kind of type is introduced, the `class` type. It behaves similarly to a
+tagged type (and in some cases can derive from one), with the following
+differences:
 
-- It's always a by-constructor type
+- It is always a by-constructor type
 - It cannot have coextensions (so no access-type discriminants)
 - Its primitives must follow the rules of First_Controlling_Parameter
 - It always follows the rules of Default_Dispatching_Calls
-- Primitives need to be declared within its scope - operations declared outside
-  of its scope are not primitives.
+- Primitives must be declared within the scope of the type; subprograms
+  declared outside that scope are not primitives.
 
-When scoped, primitives need also to be defined in the scope of the type itself,
-which leads to the introduction of a body section of the type in package
-bodies. The following demonstrates the above:
+Because primitives are declared inside the type, their bodies must also be
+provided inside the type. This motivates a new body section for the type,
+placed within the enclosing package body. The example below illustrates the
+overall structure:
 
 .. code-block:: ada
 
