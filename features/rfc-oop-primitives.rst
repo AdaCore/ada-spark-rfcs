@@ -180,26 +180,6 @@ should:
 - Have no controlling results
 - Have no access discriminants
 
-Primitives in the scope of regular records
-------------------------------------------
-
-It is possible to also scope primitives in regular records:
-
-.. code-block:: ada
-
-   package P is
-
-      type R is class record
-         F : Integer;
-
-         procedure Prim (Self : in out R; V : Integer);
-       end R;
-
-   end P;
-
-Declaring primitives outside of regular records is still possible. It's not
-possible to declare primitives within a regular tagged record.
-
 Class-wide types and the ``'Class`` attribute
 ---------------------------------------------
 
@@ -332,4 +312,26 @@ Unresolved questions
 
 Future possibilities
 ====================
+
+Scoped operations in regular records
+------------------------------------
+
+A natural extension of this RFC would be to allow scoping operations inside
+regular (non-class) record types, for example:
+
+.. code-block:: ada
+
+   package P is
+
+      type R is record
+         F : Integer;
+
+         procedure Prim (Self : in out R; V : Integer);
+       end R;
+
+   end P;
+
+This is not limited to primitives: it would also cover constructors and
+destructors, which raise a broader set of design questions. This topic is
+deferred and should be revisited at the language design level as a follow-up.
 
