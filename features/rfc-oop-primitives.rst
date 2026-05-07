@@ -76,9 +76,11 @@ Note that the body section of a class type uses the form ``type body <name> is
 of the parent type - the body only completes the primitives declared in the
 spec.
 
-Primitives declared within a type can only be called via prefix notation. When
-primitives are declared in a scope, there can no longer be primitives declared
-outside of the scope, such declarations are non-primitives.
+Primitives declared within a type can only be called via prefix notation. With
+class types, primitives can only be declared in the scope of the type.
+Subprograms declared outside of the type scope that take an instance of the type
+as an argument are not primitives, even when declared in the same declarative
+scope as the type.
 
 Scoped primitives can be referred to with their fully qualified notation (for
 example, when using access to subprograms or renamings), for example here as
