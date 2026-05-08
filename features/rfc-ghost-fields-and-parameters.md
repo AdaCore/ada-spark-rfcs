@@ -170,7 +170,7 @@ type Rec is record
    D : Integer;
 end record
    with Ghost_Size  => 12 * 8,
-      Concrete_Size => 8 * 8;
+      Concrete_Size => 4 * 8;
 ```
 
 Ghost levels can also be provided to subprograms:
@@ -273,12 +273,16 @@ type Rec is record
    A, B : Integer with Ghost => Runtime;
    C : Integer with Ghost => Static;
    D : Integer;
-end record; -- Depends on Runtime and Static
+end record; -- Uses Runtime and Static
 
 type Container is record
    R : Rec;
-end record; -- Depends also on Runtime and Static
+end record; -- Uses Runtime and Static via Rec
 ```
+
+Note that this is the *logical* set of levels used by the type. As covered
+below, the corresponding ``Ghost_Depend`` declaration only needs to mention
+the non-static levels (here, ``Runtime``).
 
 Code completion can introduce ghost level dependence. In this case however,
 the specification must allow for such introduction with the Ghost_Depend
