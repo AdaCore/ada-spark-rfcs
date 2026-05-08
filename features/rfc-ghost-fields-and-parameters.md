@@ -196,7 +196,7 @@ pragma Assertion_Level (Platinum, Depends => [Silver, Gold]);
 ```
 
 ```Ada
-pragma Assertion_Policy (Platinum);
+pragma Assertion_Policy (Platinum => Check);
 
 type Rec is record
    Inc : Integer := 0 with Ghost => Gold; -- this is active here
@@ -212,7 +212,7 @@ end Do_Something;
 declare
    X : Rec;
 begin
-   pragma Assertion_Policy (Gold);
+   pragma Assertion_Policy (Gold => Check);
    X.Inc := @ + 1; -- legal, we have the same policy
 end;
 ```
@@ -221,7 +221,7 @@ end;
 declare
    X : Rec;
 begin
-   pragma Assertion_Policy (Platinum);
+   pragma Assertion_Policy (Platinum => Check);
    X.Inc := @ + 1; -- legal, Platinum depends on Gold
 end;
 ```
@@ -230,7 +230,7 @@ end;
 declare
    X : Rec;
 begin
-   pragma Assertion_Policy (Silver);
+   pragma Assertion_Policy (Silver => Check);
    X.Inc := @ + 1; -- illegal, Silver does not depend (activate) Gold
 end;
 ```
@@ -240,7 +240,7 @@ This is necessary for consistency of behavior, for example:
 ```ada
 procedure Do_Something (X : Rec) is
 begin
-   pragma Assertion_Policy (Silver);
+   pragma Assertion_Policy (Silver => Check);
    -- if we allow this, we don't compile this statement
    X.Inc := @ + 1;
 end Do_Something;
@@ -249,7 +249,7 @@ end Do_Something;
 This would cause an unexpected issue:
 
 ```
-pragma Assertion_Policy (Gold);
+pragma Assertion_Policy (Gold => Check);
 
 X : Rec;
 S : Integer := X.Inc;
@@ -262,7 +262,7 @@ pragma Assert (Gold => X.Inc = S + 1);
 Note that the restriction on ghost fields and parameters do impose constraints
 with libraries that may need to be recompiled to serve into different contexts.
 
-For types, ghost code levels extend by compositon, for example:
+For types, ghost code levels extend by composition, for example:
 
 ```Ada
 type Rec is record
@@ -271,14 +271,14 @@ type Rec is record
    D : Integer;
 end record; -- Depends on Runtime and Static
 
-type Containter is record
+type Container is record
    R : Rec;
 end record; -- Depends also on Runtime and Static
 ```
 
 Code completion can introduce ghost level dependence. In this case however,
 the specification must allow for such introduction with the Ghost_Depend
-aspect so that so the user knows that he needs consistent assertion policy.
+aspect so that the user knows that he needs consistent assertion policy.
 
 ```Ada
    type Rec is private with Ghost_Depend => (Runtime, Static);
@@ -290,12 +290,12 @@ private
    end record; -- Depends on Runtime and Static
 ```
 
-For generics, compatibilty of the code will be established at instantiation
-time as it's possible to instanciate a generic with types that have
+For generics, compatibility of the code will be established at instantiation
+time as it's possible to instantiate a generic with types that have
 ghost depends assertions not visible at generic declaration. Note that this
 introduces risks when generic units implementers chose to configure locally
-assertion policities - issues will be detected at compile time, but may be
-unforseen at generic implementation time.
+assertion policies - issues will be detected at compile time, but may be
+unforeseen at generic implementation time.
 
 For two profiles to be mode conformant, an additional requirement must be met.
 If any pair of corresponding parameters disagree with respect to either the
