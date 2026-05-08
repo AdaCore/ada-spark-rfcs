@@ -42,13 +42,13 @@ end Assign;
 ```
 
 Ghost fields may or may not be present at compile-time. As a consequence, the
-size and layout of a data structure may differ depending on wether or not
+size and layout of a data structure may differ depending on whether or not
 ghost code is activated. In order to control this duality, a new set of
 attributes "Ghost_Size", "Ghost_Value_Size" and "Ghost_Object_Size" are added
 to refer to the size of the ghost objects when compiled whereas "Size",
 "Value_Size" and "Object_Size" refer to the value of the objects as compiled.
 As a consequence, Size, Value_Size and Object_Size may vary depending on
-wether ghost code is active or not:
+whether ghost code is active or not:
 
 Note that as a consequence, "Size", "Value_Size" and "Object_Size" can't be
 specified on a record type that has ghost fields as this size is not constant.
@@ -73,8 +73,12 @@ When representation is necessary, it has to describe both concrete and ghost
 fields, the compiler will check consistency of both cases. For example:
 
 ```Ada
-for Pair'Ghost_Size    => 12 * 8,
-for Pair'Concrete_Size => 8 * 8,
+type Pair is record
+   X, Y : Integer;
+   Area : Integer with Ghost;
+end record
+   with Ghost_Size    => 12 * 8,
+        Concrete_Size => 8 * 8;
 
 for Pair use record
    X    at 0 range 0 .. 31;
@@ -83,7 +87,7 @@ for Pair use record
 end record;
 ```
 
-There are only two layout provided for any record, one without ghost code
+There are only two layouts provided for any record, one without ghost code
 enabled, and one with ghost code - even if there can be different levels of
 ghost code for different fields, and some may not be activated at the same time.
 The ghost size and layout takes the largest ghost case where all is active.
@@ -106,12 +110,12 @@ Note that subtype predicates cannot refer to ghost entities, including ghost
 components, as they are evaluated in type membership tests. Type invariants can
 refer to ghost entities, including ghost components.
 
-Note that one of the consequence of using ghost fields is that overlays and
+Note that one of the consequences of using ghost fields is that overlays and
 unchecked conversion may fail at compile time. This is expected, and is a known
 limitation of ghost fields.
 
 Ghost fields are copied under assignment. Other component-wise operations are
-not impacted by ghostfield. For example, equality yields the same result even
+not impacted by ghost fields. For example, equality yields the same result even
 if ghost fields values are different, stream attributes do not stream ghost
 value, put_line does not output ghost fields, etc. This preserves the property
 that ghost code does not influence non-ghost code (with the exception of 'Size
@@ -120,7 +124,7 @@ where the solution is described above).
 Ghost Parameters
 ----------------
 
-The Ghost aspect can be specified for a parameters. E.g.:
+The Ghost aspect can be specified for a parameter. E.g.:
 
 ```Ada
 procedure Some_Procedure (X : Integer; Y : Integer with Ghost);
@@ -140,10 +144,10 @@ As a consequence, ghost parameters are used for name resolution and overloading
 rules.
 
 When Ghost code is not compiled, the expression valuating ghost parameter is
-not evaluated and no parameters is passed.
+not evaluated and no parameter is passed.
 
 Inside the body of a procedure or a function, ghost parameters behave like
-Ghost variable and can only be used in the context of ghost code.
+Ghost variables and can only be used in the context of ghost code.
 
 Controlling parameters cannot be marked as being ghost (as the tag of the object
 is always needed at run-time to resolve dispatching).
@@ -172,7 +176,7 @@ end record
 Ghost levels can also be provided to subprograms:
 
 ```Ada
-procedure P (V : Integer with Ghost => Gold)
+procedure P (V : Integer with Ghost => Gold);
 ```
 
 Subprograms and types assertion policies are governed by the assertion policy
@@ -202,9 +206,9 @@ type Rec is record
    Inc : Integer := 0 with Ghost => Gold; -- this is active here
 end record; -- This type depends on the Gold ghost level
 
-procedure Do_Something (V : Rec) is
+procedure Do_Something (V : in out Rec) is
 begin
-   V := V + 1;
+   V.Inc := @ + 1;
 end Do_Something;
 ```
 
@@ -238,7 +242,7 @@ end;
 This is necessary for consistency of behavior, for example:
 
 ```ada
-procedure Do_Something (X : Rec) is
+procedure Do_Something (X : in out Rec) is
 begin
    pragma Assertion_Policy (Silver => Check);
    -- if we allow this, we don't compile this statement
@@ -259,7 +263,7 @@ pragma Assert (Gold => X.Inc = S + 1);
 -- wrong at runtime if Do_Something is not compiled with at least gold
 ```
 
-Note that the restriction on ghost fields and parameters do impose constraints
+Note that the restriction on ghost fields and parameters does impose constraints
 with libraries that may need to be recompiled to serve into different contexts.
 
 For types, ghost code levels extend by composition, for example:
@@ -293,7 +297,7 @@ private
 For generics, compatibility of the code will be established at instantiation
 time as it's possible to instantiate a generic with types that have
 ghost depends assertions not visible at generic declaration. Note that this
-introduces risks when generic units implementers chose to configure locally
+introduces risks when generic units implementers choose to configure locally
 assertion policies - issues will be detected at compile time, but may be
 unforeseen at generic implementation time.
 
@@ -305,7 +309,7 @@ associated assertion levels, then the two profiles are not mode conformant.
 Reference-level explanation
 ===========================
 
-TDB
+TBD
 
 Rationale and alternatives
 ==========================
@@ -315,7 +319,7 @@ Drawbacks
 =========
 
 Alternate layout for ghost and non-ghost record may create additional
-difficulties when developping application that heavily depends on reprentations.
+difficulties when developing application that heavily depends on representations.
 Some of these applications may as a consequence not be able to rely on run-time
 ghost fields. The [Multiple Ghost fields proposal](https://github.com/QuentinOchem/ada-spark-rfcs/blob/multiple_ghost/considered/rfc-multiple_ghost_levels.md)
 would allow to cater for these cases.
