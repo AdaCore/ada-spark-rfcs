@@ -284,15 +284,39 @@ Code completion can introduce ghost level dependence. In this case however,
 the specification must allow for such introduction with the Ghost_Depend
 aspect so that the user knows that he needs consistent assertion policy.
 
+Every ghost level used by a component in the body must be listed, with the
+exception of levels that derive from Static. Static-level (and "ghostier")
+components never produce runtime code and never contribute to the layout, so
+they impose no coordination requirement on consumers and do not need to be
+declared:
+
 ```Ada
-   type Rec is private with Ghost_Depend => (Runtime, Static);
+   type Rec is private with Ghost_Depend => (Runtime);
 private
    type Rec is record
       A, B : Integer with Ghost => Runtime;
-      C : Integer with Ghost => Static;
+      C : Integer with Ghost => Static;  --  not listed: Static never runs
       D : Integer;
-   end record; -- Depends on Runtime and Static
+   end record;
 ```
+
+When several non-static levels appear, all of them must be listed, even when
+one depends on another. For example:
+
+```Ada
+pragma Assertion_Level (Gold);
+pragma Assertion_Level (Platinum, Depends => [Gold]);
+
+type Rec is private with Ghost_Depend => (Gold, Platinum);
+private
+   type Rec is record
+      V1 : Integer := 1 with Ghost => Gold;
+      V2 : Integer := 2 with Ghost => Platinum;
+   end record;
+```
+
+Listing only ``(Platinum)`` here would be insufficient even though Platinum
+depends on Gold; see the rationale section for the reasoning.
 
 For generics, compatibility of the code will be established at instantiation
 time as it's possible to instantiate a generic with types that have
@@ -314,6 +338,31 @@ TBD
 Rationale and alternatives
 ==========================
 
+Why every non-static level must be listed in Ghost_Depend
+---------------------------------------------------------
+
+Activating a level transitively activates everything it depends on:
+``Platinum => Check`` forces ``Gold => Check``. Given this, it is tempting to
+let Ghost_Depend list only the maximal levels of the body and treat their
+dependencies as implicit. This does not work, because the cascade is
+unidirectional: deactivating Platinum does *not* deactivate Gold, so
+listing only Platinum leaves Gold's policy free at the consumer side.
+
+Take a private type whose body has fields at both Gold and Platinum, declared
+in a unit with ``Platinum => Ignore`` and Gold left to its default
+(``Check``). V1 (Gold) is alive in the body; V2 (Platinum) is stubbed; the
+layout is ghost-on because Gold is active.
+
+If the spec only listed ``(Platinum)``, a consumer is told to coordinate on
+Platinum and sets ``Platinum => Ignore`` to match. Nothing in the spec
+mentions Gold, so the consumer leaves Gold at its own default — which can
+be ``Ignore``. The consumer's view of Rec is then no-ghost layout while the
+declaring unit's is ghost-on: layout mismatch, undefined behavior on V1.
+
+Listing ``(Gold, Platinum)`` forces the consumer to coordinate on both
+levels independently, closing the hole. Static-level components are exempt
+because they never produce runtime code or contribute to the layout, so
+there is nothing for a consumer to coordinate on.
 
 Drawbacks
 =========
