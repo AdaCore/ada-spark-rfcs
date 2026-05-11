@@ -93,11 +93,9 @@ requires completion. If every primitive is fully defined in the spec (for
 example, all of them are expression functions, or there are none), the
 ``type body <name> is ... end <name>;`` section must be omitted.
 
-Primitives declared within a type can only be called via prefix notation. With
-class types, primitives can only be declared in the scope of the type.
-Subprograms declared outside of the type scope that take an instance of the type
-as an argument are not primitives, even when declared in the same declarative
-scope as the type.
+Class primitives are always called via prefix notation. Subprograms declared
+outside of the type scope that take an instance of the type as an argument are
+not primitives, even when declared in the same declarative scope as the type.
 
 Scoped primitives can be referred to with their fully qualified notation (for
 example, when using access to subprograms or renamings), for example here as
