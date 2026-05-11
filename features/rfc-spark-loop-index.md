@@ -1,6 +1,6 @@
 - Feature Name: loop_index_attribute
-- Start Date: (2025-02-27
-- Status: Planning
+- Start Date: 2025-02-27
+- Status: Ready for prototyping
 
 Summary
 =======
