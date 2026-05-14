@@ -42,13 +42,13 @@ end Assign;
 ```
 
 Ghost fields may or may not be present at compile-time. As a consequence, the
-size and layout of a data structure may differ depending on wether or not
+size and layout of a data structure may differ depending on whether or not
 ghost code is activated. In order to control this duality, a new set of
 attributes "Ghost_Size", "Ghost_Value_Size" and "Ghost_Object_Size" are added
 to refer to the size of the ghost objects when compiled whereas "Size",
 "Value_Size" and "Object_Size" refer to the value of the objects as compiled.
 As a consequence, Size, Value_Size and Object_Size may vary depending on
-wether ghost code is active or not:
+whether ghost code is active or not:
 
 Note that as a consequence, "Size", "Value_Size" and "Object_Size" can't be
 specified on a record type that has ghost fields as this size is not constant.
@@ -61,7 +61,7 @@ type Pair is record
    X, Y : Integer;
    Area : Integer with Ghost;  --  ghost component
 end record
-   with Ghost_Size    => 12 * 8,
+   with Ghost_Size  => 12 * 8,
       Concrete_Size => 8 * 8;
 
 S1 : Integer := Pair'Size;          -- 8 or 12 bytes
@@ -73,8 +73,12 @@ When representation is necessary, it has to describe both concrete and ghost
 fields, the compiler will check consistency of both cases. For example:
 
 ```Ada
-for Pair'Ghost_Size    => 12 * 8,
-for Pair'Concrete_Size => 8 * 8,
+type Pair is record
+   X, Y : Integer;
+   Area : Integer with Ghost;
+end record
+   with Ghost_Size    => 12 * 8,
+        Concrete_Size => 8 * 8;
 
 for Pair use record
    X    at 0 range 0 .. 31;
@@ -82,6 +86,15 @@ for Pair use record
    Area at 8 range 0 .. 31;
 end record;
 ```
+
+There are only two layouts provided for any record, one without ghost code
+enabled, and one with ghost code - even if there can be different levels of
+ghost code for different fields, and some may not be activated at the same time.
+The ghost size and layout takes the largest ghost case where all is active.
+
+Ghost components and parameters that are of a level derived from Static never
+contribute to the ghost size or layout. This allows for example to have static
+ghost components of arbitrary large size.
 
 Ghost components do not participate in the default equality, so that two
 ``Pair`` objects which only differ in their ``Area`` component should be
@@ -97,12 +110,12 @@ Note that subtype predicates cannot refer to ghost entities, including ghost
 components, as they are evaluated in type membership tests. Type invariants can
 refer to ghost entities, including ghost components.
 
-Note that one of the consequence of using ghost fields is that overlays and
+Note that one of the consequences of using ghost fields is that overlays and
 unchecked conversion may fail at compile time. This is expected, and is a known
 limitation of ghost fields.
 
 Ghost fields are copied under assignment. Other component-wise operations are
-not impacted by ghostfield. For example, equality yields the same result even
+not impacted by ghost fields. For example, equality yields the same result even
 if ghost fields values are different, stream attributes do not stream ghost
 value, put_line does not output ghost fields, etc. This preserves the property
 that ghost code does not influence non-ghost code (with the exception of 'Size
@@ -111,7 +124,7 @@ where the solution is described above).
 Ghost Parameters
 ----------------
 
-The Ghost aspect can be specified for a parameters. E.g.:
+The Ghost aspect can be specified for a parameter. E.g.:
 
 ```Ada
 procedure Some_Procedure (X : Integer; Y : Integer with Ghost);
@@ -131,29 +144,235 @@ As a consequence, ghost parameters are used for name resolution and overloading
 rules.
 
 When Ghost code is not compiled, the expression valuating ghost parameter is
-not evaluated and no parameters is passed.
+not evaluated and no parameter is passed.
 
 Inside the body of a procedure or a function, ghost parameters behave like
-Ghost variable and can only be used in the context of ghost code.
+Ghost variables and can only be used in the context of ghost code.
 
 Controlling parameters cannot be marked as being ghost (as the tag of the object
 is always needed at run-time to resolve dispatching).
 
+Ghost Code Levels
+------------------
+
+Specific ghost levels can be specified on components. Ghost levels on components
+govern for which kind of entities these components can be applied, following
+the same dependencies as for other ghost entities with specific levels. However,
+only two representations can be given to a given type: a "ghost" one that
+includes all entities that depend directly or indirectly on "Runtime", and
+a concrete one for only concrete entities. Entities that depend on "Static" are
+never compiled. For example:
+
+```Ada
+type Rec is record
+   A, B : Integer with Ghost => Runtime;
+   C : Integer with Ghost => Static;
+   D : Integer;
+end record
+   with Ghost_Size  => 12 * 8,
+      Concrete_Size => 4 * 8;
+```
+
+Ghost levels can also be provided to subprograms:
+
+```Ada
+procedure P (V : Integer with Ghost => Gold);
+```
+
+Subprograms and types assertion policies are governed by the assertion policy
+of their declaration and impose constraints on the policy where they
+are used. The compiler only compiles them once, either following the specific
+assertion policy declared in the code, or driven by outside means such as
+compiler switches or global pragma files.
+
+An entity that contains ghost fields or parameters depends on the corresponding
+ghost fields and parameters levels. As soon as such dependency is established,
+it can only be used with a consistent activation of policy - ie it's not
+possible to use said entities in a piece of code with the corresponding
+assertion deactivated and another one activated.
+
+For example:
+
+```Ada
+pragma Assertion_Level (Silver);
+pragma Assertion_Level (Gold, Depends => [Silver]);
+pragma Assertion_Level (Platinum, Depends => [Silver, Gold]);
+```
+
+```Ada
+pragma Assertion_Policy (Platinum => Check);
+
+type Rec is record
+   Inc : Integer := 0 with Ghost => Gold; -- this is active here
+end record; -- This type depends on the Gold ghost level
+
+procedure Do_Something (V : in out Rec) is
+begin
+   V.Inc := @ + 1;
+end Do_Something;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Gold => Check);
+   X.Inc := @ + 1; -- legal, we have the same policy
+end;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Platinum => Check);
+   X.Inc := @ + 1; -- legal, Platinum depends on Gold
+end;
+```
+
+```ada
+declare
+   X : Rec;
+begin
+   pragma Assertion_Policy (Silver => Check);
+   X.Inc := @ + 1; -- illegal, Silver does not depend (activate) Gold
+end;
+```
+
+This is necessary for consistency of behavior, for example:
+
+```ada
+procedure Do_Something (X : in out Rec) is
+begin
+   pragma Assertion_Policy (Silver => Check);
+   -- if we allow this, we don't compile this statement
+   X.Inc := @ + 1;
+end Do_Something;
+```
+
+This would cause an unexpected issue:
+
+```
+pragma Assertion_Policy (Gold => Check);
+
+X : Rec;
+S : Integer := X.Inc;
+
+Do_Something (X);
+pragma Assert (Gold => X.Inc = S + 1);
+-- wrong at runtime if Do_Something is not compiled with at least gold
+```
+
+Note that the restriction on ghost fields and parameters does impose constraints
+with libraries that may need to be recompiled to serve into different contexts.
+
+For types, ghost code levels extend by composition, for example:
+
+```Ada
+type Rec is record
+   A, B : Integer with Ghost => Runtime;
+   C : Integer with Ghost => Static;
+   D : Integer;
+end record; -- Uses Runtime and Static
+
+type Container is record
+   R : Rec;
+end record; -- Uses Runtime and Static via Rec
+```
+
+Note that this is the *logical* set of levels used by the type. As covered
+below, the corresponding ``Ghost_Depend`` declaration only needs to mention
+the non-static levels (here, ``Runtime``).
+
+Code completion can introduce ghost level dependence. In this case however,
+the specification must allow for such introduction with the Ghost_Depend
+aspect so that the user knows that he needs consistent assertion policy.
+
+Every ghost level used by a component in the body must be listed, with the
+exception of levels that derive from Static. Static-level (and "ghostier")
+components never produce runtime code and never contribute to the layout, so
+they impose no coordination requirement on consumers and do not need to be
+declared:
+
+```Ada
+   type Rec is private with Ghost_Depend => (Runtime);
+private
+   type Rec is record
+      A, B : Integer with Ghost => Runtime;
+      C : Integer with Ghost => Static;  --  not listed: Static never runs
+      D : Integer;
+   end record;
+```
+
+When several non-static levels appear, all of them must be listed, even when
+one depends on another. For example:
+
+```Ada
+pragma Assertion_Level (Gold);
+pragma Assertion_Level (Platinum, Depends => [Gold]);
+
+type Rec is private with Ghost_Depend => (Gold, Platinum);
+private
+   type Rec is record
+      V1 : Integer := 1 with Ghost => Gold;
+      V2 : Integer := 2 with Ghost => Platinum;
+   end record;
+```
+
+Listing only ``(Platinum)`` here would be insufficient even though Platinum
+depends on Gold; see the rationale section for the reasoning.
+
+For generics, compatibility of the code will be established at instantiation
+time as it's possible to instantiate a generic with types that have
+ghost depends assertions not visible at generic declaration. Note that this
+introduces risks when generic units implementers choose to configure locally
+assertion policies - issues will be detected at compile time, but may be
+unforeseen at generic implementation time.
+
+For two profiles to be mode conformant, an additional requirement must be met.
+If any pair of corresponding parameters disagree with respect to either the
+(Boolean-valued) ghost property itself or, if both are ghost parameters, their
+associated assertion levels, then the two profiles are not mode conformant.
 
 Reference-level explanation
 ===========================
 
-TDB
+TBD
 
 Rationale and alternatives
 ==========================
 
+Why every non-static level must be listed in Ghost_Depend
+---------------------------------------------------------
+
+Activating a level transitively activates everything it depends on:
+``Platinum => Check`` forces ``Gold => Check``. Given this, it is tempting to
+let Ghost_Depend list only the maximal levels of the body and treat their
+dependencies as implicit. This does not work, because the cascade is
+unidirectional: deactivating Platinum does *not* deactivate Gold, so
+listing only Platinum leaves Gold's policy free at the consumer side.
+
+Take a private type whose body has fields at both Gold and Platinum, declared
+in a unit with ``Platinum => Ignore`` and Gold left to its default
+(``Check``). V1 (Gold) is alive in the body; V2 (Platinum) is stubbed; the
+layout is ghost-on because Gold is active.
+
+If the spec only listed ``(Platinum)``, a consumer is told to coordinate on
+Platinum and sets ``Platinum => Ignore`` to match. Nothing in the spec
+mentions Gold, so the consumer leaves Gold at its own default — which can
+be ``Ignore``. The consumer's view of Rec is then no-ghost layout while the
+declaring unit's is ghost-on: layout mismatch, undefined behavior on V1.
+
+Listing ``(Gold, Platinum)`` forces the consumer to coordinate on both
+levels independently, closing the hole. Static-level components are exempt
+because they never produce runtime code or contribute to the layout, so
+there is nothing for a consumer to coordinate on.
 
 Drawbacks
 =========
 
 Alternate layout for ghost and non-ghost record may create additional
-difficulties when developping application that heavily depends on reprentations.
+difficulties when developing application that heavily depends on representations.
 Some of these applications may as a consequence not be able to rely on run-time
 ghost fields. The [Multiple Ghost fields proposal](https://github.com/QuentinOchem/ada-spark-rfcs/blob/multiple_ghost/considered/rfc-multiple_ghost_levels.md)
 would allow to cater for these cases.
