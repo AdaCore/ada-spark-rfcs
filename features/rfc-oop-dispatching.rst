@@ -159,55 +159,76 @@ a scope where Default_Dispatching_Calls is On. For example:
 
 .. code-block:: ada
 
+   --  a.ads
+
    package A is
-
-      pragma Default_Dispatching_Calls (Off);
-
       type Root is tagged null record;
 
       procedure P (Self : in out Root);
 
-      type Acc is access all procedure (Self : in out Root);
+      type Acc is access procedure (Self : in out Root);
 
-      A_D : Acc;
+      A_D  : Acc;
       A_ND : Acc;
 
+      type Leaf is new Root with null record;
+
+      overriding
+      procedure P (Self : in out Leaf);
    end A;
 
-   package body B is
+   --  b.ads
 
-      pragma Default_Dispatching_Calls (On);
-
-      [... some code ...]
-
-         A_D := A.P'Access; -- This will be dispatching.
-
-      [... some code ...]
-
+   package B is
+      procedure Init;
    end B;
 
-   package body C is
+   --  b.adb
 
-      pragma Default_Dispatching_Calls (Off);
+   pragma Default_Dispatching_Calls (On);
 
-      [... some code ...]
+   with A; use A;
 
-         A_ND := A.P'Access; -- This will not be dispatching.
+   package body B is
+      procedure Init is
+      begin
+         A_D := A.P'Access; -- This will be dispatching.
+      end Init;
+   end B;
 
-      [... some code ...]
+   --  c.ads
 
+   package C is
+      procedure Init;
    end C;
 
-   package body D is
+   --  c.adb
 
-      [... some code ...]
+   with A; use A;
 
-         A_D.all (Obj); -- This dispatches
-         A_ND.all (Obj); -- This doesn't dispatch
+   package body C is
+      procedure Init is
+      begin
+         A_ND := A.P'Access; -- This will not be dispatching.
+      end Init;
+   end C;
 
-      [... some code ...]
+   --  main.adb
 
-   end D;
+   with A; use A;
+   with B;
+   with C;
+
+   procedure Main is
+      Obj : Leaf;
+   begin
+      B.Init;
+      C.Init;
+
+      A_D.all (Root (Obj)); -- This dispatches
+
+      A_ND.all (Root (Obj)); -- This doesn't dispatch
+   end Main;
 
 In other words, the decision on how a call to an access to subprogram behaves
 is taken at the point where the access value is created (through 'Access). A
