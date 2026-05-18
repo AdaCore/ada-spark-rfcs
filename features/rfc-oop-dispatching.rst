@@ -134,22 +134,96 @@ For example:
 Note that this is a problem when integrating with current Ada, pedantic Flare
 does not support multi-parameter dispatching.
 
-Dispatching on Returned Types
------------------------------
+Dispatching assigments
+----------------------
 
-A tag indeterminate dispatching call is illegal (as it is the case today). For
-example:
+In Ada, an assignment can have a class-wide left-hand side and a tag-indeterminate
+right-hand side. For example in:
 
 .. code-block:: ada
 
-     pragma Default_Dispatching_Calls (On);
-     type T is tagged ... ;
-     function Make return T; -- primitive
-     Obj1 : T'Class := ...
-     Obj2 : T'Class := Make; -- illegal
+   procedure Foo (X : out Root) is
    begin
-     Obj1 := Make; -- legal; use Obj1'Tag to dispatch
+      Root'Class (X) := Create;
+   end Foo;
 
+The :code:`Create` function that gets called is the one associated with the tag of :code:`X`
+and not necessarily the one that returns :code:`Root`.
+
+The :code:`Default_Dispatching_Calls` pragma enables this behavior even in the absence of
+an explicit conversion to class-wide:
+
+.. code-block:: ada
+
+   procedure Foo (X : out Root) is
+   begin
+      --  This will dynamically dispatch if pragma Default_Dispatching_Calls is on
+      X := Create;
+   end Foo;
+
+.. code-block:: ada
+
+   --  p1.ads
+
+   package P1 is
+      type Root is tagged null record;
+
+      procedure Foo (X : out Root);
+
+      function Create return Root;
+   end P1;
+
+   --  p1.adb
+
+   pragma Default_Dispatching_Calls (On);
+
+   package body P1 is
+      procedure Foo (X : out Root) is
+      begin
+         --  This dynamically dispatches because of Default_Dispatching_Calls
+         X := Create;
+      end Foo;
+
+      function Create return Root is
+      begin
+         return (null record);
+      end Create;
+   end P1;
+
+   --  p2.ads
+
+   with P1;
+
+   package P2 is
+      type Leaf is new P1.Root with null record;
+
+      overriding
+      function Create return Leaf;
+   end P2;
+
+   --  p2.adb
+
+   package body P2 is
+      overriding
+      function Create return Leaf is
+      begin
+         return (null record);
+      end Create;
+   end P2;
+
+   --  main.adb
+
+   pragma Default_Dispatching_Calls (On);
+
+   with P2;
+
+   procedure Main is
+      X : P2.Leaf;
+   begin
+      P2.Foo (X);
+   end Main;
+
+Here, :code:`P2.Create` is called once and :code:`P1.Create` is not called at all.
 
 Access to Subprograms
 ---------------------
