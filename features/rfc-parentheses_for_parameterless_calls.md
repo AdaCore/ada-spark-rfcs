@@ -1,6 +1,6 @@
 - Feature ID: parentheses_for_parameterless_calls
 - Start Date: 2025-11-08
-- Status: Draft
+- Status: Ready for prototyping
 
 # Summary
 
