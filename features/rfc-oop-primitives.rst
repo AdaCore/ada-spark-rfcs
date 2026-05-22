@@ -148,7 +148,7 @@ Inheritance model is single inheritance of a class, multiple inheritance of
 interfaces.
 
 A class record extension that does not add any new component or primitive can
-be written using the ``with null class record`` form, mirroring
+be written using the ``with class null record`` form, mirroring
 ``with null record`` for tagged types:
 
 .. code-block:: ada
@@ -157,7 +157,7 @@ be written using the ``with null class record`` form, mirroring
       ...
    end C;
 
-   type R is new C with null class record;
+   type R is new C with class null record;
 
 Interfaces
 ----------
@@ -328,6 +328,33 @@ E.g:
        end R;
 
    end P;
+
+
+Variant records
+---------------
+
+Class records can have a variant part, following the same rules as regular
+records. However, only components can appear in the variant part —
+primitives must always be declared in the common part of the type. E.g.:
+
+.. code-block:: ada
+
+   type R (B : Boolean) is class record
+      F : Integer;
+
+      procedure Prim (Self : in out R);
+
+      case B is
+         when True =>
+            F_True : Integer;
+         when False =>
+            F_False : Integer;
+      end case;
+   end R;
+
+The rationale is that primitives are properties of the type as a whole and
+participate in dispatching independently of the value of any discriminant;
+allowing them in the variant part would have no meaningful semantics.
 
 
 Reference-level explanation
