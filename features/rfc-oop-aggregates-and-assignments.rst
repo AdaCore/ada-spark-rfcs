@@ -76,8 +76,11 @@ copy (or clone) the value of a tagged type into a other one. For example:
 
    procedure Root'Clone (Self : Root; To : in out Root);
 
-Root'Clone is not a primitive and cannot be inherited. However, a child
-class may provide its own cloning method:
+Root'Clone is not a primitive and cannot be inherited or overridden by
+derivation.  (See the "Clone and Adjust as Primitives" section below for the
+reason Clone is non-primitive while Adjust is primitive.)
+
+A derived type may provide its own Clone:
 
 .. code-block:: ada
 
@@ -87,9 +90,14 @@ class may provide its own cloning method:
 
    procedure Child'Clone (Self : Child; To : in out Child);
 
-The default implementation of Clone first calls the parent clone and then
-calls clone operation of all the components one by one. The compiler is free to
-optimize to bitwise copies if clone operations are not user-defined.
+The default implementation of Clone for a constructor type calls the parent
+type's Clone on the parent portion of the object, then for each component in
+declaration order: if the component's type is a constructor type with a
+user-defined Clone, that Clone is called; otherwise the component is copied
+bit-for-bit.  Types that are not constructor types (Integer, access types, and
+so on) are always copied bit-for-bit; Clone is not user-specifiable for them.
+The compiler is free to optimize the entire default sequence to a single
+bitwise copy whenever it can determine that no user-defined Clone is reachable.
 
 Calls to 'Clone are statically resolved when used on definite views, and
 dynamically resolved on 'Class wide type. This is arguably a departure from the
@@ -170,7 +178,7 @@ needs to be maintained equal to the parents.
    end Child'Constructor;
 
    procedure Child'Clone (Self : Child; To : in out Child) is
-   begin'
+   begin
       Root (To) := Root (Self);
       Free (To.B);
       To.B := new Integer'(Self.B.all);
@@ -184,15 +192,21 @@ needs to be maintained equal to the parents.
       end if;
    end Child'Adjust;
 
-When reasoning about this interface, it's useful to keep in mind that it has
-a fundamental design flaw - it allows the user to modify the values of A and
-B while possibly leaking the values. A more realistic example would make these
-values private, or maybe not automatically allocate objects (but that would
-prevent to showcase some aspects of the proposal later).
+When reasoning about this interface, note that the aggregate expansion calls
+the parameterless constructor on ``Tmp`` before overwriting individual fields.
+If the constructor pre-allocates a resource for a field that the aggregate
+then replaces, the constructor's allocation is leaked.  For types intended to
+be used with aggregates, the recommended pattern is for the constructor to
+leave fields that will always be supplied by the aggregate in a trivially
+destructible initial state (typically null), and to pre-allocate only those
+resources that the aggregate cannot supply.  The ``Child'Destructor (Tmp)``
+call at the end of the expansion releases whatever state ``Tmp`` holds after
+field assignment, so the final result is leak-free provided the constructor
+follows this pattern.
 
-Generally speaking, this proposal is providing to the user the tools to develop
-a type which will remain safe and consistent, to the contrary of the previous
-model that offers shortcuts breaking this ability.
+Generally speaking, this proposal provides the tools to develop types that
+remain safe and consistent, in contrast to the previous model which offered
+shortcuts that undermined that goal.
 
 Simple Copy Assignments
 -----------------------
@@ -280,7 +294,7 @@ like today in Ada. Specifically:
       --    Root'Clone (W, V); -- this dispatches
       --    Root'Adjust (V, W); -- this dispatches
       --  else
-      --    raise <the appropriate exception>;
+      --    raise Constraint_Error;
       --  end if;
 
 Aggregate Assignments
@@ -351,6 +365,19 @@ A few notes on the above sequences:
   aggregate notation for types that do not require these constructs, and
   the compiler should optimize the sequencing in these cases.
 
+In the expansion pseudocode throughout this section, a bare declaration
+``Tmp : Child;`` denotes a compiler-introduced raw object: no implicit
+constructor call is made for the declaration itself, and the object's storage
+is indeterminate until the expansion's explicit constructor call initialises
+it.  This exemption is necessary to avoid infinite regress: if the declaration
+of a compiler temporary for an aggregate triggered the aggregate expansion
+recursively, the expansion would not terminate.  The expansion always
+provides an explicit constructor call immediately following such a declaration.
+Similarly, in the delta aggregate expansion, the notation
+``Child'Constructor (Tmp, C1)`` is the explicit copy-constructor call that
+initialises ``Tmp`` from ``C1``; it does not trigger a further assignment
+expansion.
+
 Aggregate Assignments with Extension Copies
 -------------------------------------------
 
@@ -386,11 +413,11 @@ Delta aggregates create their initial value from a by-copy constructor:
    begin
 
       C2 := (C1 with delta B => new Integer);
-      -- Tmp : Child := C1;
+      -- Tmp : Child;
       -- Child'Constructor (Tmp, C1);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp);
+      -- Child'Clone (Tmp, C2);
+      -- Child'Adjust (C2, Tmp);
       -- Child'Destructor (Tmp);
 
 Aggregates with Private Parts or Default Values
@@ -414,10 +441,12 @@ constructor, e.g.:
       -- Child'Adjust (C, Tmp);
       -- Child'Destructor (Tmp);
 
-A new syntax in Flare allows types to have both public and private components,
-if a user does not have visibility over all the components of a type, he
-needs to specify in the aggregate that these non visible values are not
-specified with a "private" part at the end of the aggregate, e.g.:
+The ``with private`` record syntax (see the OOP Fields RFC) allows a type to
+declare some components in its public view and additional components visible
+only in its private view.  When writing an aggregate for such a type without
+full visibility of all components, the caller must include the keyword
+``private`` as the final item in the aggregate to indicate that the hidden
+components are not being given explicit values, e.g.:
 
 .. code-block:: ada
 
@@ -433,11 +462,18 @@ specified with a "private" part at the end of the aggregate, e.g.:
       end record;
    end P;
 
-The behavior of a private part is the same as the one of default values. The
-presence of this private word is mandatory if the user doesn't have full
-visibility of the components of a type, forbidden otherwise. This is different
-from the "others => <>" notation which expresses the desire to not value other
-otherwise visible components.
+For constructor types, the private components are left in whatever state the
+parameterless constructor has established.  For non-constructor types, every
+private component must have a default expression; an aggregate with ``private``
+is otherwise illegal.
+
+The keyword ``private`` in aggregate position is contextual: it is treated as a
+keyword only when it is the final element of an aggregate expression.  Its
+presence is mandatory when the aggregate type has components not visible at the
+point of the aggregate; it is a compile-time error when full visibility is
+available.  This is distinct from ``others => <>``, which requests default
+values for otherwise-visible components; ``private`` stands for components that
+are entirely outside the caller's view.
 
 Self Assignment
 ---------------
@@ -486,7 +522,13 @@ its value to the final object:
    --  Child'Destructor (Tmp);
 
 Note that we're using a copy constructor here instead of the Clone / Adjust
-sequence as there's no initial object to modify here.
+sequence as there's no initial object to modify here.  The copy constructor's
+profile (its two-parameter form) is specified in the Constructors RFC.  Unlike
+Adjust, whose ``From`` parameter is typed as the root of the hierarchy, the
+copy constructor's ``From`` parameter is typed as the specific type being
+constructed, since no partial copy is involved.  When called for aggregate
+initialization, ``Self`` is in default-constructed state: the parameterless
+constructor has already been run on it before the copy constructor is invoked.
 
 Partial Copy and Initialization
 -------------------------------
@@ -514,6 +556,45 @@ Clone is necessary, simlar to assignment of the same form:
    --  Tmp.B := new Integer;
    --  Child'Constructor (C, Tmp);
    --  Child'Destructor (Tmp);
+
+Clone and Adjust as Primitives
+-------------------------------
+
+Clone is statically dispatched: each call selects the Clone of the static
+(view) type, not the tag.  This is intentional and is what allows partial
+copies to copy only the components of the view the caller names.  Because Clone
+must be statically selected, it is a non-primitive operation.
+
+Adjust is dynamically dispatched: it is called with the actual tag of the
+object being updated, so that the object can restore its own invariants
+regardless of which partial view was cloned.  Because Adjust must dispatch on
+the tag, it is a primitive operation and follows the rules of
+First_Controlling_Parameter (its first parameter is ``Self : in out T``).
+
+This combination -- static Clone, dispatching Adjust -- means a partial copy
+such as ``Root (C) := R`` will clone only the Root fields but will give Child's
+Adjust full visibility of the result, allowing Child to fix any
+inconsistencies introduced by the partial clone.
+
+Discriminant Handling
+---------------------
+
+The Clone and Adjust mechanism interacts with discriminants in two ways.
+
+If the target of a Clone call is constrained (``To'Constrained`` is ``True``),
+the compiler inserts a runtime check that ``Self`` and ``To`` have identical
+discriminant values before invoking Clone; if they differ, ``Constraint_Error``
+is raised.  This check cannot in general be resolved at compile time: a
+parameter whose subtype is an unconstrained-but-definite discriminated type may
+refer at runtime to either a constrained or an unconstrained object, so the
+check is guarded by ``To'Constrained``.
+
+If the target is unconstrained, a strategy of reshaping the target before
+cloning would silently discard its existing state, destroying Clone's efficiency
+advantage.  To avoid this situation, constructor types are prohibited from
+declaring default discriminant values.  This ensures that every object of a
+constructor type is effectively constrained from creation, so the
+unconstrained-target case never arises.
 
 Aggregate Aspect
 ----------------
@@ -546,7 +627,7 @@ such types by adding the Aggregate_Type aspect in its definition:
 .. code-block:: ada
 
    generic
-      type Root is tagged private with Type_Aggregate;
+      type Root is tagged private with Aggregate_Type;
    package P
 
       type Child is new Root with null record;
@@ -554,7 +635,7 @@ such types by adding the Aggregate_Type aspect in its definition:
       procedure Child'Constructor (Self : Child); -- Illegal
 
 If the compiler is using a generic expansion model, it is free to optimize code
-if the actual is indeed a Type_Aggregate type, and generate the full sequences
+if the actual is indeed an Aggregate_Type type, and generate the full sequences
 in other cases.
 
 Controlled Types
@@ -571,6 +652,20 @@ TBD
 
 Rationale and alternatives
 ==========================
+
+The Clone / Adjust mechanism's central efficiency advantage over Ada's existing
+Finalize / Adjust is that Clone receives both the source object and the
+pre-existing target simultaneously.  This allows a Clone implementation to
+inspect the target's current state and reuse resources rather than discarding
+them: for example, if the target already holds an allocated buffer of the right
+size, Clone can overwrite it in place rather than freeing and reallocating.  The
+Ada Finalize / Adjust model makes this impossible, because Finalize discards the
+target's state before the source is consulted.
+
+Note that the Clone implementations in this document use unconditional
+Free / allocate for conciseness.  A production Clone would typically branch on
+whether existing allocations can be reused, which is the intended use of the
+pattern.
 
 The current Ada Finalize / Adjust sequence could be an alternative. However, it
 doesn't provide sufficient ability to control consistency of the objects. It
