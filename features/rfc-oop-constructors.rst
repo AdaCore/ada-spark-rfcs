@@ -36,7 +36,7 @@ For example:
       procedure T2'Constructor (Self : in out T2; Some_Value : Integer);
    end P;
 
-As soon as a constructor exist, objects cannot be created without calling one
+As soon as a constructor exists, objects cannot be created without calling one
 of the available constructors, omitting the self parameter. This call is made on
 the object creation, using the type followed by 'Make and the
 constructor parameters. When preceded by a `new` operator, it creates an
@@ -75,7 +75,7 @@ for a generic parameter or an access-to-subprogram. For example:
 .. code-block:: ada
 
    generic
-      type T (<>) is tagged record;
+      type T (<>) is tagged private;
 
       with function F (V : Integer) return T;
    package G is
@@ -88,7 +88,7 @@ for a generic parameter or an access-to-subprogram. For example:
       procedure T1'Constructor (Self : in out T1);
       procedure T1'Constructor (Self : in out T1; Some_Value : Integer);
 
-      type T2 is null record record;
+      type T2 is null record;
 
       procedure T2'Constructor (Self : in out T2; Some_Value : Integer);
 
@@ -349,7 +349,7 @@ constructors, the compiler will report an error:
 
    type C is tagged record
       F : Some_Type; -- Compilation error, F needs explicit constructor call
-   end C;
+   end record;
 
 When a component is mentioned in the initialization list, it overrides its
 default initialization. Components that are not in the initialization list are
@@ -809,7 +809,7 @@ Tagged Hierarchy Consistency
 ----------------------------
 
 A tagged type can be either created by the legacy mechanism, or by a constructor
-as soon as such constructor exist. It is possible to extend a "regular" tagged
+as soon as such constructor exists. It is possible to extend a "regular" tagged
 type by a "by constructor" tagged type, e.g.:
 
 .. code-block:: ada
@@ -1000,13 +1000,14 @@ generics. We could consider allowing:
 	      X : String;
       end record;
 
-      procedure T1'Constructor (Self : T1; Val : String)
+      procedure T1'Constructor (Self : in out T1; Val : String);
 
-      procedure T1'Constructor (Self : T1; Val : String)
-         with Initialize => (X => Val);
+      procedure T1'Constructor (Self : in out T1; Val : String)
+         with Initialize => (X => Val)
+      is
       begin
          null;
-      end Constr;
+      end T1'Constructor;
    end P;
 
 This could make such constructions easier to write than when they rely on a
@@ -1028,17 +1029,19 @@ Consider the following hierarchy:
       end case;
    end record;
 
-   procedure Root'Constructor (Self : in out Bla; C : Boolean)
-      with Initialize => (D => C);
+   procedure Root'Constructor (Self : in out Root; C : Boolean)
+      with Initialize => (D => C)
    is
+   begin
       null;
    end Root'Constructor;
 
    type Child is new Root with null record;
 
-   procedure Child'Constructor (Self : in out Bla; C : Boolean)
-      with Super => (C);
+   procedure Child'Constructor (Self : in out Child; C : Boolean)
+      with Super => (C)
    is
+   begin
       null;
    end Child'Constructor;
 
