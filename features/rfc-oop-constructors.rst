@@ -323,7 +323,7 @@ Here's an example of using ``Initialize`` for such a case:
 .. code-block:: ada
 
    type Some_Type is tagged null record;
-   procedure Some_Type'Constructor (Self : in out C; Some_Value : Integer);
+   procedure Some_Type'Constructor (Self : in out Some_Type; Some_Value : Integer);
 
    type C is tagged record
       F : Some_Type;
@@ -340,12 +340,12 @@ Here's an example of using ``Initialize`` for such a case:
 
 
 Note that if there is no initialization for components with no default
-constructors, the compiler will raise an error:
+constructors, the compiler will report an error:
 
 .. code-block:: ada
 
    type Some_Type is tagged null record;
-   procedure Some_Type'Constructor (Self : in out C; Some_Value : Integer);
+   procedure Some_Type'Constructor (Self : in out Some_Type; Some_Value : Integer);
 
    type C is tagged record
       F : Some_Type; -- Compilation error, F needs explicit constructor call
@@ -404,7 +404,7 @@ others, it is possible to initialize limited types:
       A, B : Integer;
    end record;
 
-   type C is limited tagged record
+   type C is tagged limited record
       F : R;
    end record;
 
@@ -596,9 +596,10 @@ otherwise. For example:
       end case;
    end record;
 
-   procedure Bla'Constructor
-      with Initialize => (V => True, B => 10); -- Constraint Error
+   procedure Bla'Constructor (Self : in out Bla)
+      with Initialize => (V => True, B => 10) -- Constraint Error
    is
+   begin
       null;
    end Bla'Constructor;
 
@@ -628,15 +629,16 @@ cannot however be used to create a value. For example:
    end record;
 
    procedure Bla'Constructor (Self : in out Bla; Val : Boolean)
-      with Initialize => (V => Val);
+      with Initialize => (V => Val)
    is
+   begin
       null;
    end Bla'Constructor;
 
-   V1 : Bla := V'Make (True); -- OK, that's what we want
+   V1 : Bla := Bla'Make (True); -- OK, that's what we want
    V2 : Bla (True); -- NOK, this needs an explicit discriminant check
-   V3 : Bla (True) := V'Make (True); -- OK, that's what we want
-   V3 : Bla (False) := V'Make (True); -- OK, but will raise an exception at run-time
+   V3 : Bla (True) := Bla'Make (True); -- OK, that's what we want
+   V4 : Bla (False) := Bla'Make (True); -- OK, but will raise an exception at run-time
 
 such subtyping can also be used for components:
 
@@ -684,17 +686,17 @@ constructors are provided. For example:
 
    type T2 is tagged null record;
 
-   procedure T2'Constructor (Self : in out T1, X : Integer);
+   procedure T2'Constructor (Self : in out T2; X : Integer);
 
    type T3 is new T2 with null record;
 
-   procedure T3'Constructor (Self : in out T1, X : Integer, Y : Integer);
+   procedure T3'Constructor (Self : in out T3; X : Integer; Y : Integer);
 
-   V1 : T1;        -- OK
+   V1  : T1;       -- OK
    V2a : T2;       -- Compilation error, no parameterless constructor is present
    V2b : T2 := T2'Make (5);   -- OK
-   V3 : T3 := T3'Make(5);    -- Compilation error, no more constructor with 1 parameter for T3
-   V3 : T3 := T3'Make(5, 6); -- OK
+   V3  : T3 := T3'Make(5);    -- Compilation error, no more constructor with 1 parameter for T3
+   V4  : T3 := T3'Make(5, 6); -- OK
 
 Constructors and Generics
 -------------------------
@@ -720,16 +722,16 @@ reserved word. For example:
       --  if T1 is by constructor.
 
       type T2 is tagged private;
-      with T2'Constructor (Self : in out T2; V : Integer);
+      with procedure T2'Constructor (Self : in out T2; V : Integer);
       --  No parameterless constructor expected, but a by-copy one
 
       type T3 is tagged private;
-      with T3'Constructor (Self : in out T3) is abstract;
+      with procedure T3'Constructor (Self : in out T3) is abstract;
       --  No parameterless constructor expected, but a by-copy one
 
       type T4 is tagged private;
-      with T4'Constructor (Self : in out T4) is abstract;
-      with T4'Constructor (Self : in out T4; Src : T4) is abstract;
+      with procedure T4'Constructor (Self : in out T4) is abstract;
+      with procedure T4'Constructor (Self : in out T4; Src : T4) is abstract;
       --  Neither parameterless nor by-copy constructor expected
    package G is
      V11: T1; -- OK, we have parameterless constructor for T1
@@ -813,7 +815,7 @@ type by a "by constructor" tagged type, e.g.:
 .. code-block:: ada
 
    type New_Root is tagged record
-      null
+      null;
    end record;
 
    type New_Child is new New_Root with record
@@ -887,24 +889,24 @@ copies:
          Content_2 : Pos_Array (1..S2);
       end record;
 
-      procedure U'Constructor (Self : in out T);
+      procedure U'Constructor (Self : in out U);
 
    end Test;
 
    package body Test is
       procedure T'Constructor (Self : in out T; S : Integer)
-         with Initialize => (S => S * 2);
+         with Initialize => (S => S * 2)
       is
       begin
          Self.Content := (others => 12);
       end T'Constructor;
 
       procedure U'Constructor (Self : in out U)
-         with Initialize => (S2 => 12)
+         with Initialize => (S2 => 12),
               Super => (S => 15)
       is
       begin
-         Self.Content2 := (others => 18);
+         Self.Content_2 := (others => 18);
       end U'Constructor;
 
    end Test;
