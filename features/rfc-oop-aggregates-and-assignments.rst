@@ -22,7 +22,7 @@ replace initialization. But the consequence is that there's no way to ensure
 that a given sequence of statement is putting an object in a consistent state
 at creation time (unlike traditional constructors).
 
-Second, Adjust perform a post-copy update to a type. This causes a double issue,
+Second, Adjust performs a post-copy update to a type. This causes a double issue,
 first in terms of performance, as assignment may not need all components to be
 modified. But this also limits the control over assignment logic, as the user
 has no way to know what was the initial state of the object or what object
@@ -66,7 +66,7 @@ it knows there's no chance of calling an overridden subprogram.
 ------
 
 The attribute 'Clone can be defined for each tagged type. It describes how to
-copy (or clone) the value of a tagged type into a other one. For example:
+copy (or clone) the value of a tagged type into another one. For example:
 
 .. code-block:: ada
 
@@ -170,7 +170,7 @@ needs to be maintained equal to the parents.
    end Child'Constructor;
 
    procedure Child'Clone (Self : Child; To : in out Child) is
-   begin'
+   begin
       Root (To) := Root (Self);
       Free (To.B);
       To.B := new Integer'(Self.B.all);
@@ -389,8 +389,8 @@ Delta aggregates create their initial value from a by-copy constructor:
       -- Tmp : Child := C1;
       -- Child'Constructor (Tmp, C1);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp);
+      -- Child'Clone (Tmp, C2);
+      -- Child'Adjust (C2, Tmp);
       -- Child'Destructor (Tmp);
 
 Aggregates with Private Parts or Default Values
@@ -502,7 +502,7 @@ as other copy constructor calls, e.g.:
    --  Root'Constructor (R, Root (Child));
 
 In the context of an aggregate by extension that contains a copy, a call to
-Clone is necessary, simlar to assignment of the same form:
+Clone is necessary, similar to assignment of the same form:
 
 .. code-block:: ada
 
@@ -520,7 +520,7 @@ Aggregate Aspect
 
 The presence of constructors, destructors, clone and adjust attributes may
 significantly increase the complexity and footprint of assignment and aggregate
-usage. The compile may optimize these sequences if it has enough information,
+usage. The compiler may optimize these sequences if it has enough information,
 although it's not always clear if it can.
 
 It is possible to specify that a type hierarchy cannot provide any of these
@@ -533,20 +533,20 @@ This can be done through the Aggregate_Type aspect:
       A : access Integer;
    end record with Aggregate_Type;
 
-This aspect must be positionned on the root of a tagged type hierarchy.
+This aspect must be positioned on the root of a tagged type hierarchy.
 It forbids the introduction of user defined constructors, destructor, clone and
 adjust attributes in derivations. All record components of such types must
 also be Aggregate_Type types.
 
 Aggregate_Type types cannot be provided to generic tagged formal parameters, as
 the generic instance may extend the type and mistakenly add these attributes
-not knowing there are forbidden. However, a generic formal parameter may allow
+not knowing they are forbidden. However, a generic formal parameter may allow
 such types by adding the Aggregate_Type aspect in its definition:
 
 .. code-block:: ada
 
    generic
-      type Root is tagged private with Type_Aggregate;
+      type Root is tagged private with Aggregate_Type;
    package P
 
       type Child is new Root with null record;
@@ -554,7 +554,7 @@ such types by adding the Aggregate_Type aspect in its definition:
       procedure Child'Constructor (Self : Child); -- Illegal
 
 If the compiler is using a generic expansion model, it is free to optimize code
-if the actual is indeed a Type_Aggregate type, and generate the full sequences
+if the actual is indeed an Aggregate_Type type, and generate the full sequences
 in other cases.
 
 Controlled Types
@@ -613,7 +613,7 @@ And ensure that indeed Root is copied (you'd want to call := on Root) but that
 the actual object Child maintains consistency (you'd want to call := on Child).
 
 We looked at various ways to remove the need of temporaries, for example by
-introducing special constructors taking aggregate values as paramters. However,
+introducing special constructors taking aggregate values as parameters. However,
 this quickly leads to the need of creating a lot of extra attributes for all
 situations. In light of the added complexity, and the fact that we can
 provide means to achieve desired optimization when needed, it didn't look like
@@ -631,7 +631,7 @@ Unresolved questions
 Future possibilities
 ====================
 
-The introduction of borrow-checker capabililites as well as move semantics could
+The introduction of borrow-checker capabilities as well as move semantics could
 allow to optimize more cases. The various temporaries introduced in the
 expansion are short lived and could be moved instead of copied, saving one
 copy and one destructor operation.
