@@ -787,6 +787,7 @@ Removing Constructors from Public View
 --------------------------------------
 
 A special syntax is provided to remove the default parameterless constructor
+and/or the copy constructor
 from the public view, without providing any other constructor. The full view of
 a type is then responsible to provide constructor (with or without parameters).
 Such object can only be created by code that has visibility over the
@@ -798,9 +799,11 @@ private section of the package:
       type T1 is null record;
 
       procedure T1'Constructor (Self : in out T1) is abstract;
+      procedure T1'Constructor (Self : in out T1; From : T1) is abstract;
 
    private
       procedure T1'Constructor (Self : in out T1);
+      procedure T1'Constructor (Self : in out T1; From : T1);
    end P;
 
 Tagged Hierarchy Consistency
