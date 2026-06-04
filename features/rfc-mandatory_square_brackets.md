@@ -35,8 +35,13 @@ When reading unfamiliar code, a reader cannot determine from syntax alone
 whether `F (X)` is a function call, an array index, an entry-family index, or
 user-defined indexing. They must consult the declaration of `F`.
 
-Using square brackets for bracketed aggregate forms and indexing assigns a dedicated,
-unambiguous symbol to each category:
+Using square brackets for these access and construction forms separates them
+from subprogram calls. This RFC does not make every bracketed construct
+syntactically distinct from every other bracketed construct. Normal Ada name
+resolution still distinguishes array indexing, entry-family indexing,
+generalized indexing, slices, and aggregates. The important readability win is
+that `()` remains the visual marker for calls, while `[]` marks the family of
+indexing, slicing, and bracketed aggregate forms.
 
 | Operation            | Ada syntax          | Flare syntax        |
 | -------------------- | ------------------- | ------------------- |
@@ -304,16 +309,22 @@ After applying both this RFC and RFC `parentheses_for_parameterless_calls`, the 
 | `[others => 0]`          | Array aggregate with `others` choice            |
 | `[V with delta 2 => 99]` | Delta array aggregate                           |
 
-No expression pattern uses the same delimiter shape for these categories.
+Bracketed forms still require normal Ada resolution to determine their exact construct.
 
 # Rationale and alternatives
 
 The repeated use of `()` in Ada for calls, indexing, and array aggregates imposes a cognitive load that square brackets eliminate for the forms covered by this RFC.
 
-The design chosen here assigns exactly one shape to each operation:
+The design chosen here gives calls and bracketed forms distinct visual markers:
 
-- `()` for subprogram calls
-- `[]` for positional access and construction (indexing, array slices, and bracketed aggregate forms)
+- `()` remains for subprogram and entry calls
+- `[]` marks the family of indexing, array slicing, and bracketed aggregate forms
+
+The contents of square brackets are not assumed to have a single type or a
+single semantic role. For example, in a multidimensional array index such as
+`Matrix [Row, Column]`, `Row` and `Column` may have different index types.
+The justification for `[]` is the visual distinction between calls and the
+family of bracketed access and construction forms.
 
 This is a complete and consistent bracketing policy for the forms covered by
 this RFC. Applying it to bracketed aggregate forms alone without indexing would
