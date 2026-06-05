@@ -74,7 +74,9 @@ it knows there's no chance of calling an overridden subprogram.
 ------
 
 The attribute 'Clone can be defined for each tagged type. It describes how to
-copy (or clone) the value of a tagged type into another one. For example:
+copy (or clone) the value of a tagged type into another one. It is a
+definition-only attribute: user code never calls 'Clone directly (see below).
+For example:
 
 .. code-block:: ada
 
@@ -99,19 +101,23 @@ The default implementation of Clone first calls the parent clone and then
 calls the clone operation of all the components one by one. The compiler is free to
 optimize to bitwise copies if clone operations are not user-defined.
 
-'Clone is exempt from the "all calls are dispatching" default of the language: it
-is resolved by the static view, dispatching only when applied to a 'Class wide
-operand. In other words, a call to 'Clone on a definite view is always a static,
-non-dispatching call to that view's 'Clone; only a 'Class wide operand dispatches.
+'Clone cannot be invoked explicitly by user code. It has only two entry points: the
+compiler's expansion of an assignment (see below), and the copy of the parent part
+from within a 'Clone body, which is written ``Self'Super'Clone (To)``. This is what
+guarantees the central invariant of this model: every object a user can observe has
+been through 'Adjust, because the only way to reach 'Clone is an assignment that also
+runs the paired 'Adjust (which the compiler may elide only where it provably has no
+effect).
 
-This exemption is mandatory, for two reasons. First, it is what allows partial
-copies of objects, which are done today in various places in Ada: an assignment
-through a parent view (for example ``Root (C1) := Root (C2)``) must copy only the
-components of that view, which is only possible if 'Clone binds to the view rather
-than the tag. Second, it is what guarantees termination: because a 'Clone body may
-itself copy its parent part, a dispatching 'Clone would re-enter the derived 'Clone
-and recurse infinitely. Static resolution on the parent view binds such a call to
-the parent's 'Clone instead, which terminates.
+When the compiler expands an assignment, it resolves 'Clone by the static view rather
+than by dispatching: an assignment on a definite view runs that view's 'Clone, and
+only a 'Class wide operand dispatches. This is mandatory for two reasons. First, it is
+what allows partial copies, done today in various places in Ada: an assignment through
+a parent view (for example ``Root (C1) := Root (C2)``) must copy only the components of
+that view, which is only possible if 'Clone binds to the view rather than the tag.
+Second, it is what guarantees termination: a 'Clone body copies its parent part with
+``Self'Super'Clone``, which, like every 'Super call, is non-dispatching and therefore
+binds to the parent's 'Clone rather than re-entering the derived one.
 
 The invariant of the target object is not checked after a call to Clone, some
 parts may still be inconsistent and fixed later by Adjust.
@@ -157,52 +163,6 @@ call.
 
 Invariants are checked after a call to Adjust.
 
-'Static_Clone
--------------
-
-The 'Static_Clone attribute calls a specific type's Clone directly, with no
-Adjust and no invariant check afterward. The name follows the existing
-terminology in this proposal: Clone calls are described as "static" (resolved
-at compile time on a specific type's view) as opposed to the "dispatching"
-Adjust calls. 'Static_Clone makes this static-call-only semantics explicitly
-available to the developer.
-
-.. code-block:: ada
-
-      R1, R2 : Root;
-   begin
-      Root'Static_Clone (R1, R2);  -- calls Root'Clone, no Adjust
-
-This can be used in any context where the developer needs to perform a clone
-operation without the full assignment protocol, for example when building
-composite operations that need fine-grained control over the copy sequence.
-
-This is particularly useful within Clone attribute bodies, where it allows
-chaining to the parent type's Clone. Using a regular assignment for this
-(e.g. ``Root (To) := Root (Self)``) would trigger the full Clone + Adjust
-sequence, causing a spurious Adjust on a half-cloned object. 'Static_Clone
-avoids this:
-
-.. code-block:: ada
-
-   procedure Child'Clone (Self : Child; To : in out Child) is
-   begin
-      Root'Static_Clone (Self, To);  -- calls Root'Clone, no Adjust
-      Free (To.B);
-      To.B := new Integer'(Self.B.all);
-   end Child'Clone;
-
-When used to chain to a parent's Clone, the call is optional, not mandatory.
-The developer may choose to skip it and handle the parent components
-differently (e.g. using 'Raw_Clone for the entire object, or manually cloning
-individual fields). This follows the same convention as most other languages
-with similar mechanisms, where chaining to the parent's copy logic is expected
-but not enforced.
-
-Because 'Static_Clone is visible in the source code, it serves as a natural
-review point: static analysis tools can verify that Clone bodies either invoke
-'Static_Clone on the parent or explicitly handle all parent components.
-
 Base code for the Examples
 --------------------------
 
@@ -245,7 +205,10 @@ needs to be maintained equal to the parents.
 
    procedure Child'Clone (Self : Child; To : in out Child) is
    begin
-      Root'Static_Clone (Self, To);
+      Self'Super'Clone (To);
+      --  Copy the parent part with 'Super, which copies only the Root slice, not
+      --  an assignment. An assignment would also run 'Adjust on the still
+      --  incomplete target. Like every 'Super call, this is non-dispatching.
       Free (To.B);
       To.B := new Integer'(Self.B.all);
    end Child'Clone;
@@ -276,7 +239,9 @@ Simple Copy Assignments
 -----------------------
 
 The simple copy assignment of two objects leads to a sequence of calls to clone
-and adjust:
+and adjust. In the expansions below, the commented ``'Clone`` and ``'Adjust`` lines
+depict the compiler's internal lowering of the assignment; they are not syntax a
+user could write (in particular ``'Clone`` is never callable directly):
 
 .. code-block:: ada
 
