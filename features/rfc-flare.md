@@ -14,7 +14,7 @@ The Ada/Flare language is activated at the unit level (spec and body). Flare
 can be turned on at the child package level, once that's the case all further
 children must also be Ada/Flare. Flare packages may depend on Ada units, the
 reverse is not possible. Furthermore, if a specific Flare version is specified,
-children unit or dependents must all be at least of that specific version, or
+children units or dependents must all be at least of that specific version, or
 further.
 
 Flare versions implement semantic numbering, Major.Minor. Beside the minor
@@ -47,7 +47,7 @@ version-aware flare pragmas, e.g.:
 pragma Flare_0_1;
 
 package P is
-   --  This is Flare code is compatible with Flare 0.1
+   --  This Flare code is compatible with Flare 0.1
 end P;
 ```
 
@@ -70,7 +70,16 @@ package P is
 end P;
 ```
 
-The current Flare versions are based of a subset of the Ada 2022 language.
+The current Flare versions are based on a subset of the Ada 2022 language.
+
+## Pedantic vs Compatible mode
+
+Compatible mode (e.g. ``pragma Flare_Extensions``) will only activate
+capabilities that are backward compatible. Pedantic mode will activate
+additional capabilities, but may fail in compiling legacy Ada code.
+
+Notably, new reserved words (``continue``, ``finally`` and ``class``) may not
+be considered reserved in Ada compatibility mode, but are in Flare pedantic.
 
 ## Features Enabled in Flare 0.1
 
