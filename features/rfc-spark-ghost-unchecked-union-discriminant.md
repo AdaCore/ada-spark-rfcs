@@ -1,6 +1,6 @@
 - Feature Name: spark_ghost_unchecked_union_discriminant
 - Start Date: 2026-04-02
-- Status: Design
+- Status: Ready for prototyping
 
 Summary
 =======
@@ -11,8 +11,8 @@ cases for verification purposes.
 Motivation
 ===========
 
-
-Ada mandates that discriminant of unchecked union types (used to interface C union) cannot be read, as per legality rule B.3.3 (9/5). This is
+Ada mandates that discriminant of unchecked union types (used to interface C
+union) cannot be read, as per legality rule B.3.3 (9/5). This is
 cumbersome in the context of verification with SPARK, as the discriminant
 carry information pertinent to the specification. For example, some
 subprograms may only work for a subclass of discriminants. Without the
@@ -29,6 +29,35 @@ Reference-level explanation
 Legality rule B.3.3 (9/5) is relaxed: the list of cases in which a
 name denoting a discriminant of a type with Unchecked_Union is allowed to
 occur is extended by ghost code with an assertion level depending on Static.
+
+The following example illustrates the usage of Unchecked_Union:
+
+```ada
+   type My_Rec (Is_Int : Boolean := False) is record
+      case Is_Int is
+         when True =>
+            F_Int : Integer;
+         when False =>
+            F_Float : Float;
+      end case;
+   end record with
+     Unchecked_Union;
+   
+   function Read_F_Int (X : My_Rec) return Integer with
+     Pre => (Static => X.Is_Int);
+   
+   function Read_F_Int (X : My_Rec) return Integer is (X.F_Int);
+   
+   procedure Write_F_Int_If_B (X : in out My_Rec; B : Boolean) with
+     Post => (Static => (if B then X = (True, 12) else X = X'Old));
+   
+   procedure Write_F_Int_If_B (X : in out My_Rec; B : Boolean) is
+   begin
+      if B then
+         X := (True, 12);
+      end if;
+   end Write_F_Int_If_B;
+```
 
 Rationale and alternatives
 ==========================
