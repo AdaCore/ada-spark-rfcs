@@ -4,16 +4,21 @@
 
 # Summary
 
-This RFC proposes to make the square-bracket syntax `[...]` mandatory for three
+This RFC proposes to make the square-bracket syntax `[...]` mandatory for four
 related constructs in pedantic Ada Flare:
 
 1. Bracketed aggregate forms, namely array aggregates (including array delta
    aggregates) and Ada 2022 container aggregates: `[1, 2, 3]`, `[others => 0]`,
    `[Base with delta 1 => 99]`
-2. Indexing, including array indexing, entry-family indexing, and generalized
-   indexing: `A [I]`, `M [Row, Col]`, `Request [Medium]`,
-   `Vector [Position]`, `Map [Key]`
+2. Indexing, including array indexing, entry-family indexing (also in indexed
+   entry calls), and generalized indexing: `A [I]`, `M [Row, Col]`,
+   `Request [Medium]`, `Request [High] (T)`, `Vector [Position]`, `Map [Key]`
 3. Array slices: `A [1 .. 3]`
+4. The index list of array type definitions, entry family declarations, and
+   index constraints in subtype indications:
+   `type Foo is array [1 .. 2] of Positive;`,
+   `entry Request [Priority] (D : Item);`,
+   `subtype Line is String [1 .. 80];`
 
 In Ada 2022, `[...]` is the preferred syntax for array aggregates, and GNAT already warns on the old parenthesised form `(...)`. This RFC extends the Ada 2022 direction to also cover indexing and array slices, making these forms a compile-time requirement in pedantic Flare.
 
@@ -23,13 +28,22 @@ Container aggregates already use square brackets in Ada 2022 and follow the same
 
 ## Readability and visual clarity
 
-In Ada, parentheses `()` carry several distinct meanings at the call or access site:
+In Ada, parentheses `()` carry several distinct meanings.
+
+In calls, indexing, and other expressions:
 
 - Subprogram call with arguments: `Sort (Buffer, Length)`
 - Array indexing: `Buffer (I)`
 - Entry-family indexing: `Request (Medium)`
+- Indexed entry call: `Request (High) (T)`
 - Generalized indexing: `Vector (Position)`, `Map (Key)`
 - Array aggregate: `Buffer := (1, 2, 3)`
+
+In declarations:
+
+- Index list of an array type definition: `array (1 .. 2) of Positive`
+- Index constraint in a subtype indication: `String (1 .. 80)`
+- Family index of an entry declaration: `entry Request (Priority) (D : Item)`
 
 When reading unfamiliar code, a reader cannot determine from syntax alone
 whether `F (X)` is a function call, an array index, an entry-family index, or
@@ -48,11 +62,24 @@ indexing, slicing, and bracketed aggregate forms.
 | Subprogram call      | `F (X)`             | `F (X)`             |
 | Array index          | `A (I)`             | `A [I]`             |
 | Entry-family index   | `Request (Medium)`  | `Request [Medium]`  |
+| Indexed entry call   | `Request (High) (T)` | `Request [High] (T)` |
 | Generalized indexing | `Vector (Position)` | `Vector [Position]` |
 | Generalized indexing | `Map (Key)`         | `Map [Key]`         |
 | Array aggregate      | `(1, 2, 3)`         | `[1, 2, 3]`         |
+| Array type definition | `array (1 .. 2) of Positive` | `array [1 .. 2] of Positive` |
+| Index constraint     | `String (1 .. 80)`  | `String [1 .. 80]`  |
 
 This aligns with the visual convention that most programmers already associate with square brackets from languages such as C, C++, Rust, Python, and Go, where `A[I]` denotes an index operation.
+
+## Declaration and use symmetry
+
+Extending the rule to array type definitions, index constraints, and entry
+family declarations makes declarations mirror their use sites. The index list
+introduced by `type Foo is array [1 .. 2] of Positive`, constrained by
+`subtype Line is String [1 .. 80]`, or declared by
+`entry Request [Priority] (D : Item)` is written between the same brackets
+that appear at every use site: `Foo_Object [I]`, `Line_Object [I]`, and
+`Request [High] (T)`.
 
 ## Alignment with Ada 2022
 
@@ -115,6 +142,7 @@ Element := Buffer (I);
 Matrix (Row, Col) := 0;
 Sub := Buffer (1 .. 3);
 Request (Medium);
+Request (High) (T);
 ```
 
 **Flare:**
@@ -124,7 +152,12 @@ Element := Buffer [I];
 Matrix [Row, Col] := 0;
 Sub := Buffer [1 .. 3];
 Request [Medium];
+Request [High] (T);
 ```
+
+In an indexed entry call, the family index is written between square brackets
+while the actual parameters keep parentheses, so the two roles are
+syntactically distinct.
 
 The same rule applies to generalized indexing, where a tagged type provides
 indexing through the `Constant_Indexing` or `Variable_Indexing` aspect.
@@ -146,6 +179,40 @@ Field := Table [Row, Column];
 ```
 
 This RFC only changes the delimiter used for existing generalized indexing. It does not introduce user-defined slicing for arbitrary containers.
+
+## Array type declarations, index constraints, and entry families
+
+The index list of an array type definition, the index constraint of a subtype
+indication, and the family index of an entry declaration also use square
+brackets, so that declarations mirror their use sites.
+
+**Ada:**
+
+```ada
+type Foo is array (1 .. 2) of Positive;
+type Buffer_Type is array (Positive range <>) of Byte;
+
+subtype Line is String (1 .. 80);
+Buffer : String (1 .. 80);
+
+entry Request (Priority) (D : Item);
+...
+accept Request (P) (D : Item) do
+```
+
+**Flare:**
+
+```ada
+type Foo is array [1 .. 2] of Positive;
+type Buffer_Type is array [Positive range <>] of Byte;
+
+subtype Line is String [1 .. 80];
+Buffer : String [1 .. 80];
+
+entry Request [Priority] (D : Item);
+...
+accept Request [P] (D : Item) do
+```
 
 ## Functions returning an indexable object
 
@@ -291,6 +358,75 @@ The existing slice semantics are unchanged: after any implicit dereference, the
 prefix still has to resolve to a one-dimensional array type. This RFC does not
 introduce user-defined slicing or container slicing.
 
+## Array type definitions
+
+RM 3.6 `unconstrained_array_definition` and `constrained_array_definition`
+become:
+
+```
+unconstrained_array_definition ::=
+  array '[' index_subtype_definition {, index_subtype_definition} ']'
+    of component_definition
+
+constrained_array_definition ::=
+  array '[' discrete_subtype_definition {, discrete_subtype_definition} ']'
+    of component_definition
+```
+
+Only the delimiters around the index list change. The
+`index_subtype_definition`, `discrete_subtype_definition`, and
+`component_definition` syntax, and all static and dynamic semantics of RM 3.6,
+are unchanged.
+
+## Index constraints
+
+RM 3.6.1 `index_constraint` becomes:
+
+```
+index_constraint ::= '[' discrete_range {, discrete_range} ']'
+```
+
+The discrete range syntax and all static and dynamic semantics of RM 3.6.1 are
+unchanged.
+
+## Entry families
+
+In the grammar fragments below, quoted `'['` and `']'` are literal square
+brackets, while unquoted `[` `]` retain their RM meaning of an optional part.
+
+RM 9.5.2 `entry_declaration` becomes:
+
+```
+entry_declaration ::=
+  [overriding_indicator]
+  entry defining_identifier ['[' discrete_subtype_definition ']']
+    parameter_profile
+    [aspect_specification];
+```
+
+RM 9.5.2 `accept_statement` becomes:
+
+```
+accept_statement ::=
+  accept entry_direct_name ['[' entry_index ']'] parameter_profile [do
+    handled_sequence_of_statements
+  end [entry_identifier]];
+```
+
+RM 9.5.3 `entry_call_statement` is unchanged:
+
+```
+entry_call_statement ::= entry_name [actual_parameter_part];
+```
+
+When the entry name denotes an entry of an entry family, the name is an
+`indexed_component` and therefore uses square brackets under this RFC (RM 4.1.1
+above), while the `actual_parameter_part` keeps parentheses:
+
+```ada
+Request [High] (T);
+```
+
 ## Disambiguation summary
 
 After applying both this RFC and RFC `parentheses_for_parameterless_calls`, the following table holds:
@@ -301,6 +437,7 @@ After applying both this RFC and RFC `parentheses_for_parameterless_calls`, the 
 | `F (X)`                  | Call to subprogram `F` with argument `X`        |
 | `A [I]`                  | Index array `A` at position `I`                 |
 | `Request [Medium]`       | Index entry family `Request`                    |
+| `Request [High] (T)`     | Call entry `High` of family `Request` with `T`  |
 | `Vector [Position]`      | Generalized indexing on container `Vector`      |
 | `Map [Key]`              | Generalized indexing on container `Map`         |
 | `A [1 .. 3]`             | Slice of array `A`                              |
@@ -352,7 +489,9 @@ declaration lookup to distinguish generalized indexing from a subprogram call.
 
 All existing Ada code using `(...)` for array aggregates, `A (I)` for array
 indexing, entry-family indexing, or generalized indexing, or `A (L .. R)` for
-array slices must be updated before it compiles in pedantic Flare.
+array slices must be updated before it compiles in pedantic Flare, as must
+array type definitions, index constraints, and entry family declarations using
+parenthesised index lists.
 
 # Compatibility
 
@@ -361,9 +500,10 @@ Code already using `[...]` for array or container aggregates is valid Ada 2022 a
 Code using `(...)` for array aggregates must be updated. In non-pedantic Flare, both forms are accepted for backward compatibility.
 
 Code written with `A [I]` for array indexing, entry-family indexing, or
-generalized indexing is not valid Ada 2022 and will not compile with a standard
-Ada 2022 compiler. In non-pedantic Flare, the Ada 2022 form `A (I)` continues
-to be accepted.
+generalized indexing, or with bracketed index lists in array type definitions,
+index constraints, and entry family declarations, is not valid Ada 2022 and
+will not compile with a standard Ada 2022 compiler. In non-pedantic Flare, the
+parenthesised Ada 2022 forms continue to be accepted.
 
 # Open questions
 
