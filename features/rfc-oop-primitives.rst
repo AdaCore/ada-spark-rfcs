@@ -187,13 +187,15 @@ Operators can be declared as primitives:
       end T1;
 
       type T2 is new T1 with class record
-         function "=" (Left : T2; Right : T1) return Boolean;
-         function "+" (Left : T2; Right : T1) return T1;
+         function "=" (Left, Right : T2) return Boolean;
+         function "+" (Left, Right : T2) return T2;
       end T2;
    end P;
 
-Note that when overriding an operator, only the first parameter changes to the
-current class type.
+Note that here both parameters (and, for ``"+"``, the result) are controlling,
+so they all change to the current class type when overriding. A parameter or
+result that should instead keep its subtype across overridings would be marked
+with ``'Fixed``.
 
 Inheritance from regular tagged types
 -------------------------------------
@@ -203,8 +205,9 @@ interface can inherit from a regular interface. The opposite is not possible.
 For this to be legal, the tagged record or regular interface inherited from
 should:
 
-- Only have primitives with one controlling parameter which is the first one
-- Have no controlling results
+- Only have primitives that follow the ``First_Controlling_Parameter`` rules,
+  i.e. whose first parameter is controlling (additional controlling parameters,
+  a controlling result, and ``'Fixed`` parameters or results are all allowed)
 - Have no access discriminants
 
 Class-wide types and the ``'Class`` attribute

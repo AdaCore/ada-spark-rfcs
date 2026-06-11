@@ -8,10 +8,12 @@ Summary
 Motivation
 ==========
 
-There are several motivations to this RFC. The first one is to get rid of
-controlling return types, which are a complicated and seldom used feature of
-Ada. The second is to simplify the scheme with regards to which parameters can
-be dispatching.
+There are several motivations to this RFC. The first one is to give explicit
+control over which parameters and results of a primitive are dispatching, in
+particular to allow primitives that return (or take) an instance of their type
+without that result or parameter being dispatching - something that is awkward
+to express in current Ada. The second is to simplify the scheme with regards to
+which parameters can be dispatching.
 
 Controlling return types
 ------------------------
@@ -62,14 +64,14 @@ We think that dot notation, and the ability to use primitives without with-ing
 the defining package, are integral parts of idiomatic object-oriented
 programming.
 
-Also the use cases where the above is useful are extremely rare if not non
-existent, so we feel it's OK to forbid them.
+Also the use cases where the above is useful are extremely rare if not non-existent,
+so we feel it's OK to forbid them.
 
 Guide-level explanation
 =======================
 
 A new pragma / aspect is introduced for tagged types, ``First_Controlling_Parameter``
-which modifies the semantic of primitive / controlling parameter.
+which modifies the semantics of primitive / controlling parameter.
 
 When a tagged type is marked under this aspect, only subprograms that have the
 first parameter of this type will be considered primitive.
@@ -99,12 +101,21 @@ For example:
     function F return Child; -- NOT Primitive
 
     function F2 (V : Child) return Child;
-    -- Primitive, but only controlling on the first parameter
+    -- Primitive, controlling on the first parameter and on the result
 
-Note that ``function F2 (V : Child) return Child;`` differs from
-``function F2 (V : Child) return Child'Class;`` in that the returned type is a
-definite type. It's also different from the legacy semantic which would force
-further derivations adding fields to override the function.
+    function F3 (V : Child) return Child'Fixed;
+    -- Primitive, controlling on the first parameter only; the result is fixed
+
+As long as the first parameter is controlling, a primitive may also have
+additional controlling parameters and a controlling result. These all dispatch
+and are rewritten to the derived type when the primitive is overridden. When a
+parameter or result should refer to the type without dispatching, it is marked
+with the ``'Fixed`` attribute, as shown above with ``F3``.
+
+Note that ``function F3 (V : Child) return Child'Fixed;`` differs from
+``function F3 (V : Child) return Child'Class;`` in that the returned type is a
+definite type. It is also different from a controlling (dispatching) result
+such as ``F2``'s, which forces further derivations to override the function.
 
 For generic formals tagged types, you can specify whether the type has the
 ``First_Controlling_Parameter`` aspect on or not.
@@ -176,26 +187,74 @@ with regards to which subprograms will be considered primitives of the type:
    parameter of the subprogram needs to be a controlling parameter of type**
    ``T`` in order for the subprogram to be considered a primitive.
 
-2. In addition, the return value won't ever be considered as being controlling.
-   A primitive of a tagged type with the aspect defined can return a value of
-   the type itself, but won't be controlling on the return type.
+2. Beyond the first parameter, a primitive may have any number of additional
+   controlling parameters as well as a controlling result. These all dispatch
+   and are rewritten to the derived type when the primitive is overridden, as
+   for regular tagged types.
 
-.. note:: Not sure if the rule above is necessary. Not sure that return type
-   dispatching has any effect if there are other parameters than the return
-   type. In which case, the first additional rule is enough.
+The ``'Fixed`` attribute
+------------------------
+
+A parameter or result that refers to the type but should **not** dispatch can
+be marked with the ``'Fixed`` attribute, applied to a subtype mark of the type.
+``T'Fixed`` denotes a non-dispatching, definite reference to the subtype ``T``.
+
+The following rules apply to ``'Fixed``:
+
+* ``'Fixed`` may only be used in a position where the type may be controlling,
+  i.e. on a parameter or result of a primitive of the type. It is illegal
+  anywhere else.
+
+* A ``'Fixed`` parameter or result keeps its subtype unchanged in overridings -
+  it is not rewritten to the derived type - and does not participate in
+  dispatching.
+
+* ``'Fixed`` participates in subprogram conformance: two profiles conform only
+  if their ``'Fixed`` markings match.
+
+* ``'Fixed`` cannot be applied to the first parameter of a primitive, since the
+  first parameter must always be controlling.
+
+* ``'Fixed`` cannot be used on a generic formal parameter.
+
+* ``'Fixed`` may be applied not only to the first subtype of the type but to any
+  subtype of it.
+
+For example:
 
 .. code-block:: ada
 
-   type T is tagged null record;
+   type Root is tagged null record with First_Controlling_Parameter;
+
+   function F (Self : Root; Param : Root'Fixed) return Root'Fixed;
+
+   type Child is new Root with null record;
+
+   overriding
+   function F (Self : Child; Param : Root'Fixed) return Root'Fixed;
+   --  Only the first parameter changes to Child when overriding; the 'Fixed
+   --  parameter and result keep the Root'Fixed subtype.
+
+.. code-block:: ada
+
+   type T is tagged null record with First_Controlling_Parameter;
 
    procedure Prim_1 (Self : T);  -- Primitive
    procedure Prim_2 (Self : T; Other : T);
-   --  Primitive. You can have several controlling parameters as long as the 1st
-   --  is
+   --  Primitive. Several controlling parameters are allowed as long as the
+   --  first one is controlling; Other dispatches and becomes the derived type
+   --  when overridden.
+
+   procedure Prim_2b (Self : T; Other : T'Fixed);
+   --  Primitive. Other refers to T but is fixed: it does not dispatch and keeps
+   --  the T'Fixed subtype when overridden.
 
    function Prim_3 (Self : T) return T;
-   --  Primitive. Not controlling on the return type (no return type
-   --  dispatching possible)
+   --  Primitive, controlling on the result (return type dispatching).
+
+   function Prim_3b (Self : T) return T'Fixed;
+   --  Primitive. The result refers to T but is fixed: no return type
+   --  dispatching.
 
    function "=" (Self, Other : T) return Boolean; -- Primitive (same as Prim_2)
    function Not_A_Prim_1 (Self : T'Class) return T; -- Not a primitive
