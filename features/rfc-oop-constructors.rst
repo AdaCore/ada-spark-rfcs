@@ -312,6 +312,7 @@ Initialization of Components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Initialization of components can be done in two ways:
+
 - Through the default value provided at component declaration.
 - Through an ``Initialize`` aspect that can rely on constructor parameters.
 
