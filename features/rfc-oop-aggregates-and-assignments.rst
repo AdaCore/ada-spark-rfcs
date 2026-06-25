@@ -57,7 +57,7 @@ be provided for simple records.
 
 The additional capabilities need to be optimized as much as possible by the
 compiler. In particular - even if it's not a language mandate - the compiler
-should replace calls to Assign by binary copies.
+should replace calls to Assign by binary copies when such optimization is possible.
 
 'Assign
 -------
@@ -65,10 +65,11 @@ should replace calls to Assign by binary copies.
 `'Assign` is an overridable attribute called in place of copy where the object to
 be assigned has to be modified (i.e. otherwise that's a copy constructor call).
 It is different from the legacy Ada Adjust primitive in that it has an argument
-referring to the initial value. Note that the From parameter of `'Assign` is
-always typed after the root type of the tagged record hierarchy - indeed, the
-source object may be higher up in the derivation chain in the case of partial
-copy. This value is provided for reference but is not expected to be modified.
+referring to the initial value and is expected to perform the actual copy. Note
+that the From parameter of `'Assign` is always typed after the root type of the
+tagged record hierarchy - indeed, the source object may be higher or lower in
+the derivation chain in the case of partial copy. This value is provided for
+reference but is not expected to be modified.
 
 .. code-block:: ada
 
@@ -76,13 +77,13 @@ copy. This value is provided for reference but is not expected to be modified.
       A : access Integer;
    end record;
 
-   procedure Root'Assign (Self : in out Root; From : Root);
+   procedure Root'Assign (Self : in out Root; From : Root'Class);
 
    type Child is new Root with record
       B : access Integer;
    end record;
 
-   procedure Child'Assign (Self : in out Child; From : Root);
+   procedure Child'Assign (Self : in out Child; From : Root'Class);
 
 The From parameter refers to the original source object and is passed by
 reference; it is not a copy and is not expected to be modified.
@@ -108,7 +109,7 @@ needs to be maintained equal to the parents.
       Self.A := new Integer'(0);
    end Root'Constructor;
 
-   procedure Root'Assign (Self : in out Root; From : Root) is
+   procedure Root'Assign (Self : in out Root; From : Root'Class) is
    begin
       Free (Self.A);
       Self.A := new Integer'(From.A.all);
@@ -123,10 +124,10 @@ needs to be maintained equal to the parents.
       Self.B := new Integer'(0);
    end Child'Constructor;
 
-   procedure Child'Assign (Self : in out Child; From : Root)
-      with Super (From)
+   procedure Child'Assign (Self : in out Child; From : Root'Class)
    is
    begin
+      Self'Super'ASsign (From);
       Free (Self.B);
       Self.B := new Integer'(From.B.all);
 
@@ -199,9 +200,9 @@ Class-Wide Assignments
 
 Class wide assignments lead to dispatching calls to 'Assign, ensuring
 that the whole object is copied. They also require the two tags to be equal,
-like today in Ada. Unless the type is mutable, in which case the 'Class'Assign
-operation will be called (see later). This is the code for immutable class wide
-types:
+like today in Ada. Unless the type is mutable, in which case we need to call
+a destructor / constructor sequence (see later). This is the code for immutable
+class wide types:
 
  .. code-block:: ada
 
@@ -486,7 +487,8 @@ Controlled Types
 
 Controlled types, which include types derived from Ada.Finalization and types
 that are using the Finalizable aspect, are incompatible with constructors,
-destructors as well as assign attributes.
+destructors as well as assign attributes. Note that controlled type are
+deprecated in pedantic Flare.
 
 Raw Assign, Mutable Variadic and Class Wide Types
 -------------------------------------------------
@@ -512,15 +514,6 @@ For example, for a simple type:
                B : Float;
          end case;
       end record;
-
-      procedure Rec'Assign (Self : in out Rec; From : Rec) is
-      begin
-         if Self.V /= From.V then
-            Self'Destroy_And_Make (From.V);
-         end if;
-
-         --  regular assign;
-      end Rec'Assign;
 
       Rec1 : Rec := Rec'(True, 1);
       Rec2 : Rec := Rec'(False, 1);
