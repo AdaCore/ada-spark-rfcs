@@ -19,10 +19,10 @@ current semantics.
 First, in Ada, aggregates are a way to completely workaround calls of
 initialization. To some respect, this makes sense, aggregates are ways to
 replace initialization. But the consequence is that there's no way to ensure
-that a given sequence of statement is putting an object in a consistent state
+that a given sequence of statements is putting an object in a consistent state
 at creation time (unlike traditional constructors).
 
-Second, Adjust perform a post-copy update to a type. This causes a double issue,
+Second, Adjust performs a post-copy update to a type. This causes a double issue,
 first in terms of performance, as assignment may not need all components to be
 modified. But this also limits the control over assignment logic, as the user
 has no way to know what was the initial state of the object or what object
@@ -44,10 +44,10 @@ To solve these issues, we propose to introduce a new mechanism for assignment,
 Note that this change complexity is also driven from the desire to support
 natively Ada constructs (aggregates, partial copies, etc) and improve
 compatibility between classes and tagged types. Users can leverage default
-implementation if such level of control is unecessary. Some language extension
+implementation if such level of control is unnecessary. Some language extension
 may also allow to forbid aggregates and partial update on specific types
 (although this introduces complexities in generics that now need to specify
-wether these restricted types are allowed or not).
+whether these restricted types are allowed or not).
 
 Also keep in mind that Ada Flare aggregates also need to account for types that
 have both public and private components.
@@ -62,10 +62,10 @@ should replace calls to Assign by binary copies.
 'Assign
 -------
 
-`'Assign` is a overridable attribute called in place of copy where the object to
-be assigned has to be modified (ie otherwise that's a copy constructor call).
-different from the legacy Ada Adjust primitive in that it has an argument
-refering to the initial value. Note that the From parameter of `'Assign` is
+`'Assign` is an overridable attribute called in place of copy where the object to
+be assigned has to be modified (i.e. otherwise that's a copy constructor call).
+It is different from the legacy Ada Adjust primitive in that it has an argument
+referring to the initial value. Note that the From parameter of `'Assign` is
 always typed after the root type of the tagged record hierarchy - indeed, the
 source object may be higher up in the derivation chain in the case of partial
 copy. This value is provided for reference but is not expected to be modified.
@@ -84,10 +84,10 @@ copy. This value is provided for reference but is not expected to be modified.
 
    procedure Child'Assign (Self : in out Child; From : Root);
 
-Values of the From parameter will have been copied from Clone call prior to
-calling Adjust.
+The From parameter refers to the original source object and is passed by
+reference; it is not a copy and is not expected to be modified.
 
-Invariants are checked after a call to Adjust.
+Invariants are checked after a call to Assign.
 
 Base code for the Examples
 --------------------------
@@ -123,7 +123,7 @@ needs to be maintained equal to the parents.
       Self.B := new Integer'(0);
    end Child'Constructor;
 
-   procedure Child'Adjust (Self : in out Child; From : Root)
+   procedure Child'Assign (Self : in out Child; From : Root)
       with Super (From)
    is
    begin
@@ -134,7 +134,7 @@ needs to be maintained equal to the parents.
          --  This was a partial assignment, fix the A / B consistency
          Self.B.all := Self.A.all;
       end if;
-   end Child'Adjust;
+   end Child'Assign;
 
 When reasoning about this interface, it's useful to keep in mind that it has
 a fundamental design flaw - it allows the user to modify the values of A and
@@ -197,7 +197,7 @@ This is also the case where the view conversion is hidden, e.g. in calls:
 Class-Wide Assignments
 ----------------------
 
-Class wide assignments lead to dispatching calls to 'Clone and 'Adjust, ensuring
+Class wide assignments lead to dispatching calls to 'Assign, ensuring
 that the whole object is copied. They also require the two tags to be equal,
 like today in Ada. Unless the type is mutable, in which case the 'Class'Assign
 operation will be called (see later). This is the code for immutable class wide
@@ -237,7 +237,7 @@ temporary object initially:
       -- Tmp'Destructor;
 
 Note that the compiler is free to optimize the above by directly assigning A and
-B if it knows that there's no clone and adjust user attributes:
+B if it knows that there's no user defined constructor, destructor or assign attributes:
 
 .. code-block:: ada
 
@@ -251,7 +251,7 @@ B if it knows that there's no clone and adjust user attributes:
 
 The above works the same in the case of a by extension aggregate if the parent
 type is directly referred to. Values taken from the parent object are those
-resulting of the constructor call:
+resulting from the constructor call:
 
 .. code-block:: ada
 
@@ -272,7 +272,7 @@ A few notes on the above sequences:
   internal consistency and lifecycle, hence the need to call its constructor and
   destructor.
 - Usage of aggregate in conjunction with types that provide constructors,
-  destructors, adjust and clone attributes is somewhat heavy, as the aggregate
+  destructors and assign attributes is somewhat heavy, as the aggregate
   needs to be fully initialized before assigned, then reclaimed. It's important
   to have self consistency here. However, developers may prefer to reserve
   aggregate notation for types that do not require these constructs, and
@@ -282,7 +282,7 @@ Aggregate Assignments with Extension Copies
 -------------------------------------------
 
 Aggregate by extension that are extending a value as opposed to a default value
-require an initial cloning of said value, e.g.:
+require an initial assignment of said value, e.g.:
 
 .. code-block:: ada
 
@@ -407,8 +407,8 @@ its value to the final object:
    --  Child'Constructor (C, Tmp);
    --  Tmp'Destructor;
 
-Note that we're using a copy constructor here instead of the Clone / Adjust
-sequence as there's no initial object to modify here.
+Note that we're using a copy constructor here instead of the Assign
+operation as there's no initial object to modify here.
 
 Partial Copy and Initialization
 -------------------------------
@@ -424,7 +424,7 @@ as other copy constructor calls, e.g.:
    --  Root'Constructor (R, Root (C));
 
 In the context of an aggregate by extension that contains a copy, a call to
-Clone is necessary, similar to assignment of the same form:
+Assign is necessary, similar to assignment of the same form:
 
 .. code-block:: ada
 
@@ -432,15 +432,15 @@ Clone is necessary, similar to assignment of the same form:
    C : Child := (R with B => new Integer);
    --  Tmp : Child;
    --  Child'Constructor (Tmp);
-   --  R'Assign (Tmp);
+   --  Tmp'Assign (R);
    --  Tmp.B := new Integer;
    --  Child'Constructor (C, Tmp);
-   --  Tmp'Destructor (C);
+   --  Tmp'Destructor;
 
 Aggregate Aspect
 ----------------
 
-The presence of constructors, destructors, clone and adjust attributes may
+The presence of constructors, destructors and assign attributes may
 significantly increase the complexity and footprint of assignment and aggregate
 usage. The compiler may optimize these sequences if it has enough information,
 although it's not always clear if it can.
@@ -456,8 +456,8 @@ This can be done through the Aggregate_Type aspect:
    end record with Aggregate_Type;
 
 This aspect must be positioned on the root of a tagged type hierarchy.
-It forbids the introduction of user defined constructors, destructors, clone and
-adjust attributes in derivations. All record components of such types must
+It forbids the introduction of user defined constructors, destructors and
+assign attributes in derivations. All record components of such types must
 also be Aggregate_Type types.
 
 Aggregate_Type types cannot be provided to generic tagged formal parameters, as
@@ -486,7 +486,7 @@ Controlled Types
 
 Controlled types, which include types derived from Ada.Finalization and types
 that are using the Finalizable aspect, are incompatible with constructors,
-destructors as well as clone and adjust attributes.
+destructors as well as assign attributes.
 
 Raw Assign, Mutable Variadic and Class Wide Types
 -------------------------------------------------
@@ -515,7 +515,7 @@ For example, for a simple type:
 
       procedure Rec'Assign (Self : in out Rec; From : Rec) is
       begin
-         if Self.V := From.V then
+         if Self.V /= From.V then
             Self'Destroy_And_Make (From.V);
          end if;
 
@@ -573,7 +573,7 @@ Dispatching_Copy (or any compiler internal) conceptually looks like:
 
 .. code-block:: ada
 
-   procedure Displatching_Copy (Source : Child; Destination : Root'Class) issue
+   procedure Dispatching_Copy (Source : Child; Destination : Root'Class) is
    begin
       Child'Constructor (Destination, Source);
       --  This statement isn't completely Flare and needs to be generated by the
@@ -588,7 +588,7 @@ TBD
 Rationale and alternatives
 ==========================
 
-To fully appreciate the needs / usefuleness of such construction, one
+To fully appreciate the needs / usefulness of such construction, one
 can consider the following hierarchy:
 
 .. code-block:: ada
@@ -604,7 +604,7 @@ can consider the following hierarchy:
       Middle_Element : access Node;
    end record;
 
-   procedure List'Assign (Self : in out List_With_Stats; From : List'Class);
+   procedure List_With_Stats'Assign (Self : in out List_With_Stats; From : List'Class);
 
    procedure List'Assign (Self : in out List; From : List'Class) is
    begin
@@ -612,7 +612,7 @@ can consider the following hierarchy:
       Self.End_Node := Get_Last (Self.Start_Node);
    end List'Assign;
 
-   procedure List'Assign (Self : in out List_With_Stats; From : List'Class) is
+   procedure List_With_Stats'Assign (Self : in out List_With_Stats; From : List'Class) is
    begin
       Self'Super'Assign (From);
 
@@ -620,9 +620,8 @@ can consider the following hierarchy:
          Self.Number_Of_Element := Compute_Number_Of_Element (Self.Start_Node);
       end if;
 
-      Self.Middle_Element := Get_Middle_Element (Selt_Start_Node, Self.Number_Of_Element);
-   end List'Assig;
-``
+      Self.Middle_Element := Get_Middle_Element (Self.Start_Node, Self.Number_Of_Element);
+   end List_With_Stats'Assign;
 
 Note that the above structure doesn't need to do any shallow copy of Start_Node
 and End_Node, only needs to compute number of elements in the partial assign
