@@ -16,13 +16,13 @@ Aggregates and assignments share a few joint issues that make it worth combining
 into a single RFC. To understand, it's worth starting with the issues with the
 current semantics.
 
-First, in Ada, aggregates are a way to completely work around calls of
+First, in Ada, aggregates are a way to completely workaround calls of
 initialization. To some respect, this makes sense, aggregates are ways to
 replace initialization. But the consequence is that there's no way to ensure
-that a given sequence of statements puts an object in a consistent state
+that a given sequence of statement is putting an object in a consistent state
 at creation time (unlike traditional constructors).
 
-Second, Adjust performs a post-copy update to a type. This causes a double issue,
+Second, Adjust perform a post-copy update to a type. This causes a double issue,
 first in terms of performance, as assignment may not need all components to be
 modified. But this also limits the control over assignment logic, as the user
 has no way to know what was the initial state of the object or what object
@@ -38,109 +38,37 @@ is copied into a child one with specific values provided by the aggregate,
 again here with no control over the consistency of values (not even in Adjust
 in the case of initialization).
 
-To solve these issues, we propose to introduce a two step object update
-mechanism through a value duplication ('Clone) and post update adjustment
-('Adjust).
+To solve these issues, we propose to introduce a new mechanism for assignment,
+'Assign, called in place of both binary copy and post copy assignment.
 
-This RFC redefines the semantics of assignment (``:=``) for tagged types in terms of
-'Clone and 'Adjust. This supersedes the description given in the constructors RFC,
-where assignment was defined as a destructor call followed by a copy constructor. In
-particular, assignment no longer performs an implicit destructor on the target: the
-reclamation of the target's resources, where needed, is the responsibility of 'Clone.
-Copy constructors remain in use for initialization (for example ``V2 : T := V1;``),
-which has no pre-existing target to update.
-
-Note that this extra complexity is driven from the desire to support natively
-Ada constructs (aggregates, partial copies, etc) and improve compatibility
-between classes and tagged types. Users can leverage default implementation if
-such level of control is unnecessary. Some language extensions may also allow
-to forbid aggregates and partial update on specific types (although this
-introduces complexities in generics that now need to specify whether these
-restricted types are allowed or not).
+Note that this change complexity is also driven from the desire to support
+natively Ada constructs (aggregates, partial copies, etc) and improve
+compatibility between classes and tagged types. Users can leverage default
+implementation if such level of control is unecessary. Some language extension
+may also allow to forbid aggregates and partial update on specific types
+(although this introduces complexities in generics that now need to specify
+wether these restricted types are allowed or not).
 
 Also keep in mind that Ada Flare aggregates also need to account for types that
 have both public and private components.
 
-This RFC is about tagged records (and class records even if not explicitly
-mentioned). Simple records should also be studied when constructors are made
-available to them.
+This RFC cover both simple and tagged records, assumes that constructors will
+be provided for simple records.
 
 The additional capabilities need to be optimized as much as possible by the
 compiler. In particular - even if it's not a language mandate - the compiler
-should replace calls to Clone by binary copies and remove calls to Adjust when
-it knows there's no chance of calling an overridden subprogram.
+should replace calls to Assign by binary copies.
 
-'Clone
-------
-
-The attribute 'Clone can be defined for each tagged type. It describes how to
-copy (or clone) the value of a tagged type into another one. It is a
-definition-only attribute: user code never calls 'Clone directly (see below).
-For example:
-
-.. code-block:: ada
-
-   type Root is tagged record
-      A : access Integer;
-   end record;
-
-   procedure Root'Clone (Self : Root; To : in out Root);
-
-Root'Clone is not a primitive and cannot be inherited. However, a child
-class may provide its own cloning method:
-
-.. code-block:: ada
-
-   type Child is new Root with record
-      B : access Integer;
-   end record;
-
-   procedure Child'Clone (Self : Child; To : in out Child);
-
-The default implementation of Clone first calls the parent clone and then
-calls the clone operation of all the components one by one. The compiler is free to
-optimize to bitwise copies if clone operations are not user-defined.
-
-'Clone cannot be invoked explicitly by user code. It has only two entry points: the
-compiler's expansion of an assignment (see below), and the copy of the parent part
-from within a 'Clone body, which is written ``Self'Super'Clone (To)``. This is what
-guarantees the central invariant of this model: every object a user can observe has
-been through 'Adjust, because the only way to reach 'Clone is an assignment that also
-runs the paired 'Adjust (which the compiler may elide only where it provably has no
-effect).
-
-When the compiler expands an assignment, it resolves 'Clone by the static view rather
-than by dispatching: an assignment on a definite view runs that view's 'Clone, and
-only a 'Class wide operand dispatches. This is mandatory for two reasons. First, it is
-what allows partial copies, done today in various places in Ada: an assignment through
-a parent view (for example ``Root (C1) := Root (C2)``) must copy only the components of
-that view, which is only possible if 'Clone binds to the view rather than the tag.
-Second, it is what guarantees termination: a 'Clone body copies its parent part with
-``Self'Super'Clone``, which, like every 'Super call, is non-dispatching and therefore
-binds to the parent's 'Clone rather than re-entering the derived one.
-
-The invariant of the target object is not checked after a call to Clone, some
-parts may still be inconsistent and fixed later by Adjust.
-
-'Adjust
+'Assign
 -------
 
-'Adjust is an overridable attribute called after certain operations. It differs
-from the legacy Ada Adjust primitive in two ways.
-
-First, it receives a From parameter referring to the value that was copied in. From
-is class-wide, rooted at the root of the tagged hierarchy, so that Adjust may examine
-the source object if needed (for example its actual values). This value is provided
-for reference and is not expected to be modified.
-
-Second, it receives Copied_As, the tag of the view through which the assignment was
-made - the same view that Clone was resolved against. This lets Adjust determine
-whether the copy was partial with respect to the current type: the components
-introduced at a given type were copied only when Copied_As designates that type or
-one of its descendants. The tag of From cannot serve this purpose, as it denotes the
-source's own type rather than how much was copied - a partial copy such as
-``Root (C1) := Root (C2)`` only copies the Root slice even though both objects are of
-type Child.
+`'Assign` is a overridable attribute called in place of copy where the object to
+be assigned has to be modified (ie otherwise that's a copy constructor call).
+different from the legacy Ada Adjust primitive in that it has an argument
+refering to the initial value. Note that the From parameter of `'Assign` is
+always typed after the root type of the tagged record hierarchy - indeed, the
+source object may be higher up in the derivation chain in the case of partial
+copy. This value is provided for reference but is not expected to be modified.
 
 .. code-block:: ada
 
@@ -148,18 +76,16 @@ type Child.
       A : access Integer;
    end record;
 
-   procedure Root'Adjust
-     (Self : in out Root; From : Root'Class; Copied_As : Tag);
+   procedure Root'Assign (Self : in out Root; From : Root);
 
    type Child is new Root with record
       B : access Integer;
    end record;
 
-   procedure Child'Adjust
-     (Self : in out Child; From : Root'Class; Copied_As : Tag);
+   procedure Child'Assign (Self : in out Child; From : Root);
 
-The From and Copied_As parameters describe the value produced by the preceding Clone
-call.
+Values of the From parameter will have been copied from Clone call prior to
+calling Adjust.
 
 Invariants are checked after a call to Adjust.
 
@@ -182,17 +108,11 @@ needs to be maintained equal to the parents.
       Self.A := new Integer'(0);
    end Root'Constructor;
 
-   procedure Root'Clone (Self : Root; To : in out Root) is
+   procedure Root'Assign (Self : in out Root; From : Root) is
    begin
-      Free (To.A);
-      To.A := new Integer'(Self.A.all);
-   end Root'Clone;
-
-   procedure Root'Adjust
-     (Self : in out Root; From : Root'Class; Copied_As : Tag) is
-   begin
-      null;
-   end Root'Adjust;
+      Free (Self.A);
+      Self.A := new Integer'(From.A.all);
+   end Root'Assign;
 
    type Child is new Root with record
       B : access Integer;
@@ -203,24 +123,15 @@ needs to be maintained equal to the parents.
       Self.B := new Integer'(0);
    end Child'Constructor;
 
-   procedure Child'Clone (Self : Child; To : in out Child) is
+   procedure Child'Adjust (Self : in out Child; From : Root)
+      with Super (From)
+   is
    begin
-      Self'Super'Clone (To);
-      --  Copy the parent part with 'Super, which copies only the Root slice, not
-      --  an assignment. An assignment would also run 'Adjust on the still
-      --  incomplete target. Like every 'Super call, this is non-dispatching.
-      Free (To.B);
-      To.B := new Integer'(Self.B.all);
-   end Child'Clone;
+      Free (Self.B);
+      Self.B := new Integer'(From.B.all);
 
-   procedure Child'Adjust
-     (Self : in out Child; From : Root'Class; Copied_As : Tag) is
-   begin
-      if not Is_Descendant_At_Same_Level (Copied_As, Child'Tag) then
-         --  The assignment was made through a view above Child, so B was not
-         --  copied and may be inconsistent with A. Re-derive it. Note that this
-         --  is decided from the assignment view (Copied_As), not from From's
-         --  type: Root (C1) := Root (C2) is partial even when From is a Child.
+      if From not in Child'Class then
+         --  This was a partial assignment, fix the A / B consistency
          Self.B.all := Self.A.all;
       end if;
    end Child'Adjust;
@@ -238,10 +149,8 @@ model that offers shortcuts breaking this ability.
 Simple Copy Assignments
 -----------------------
 
-The simple copy assignment of two objects leads to a sequence of calls to clone
-and adjust. In the expansions below, the commented ``'Clone`` and ``'Adjust`` lines
-depict the compiler's internal lowering of the assignment; they are not syntax a
-user could write (in particular ``'Clone`` is never callable directly):
+The simple copy assignment of two objects leads to a simple dispatching call
+to 'Assign:
 
 .. code-block:: ada
 
@@ -250,15 +159,13 @@ user could write (in particular ``'Clone`` is never callable directly):
    begin
 
       R2 := R1;
-      --  Root'Clone (R1, R2); -- Static call
-      --  Root'Adjust (R2, R1, Root'Tag); -- Dispatching call on R2
+      --  R2'Assign (R1); -- dispatch to Root
 
 Partial Copy Assignments
 ------------------------
 
-Ada dynamically checks for tags compatibility in the context of two 'Class
-types, which can only be assigned if they are of the same type. However, if the
-views are definite, the assignment is partial. For example:
+Assign is always dispatching, as any other primitive in Flare. So even if
+the user is doing a static view conversion, we will dispatch:
 
 .. code-block:: ada
 
@@ -268,19 +175,16 @@ views are definite, the assignment is partial. For example:
    begin
 
       Root (C1) := R1;
-      --  Root'Clone (R1, C1);            -- static, only copies the Root slice
-      --  Child'Adjust (C1, R1, Root'Tag); -- dispatches; Copied_As = Root'Tag
+      --  C1'Assign (R1); -- dispatch to Child
 
-In this case, the sequence is exactly the same as before. A similar
-thing can be observed in parameters:
+This is also the case where the view conversion is hidden, e.g. in calls:
 
 .. code-block:: ada
 
       procedure Something (A : in out Root; B : Root) is
       begin
          A := B;
-         --  Root'Clone (B, A);             -- static
-         --  Root'Adjust (A, B, Root'Tag);  -- dispatches
+         --  A'Assign (B);  -- dispatch to whatever is the real tag of A
       end Something;
 
       R1 : Root;
@@ -290,42 +194,22 @@ thing can be observed in parameters:
 
       Something (Root (C1), R1);
 
-In Flare, calls dispatch by default, so the call to Root'Adjust dispatches to
-Child'Adjust. Note that Clone, by contrast, is statically resolved on the definite
-Root view (see the 'Clone section), which is why only the Root slice is copied.
-
-Note also that while Adjust dispatches, Clone is a static call, in order to
-respect the user choice to assign only the components of the view. For example:
-
-.. code-block:: ada
-
-      C1 : Child;
-      C2 : Child;
-
-   begin
-
-      Root (C1) := Root (C2);
-      --  Root'Clone (C2, C1); -- this is static, only copy Root fields
-      --  Root'Adjust (C1, C2, Root'Tag); -- dispatches to Child'Adjust;
-      --                                   -- Copied_As = Root'Tag, so the
-      --                                   -- partial copy is detected even
-      --                                   -- though C2 is a Child
-
 Class-Wide Assignments
 ----------------------
 
 Class wide assignments lead to dispatching calls to 'Clone and 'Adjust, ensuring
 that the whole object is copied. They also require the two tags to be equal,
-like today in Ada. Specifically:
+like today in Ada. Unless the type is mutable, in which case the 'Class'Assign
+operation will be called (see later). This is the code for immutable class wide
+types:
 
-.. code-block:: ada
+ .. code-block:: ada
 
-   procedure P (V : in out Root'Class; W : Root'Class) is
-   begin
-      V := W;
+    procedure P (V : in out Root'Class; W : Root'Class) is
+    begin
+       V := W;
       --  if V'Tag = W'Tag then
-      --    Root'Clone (W, V); -- this dispatches
-      --    Root'Adjust (V, W, V'Tag); -- dispatches; full copy, Copied_As = V'Tag
+      --    V'Assign (W); -- dispatches
       --  else
       --    raise <the appropriate exception>;
       --  end if;
@@ -334,7 +218,7 @@ Aggregate Assignments
 ---------------------
 
 Aggregates will lead to field by field assignment of a temporary object,
-followed by the same sequence of Clone and Adjust. Aggregate objects need to
+followed by the same call to Assign. Aggregate objects need to
 have a default constructor as this is what's going to be used to create the
 temporary object initially:
 
@@ -349,9 +233,8 @@ temporary object initially:
       -- Child'Constructor (Tmp);
       -- Tmp.A := new Integer;
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp, Child'Tag);
-      -- Child'Destructor (Tmp);
+      -- C'Assign (Tmp);
+      -- Tmp'Destructor;
 
 Note that the compiler is free to optimize the above by directly assigning A and
 B if it knows that there's no clone and adjust user attributes:
@@ -380,20 +263,17 @@ resulting of the constructor call:
       -- Tmp : Child;
       -- Child'Constructor (Tmp);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp, Child'Tag);
-      -- Child'Destructor (Tmp);
+      -- C'Assign (Tmp);
+      -- Tmp'Destructor;
 
 A few notes on the above sequences:
 
-- The call to Clone is important, as it allows to clean the target object if
-  necessary prior to copy.
-- Tmp is itself a full object that we then clone, so we need to ensure its own
+- Tmp is itself a full object that we then assign, so we need to ensure its own
   internal consistency and lifecycle, hence the need to call its constructor and
   destructor.
 - Usage of aggregate in conjunction with types that provide constructors,
   destructors, adjust and clone attributes is somewhat heavy, as the aggregate
-  needs to be fully initialized before cloned, then reclaimed. It's important
+  needs to be fully initialized before assigned, then reclaimed. It's important
   to have self consistency here. However, developers may prefer to reserve
   aggregate notation for types that do not require these constructs, and
   the compiler should optimize the sequencing in these cases.
@@ -414,10 +294,9 @@ require an initial cloning of said value, e.g.:
       C := (R with new Integer);
       -- Tmp : Child;
       -- Child'Constructor (Tmp);
-      -- Root'Clone (R, Tmp);
+      -- Tmp'Assign (R);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp, Child'Tag);
+      -- C'Assign (Tmp);
       -- Child'Destructor (Tmp);
 
 Delta Aggregates
@@ -436,9 +315,8 @@ Delta aggregates create their initial value from a by-copy constructor:
       -- Tmp : Child;
       -- Child'Constructor (Tmp, C1);
       -- Tmp.B := new Integer;
-      -- Child'Clone (Tmp, C2);
-      -- Child'Adjust (C2, Tmp, Child'Tag);
-      -- Child'Destructor (Tmp);
+      -- C2'Assign (Tmp);
+      -- Tmp'Destructor;
 
 Aggregates with Private Parts or Default Values
 -----------------------------------------------
@@ -457,9 +335,8 @@ constructor, e.g.:
       -- Tmp : Child;
       -- Child'Constructor (Tmp);
       -- Tmp.A := new Integer;
-      -- Child'Clone (Tmp, C);
-      -- Child'Adjust (C, Tmp, Child'Tag);
-      -- Child'Destructor (Tmp);
+      -- C'Assign (Tmp);
+      -- Tmp'Destructor;
 
 A new syntax in Flare allows types to have both public and private components,
 if a user does not have visibility over all the components of a type, he
@@ -502,14 +379,12 @@ provided so far is conceptually a shortcut to:
    begin
       R1 := R2;
       --  if R1'Address /= R2'Address then
-      --    Root'Clone (R2, R1);
-      --    Root'Adjust (R1, R2, Root'Tag);
+      --    R1'Assign (R2);
       --  end if;
       --
       R1 := R1;
       --  if R1'Address /= R1'Address then
-      --    Root'Clone (R1, R1);
-      --    Root'Adjust (R1, R1, Root'Tag);
+      --    R1'Assign (R1);
       --  end if;
 
 Note that this check was already an implementation permission in former versions
@@ -530,7 +405,7 @@ its value to the final object:
    --  Tmp.A := new Integer;
    --  Tmp.B := new Integer;
    --  Child'Constructor (C, Tmp);
-   --  Child'Destructor (Tmp);
+   --  Tmp'Destructor;
 
 Note that we're using a copy constructor here instead of the Clone / Adjust
 sequence as there's no initial object to modify here.
@@ -557,10 +432,10 @@ Clone is necessary, similar to assignment of the same form:
    C : Child := (R with B => new Integer);
    --  Tmp : Child;
    --  Child'Constructor (Tmp);
-   --  Root'Clone (R, Tmp);
+   --  R'Assign (Tmp);
    --  Tmp.B := new Integer;
    --  Child'Constructor (C, Tmp);
-   --  Child'Destructor (Tmp);
+   --  Tmp'Destructor (C);
 
 Aggregate Aspect
 ----------------
@@ -613,33 +488,54 @@ Controlled types, which include types derived from Ada.Finalization and types
 that are using the Finalizable aspect, are incompatible with constructors,
 destructors as well as clone and adjust attributes.
 
-Raw Clone
----------
+Raw Assign, Mutable Variadic and Class Wide Types
+-------------------------------------------------
 
-In some situation, it may be effective to do a bit-by-bit copy between the
-source and a target of an assignment. This can be done through a special
-attribute, 'Raw_Clone, who can only be used within a Clone attribute, on the
-To parameter. For example:
+There are cases where types can "mutate" - that is to say have different
+source and destination constraints or different tag. In these cases,
+conceptually, the old object needs to be completely finalized, then the new one
+is created through a by-copy constructor. The compiler adds a test on
+constraints and will run the destruct then construct by copy sequence if they
+differ. Incidentally, mutable types that don't have a by-copy constructor can't
+be assigned.
+
+For example, for a simple type:
 
 .. code-block:: ada
 
-      type Rec is record
-         A : Integer;
-         B : Float;
+      type Rec (V : Boolean := False) is record
+         case V is
+            when True =>
+               A : Integer;
+
+            when False =>
+               B : Float;
+         end case;
       end record;
 
-      procedure Rec'Clone (Self : Rec; To : in out Rec) is
+      procedure Rec'Assign (Self : in out Rec; From : Rec) is
       begin
-         Rec'Raw_Clone (Self, To);
-      end Rec'Clone;
+         if Self.V := From.V then
+            Self'Destroy_And_Make (From.V);
+         end if;
 
-The use of this attribute is very restrictive. It can only be invoked on the
-first and second parameter of a clone call.
+         --  regular assign;
+      end Rec'Assign;
 
-Mutable Variadic and Class Wide Types
--------------------------------------
+      Rec1 : Rec := Rec'(True, 1);
+      Rec2 : Rec := Rec'(False, 1);
+   begin
+      Rec1 := Rec2;    -- (1) Mutating object
+      --  if Rec1.V /= Rec2.V then
+      --     Rec1'Destructor;
+      --     Rec'Constructor (Rec2);
+      --  else
+      --     Rec1'Assign (Rec2);
+      --  end if;
 
-Assignments can be done on mutable types, for example:
+Note that for tagged types, we need some kind of a dispatching creation of
+object to be able to run the copy, which is provided by a compiler generated
+primitive.
 
 .. code-block:: ada
 
@@ -661,38 +557,28 @@ Assignments can be done on mutable types, for example:
          B : Integer;
       end record;
 
-      Rec1 : Rec := Rec'(True, 1);
-      Rec2 : Rec := Rec'(False, 1);
-
       C1 : Root'Class := Root'(others => <>);
       C2 : Root'Class := Child'(others => <>);
    begin
+      C1 := Root (C2); -- (2) No mutation (C1 is still Root) - calls Assign
 
-      Rec1 := Rec2;    -- (1) Mutating object
-      C1 := Root (C2); -- (2) No mutation (C1 is still Root)
       C1 := C2;        -- (3) Mutating object
+      --  if C1'Tag /= C2'Tag then
+      --    C1'Destructor;
+      --    C2.Dispatching_Copy (Rec1);
+      --  else
+      --    C1'Assign (C2);
 
-In all of these cases, the Clone function doesn't have the ability to mutate
-the type. There also needs to be a way to differentiate (2) and (3). In these cases,
-we need to (1) handle the target object pre mutation,
-(2) mutate it to the target and (3) copy source to target.
-
-These situations can be resolved by using `'Raw_Clone` as described in the
-previous section. Note that the behavior of this attribute will depend on the
-actual context call - which could be implemented by the compiler by either a
-hidden parameter or a duplication of the clone attribute with a different
-Raw_Copy expansion. For example, if we have
+Dispatching_Copy (or any compiler internal) conceptually looks like:
 
 .. code-block:: ada
 
-   procedure Root'Clone (Self : Root; To : in out Root) is
+   procedure Displatching_Copy (Source : Child; Destination : Root'Class) issue
    begin
-      Root'Raw_Clone (Self, To); -- will mutate To if needed
-   end Root'Clone;
-
-In the case (2), we're performing a non-mutable assignment, only the Root part
-of the assignment is modified, while in case (3) the object is mutated from a
-Root to a Child.
+      Child'Constructor (Destination, Source);
+      --  This statement isn't completely Flare and needs to be generated by the
+      --  compiler, as it should call the whole construction sequence
+   end Dispatching_Copy;
 
 Reference-level explanation
 ===========================
@@ -702,52 +588,46 @@ TBD
 Rationale and alternatives
 ==========================
 
-The current Ada Finalize / Adjust sequence could be an alternative. However, it
-doesn't provide sufficient ability to control consistency of the objects. It
-forces the target object to be finalized, it never allows to look at both the
-source and target value in the same sequence of statements (finalize on the
-previous value, adjust on the new value) and it doesn't allow to control
-what is copied. On top of that, when doing assignment on partial objects,
-Finalize and Adjust are never dispatched to the real value, leaving potential
-inconsistencies.
-
-Another approach would have been to introduce some kind of a new assignment
-overload similar to C++, for example:
-
+To fully appreciate the needs / usefuleness of such construction, one
+can consider the following hierarchy:
 
 .. code-block:: ada
 
-   type Root is tagged record
-      A : access Integer;
+   type List is tagged record
+      Start_Node, End_Node : access Node;
    end record;
 
-   procedure ":=" (Self : in out Root; From : in out Root);
+   procedure List'Assign (Self : in out List; From : List'Class);
 
-   type Child is new Root with record
-      B : access Integer;
+   type List_With_Stats is new List with record
+      Number_Of_Element : Integer := 0;
+      Middle_Element : access Node;
    end record;
 
-   procedure ":=" (Self : in out Child; From : in out Child);
+   procedure List'Assign (Self : in out List_With_Stats; From : List'Class);
 
-However, this still doesn't allow control over partial assignment. There's no
-simple way to write:
-
-.. code-block:: ada
-
-      C1 : Child;
-      C2 : Child;
+   procedure List'Assign (Self : in out List; From : List'Class) is
    begin
-      Root (C1) := Root (C2);
+      Self.Start_Node := Duplicate (From.Start);
+      Self.End_Node := Get_Last (Self.Start_Node);
+   end List'Assign;
 
-And ensure that indeed Root is copied (you'd want to call := on Root) but that
-the actual object Child maintains consistency (you'd want to call := on Child).
+   procedure List'Assign (Self : in out List_With_Stats; From : List'Class) is
+   begin
+      Self'Super'Assign (From);
 
-We looked at various ways to remove the need of temporaries, for example by
-introducing special constructors taking aggregate values as parameters. However,
-this quickly leads to the need of creating a lot of extra attributes for all
-situations. In light of the added complexity, and the fact that we can
-provide means to achieve desired optimization when needed, it didn't look like
-the right trade-off.
+      if From not in List_With_Stats'Class then
+         Self.Number_Of_Element := Compute_Number_Of_Element (Self.Start_Node);
+      end if;
+
+      Self.Middle_Element := Get_Middle_Element (Selt_Start_Node, Self.Number_Of_Element);
+   end List'Assig;
+``
+
+Note that the above structure doesn't need to do any shallow copy of Start_Node
+and End_Node, only needs to compute number of elements in the partial assign
+case, and always requires to re-compute middle element for consistency.
+
 
 Drawbacks
 =========
