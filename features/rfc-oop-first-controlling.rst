@@ -141,6 +141,28 @@ between the partial and the full view:
    type T is tagged null record with First_Controlling_Parameter; -- ILLEGAL
 
 
+'Fixed and renamings
+--------------------
+
+'Fixed participate to subprogram conformance, and need to match when creating
+renamings. Notably, in the following example:
+
+.. code-block:: ada
+
+   package Pkg is
+      type T is ....;
+
+      procedure Prim  (X : T);
+
+      package Nested is
+         procedure Not_Prim (X : T);
+      end Nested;
+
+      procedure Ren1 (X : T'Fixed) renames Prim; -- Illegal, ‘Fixed is different
+      procedure Ren2 (X : T'Fixed) renames Nested.Not_Prim; -- Illegal ‘Fixed is different
+   end Pkg;
+
+
 Reference-level explanation
 ===========================
 
