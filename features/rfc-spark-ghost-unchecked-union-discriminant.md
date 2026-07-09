@@ -30,6 +30,14 @@ Legality rule B.3.3 (9/5) is relaxed: the list of cases in which a
 name denoting a discriminant of a type with Unchecked_Union is allowed to
 occur is extended by ghost code with an assertion level depending on Static.
 
+Dynamic semantics B.3.3 (20/6) is modified by adding that views of
+unchecked union objects occurring in ghost code with an assertion
+level depending on Static have inferable discriminant. (This cannot
+affect the dynamic semantics of any Ada program. The intent is to clarify
+that tools using such ghost annotations may essentially ignore
+unchecked_union within said annotations. That includes potential
+compiler warnings pertaining to checks known to fail at compile time).
+
 The following example illustrates the usage of Unchecked_Union:
 
 ```ada
@@ -65,3 +73,9 @@ Rationale and alternatives
 Reading discriminants of unchecked union types could be integrated
 in the framework of ghost fields. This is arguably a simpler case,
 since the access can never be compiled in the first place.
+
+The modification for Dynamic Semantics (B.3.3,20/6) could instead
+be a modification of (B.3.3,22/2) preventing Program_Error
+in Static ghost code. The difference only affects the ``Read``
+and ``Write`` attributes, which are not expected to serve any purpose
+in such annotations.
