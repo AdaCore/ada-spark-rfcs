@@ -1,6 +1,6 @@
 - Feature ID: mandatory_square_brackets
 - Start Date: 2026-02-26
-- Status: Design
+- Status: Ready for prototyping
 
 # Summary
 
