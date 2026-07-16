@@ -71,11 +71,19 @@ component iterators and container element iterators whose container type is
 annotated with the ``Iterable`` aspect. Occurrences of this
 attribute are only allowed in the body of a loop with such an iterator.
 
-During the execution of the body of a loop with an array component iterator,
-references to the ``Loop_Index`` attribute stand for the index of the component
-of the array designated by the loop parameter. Here is an equivalent formulation
-of the loop from ``Do_Loop_1`` presented in the previous section:
+If the prefix of an attribute ``Loop_Index`` is the loop parameter of an
+array component iterator, the attribute may have a single argument ``N``,
+that shall be a static expression of an Integer type. The value of `N` shall
+be greater than zero and no greater than the dimensionality of the array.
+If the array has dimensionality greater than one, then the argument shall be
+present.
 
+During the execution of the body of a loop with an array component iterator,
+references to the ``Loop_Index (N)`` attribute stand for the index of the
+component of the array designated by the loop parameter, at dimension ``N``.
+For one-dimensional arrays, the attribute ``Loop_Index`` is equivalent to
+``Loop_Index (1)``. Here is an equivalent formulation of the loop from
+``Do_Loop_1`` presented in the previous section:
 
 ```ada
 procedure Do_Loop_1 (A : in out My_Array) is
@@ -156,10 +164,6 @@ Prior art
 
 Unresolved questions
 ====================
-
-For array content iterators over multi-dimensional arrays, it might make sense
-to define ``Loop_Index (I)`` attributes for each dimension. Another possibility
-is to disallow the feature on multi-dimensional arrays for now.
 
 Future possibilities
 ====================
