@@ -8,6 +8,11 @@ Summary
 Motivation
 ==========
 
+In Ada, a primitive call dispatches only on a class-wide view, so a call on a
+specific type silently ignores derived overrides, unlike in Java or C++, which
+is also a potential vulnerability. This RFC makes dispatching the default
+behavior.
+
 Guide-level explanation
 =======================
 
@@ -29,21 +34,22 @@ explicitly marked as static (for example, through 'Super). E.g:
    type Root is tagged null record;
 
    procedure P (Self : in out Root);
+   procedure P2 (Self : in out Root);
 
    type Child is new Root with null record;
 
-   procedure P (Self : in out Root);
+   procedure P (Self : in out Child);
 
    type A_Root is access all Root;
 
-   procedure P (V : in out Root) is
+   procedure P (Self : in out Root) is
    begin
-      V.P2; -- Dispatching
+      Self.P2; -- Dispatching
    end P;
 
    V : A_Root := new Child;
 
-   V.P; -- dispatching
+   V.P; -- Dispatching
 
    P (V); -- also dispatching
 
@@ -64,7 +70,7 @@ the subprogram declaration. For example:
 
       type Child is new Root with null record;
 
-      procedure P (Self : in out Root);
+      procedure P (Self : in out Child);
 
    end A;
 
