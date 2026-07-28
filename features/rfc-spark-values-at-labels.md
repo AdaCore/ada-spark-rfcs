@@ -7,10 +7,12 @@ Status: Ready for prototyping
 Summary
 =======
 
-This RFC introduces a new attribute, called ``At`` that can be applied to
+This RFC introduces a new attribute, called ``At_Label`` that can be applied to
 an expression to refer to a copy of its value saved at a preceding label.
 This attribute can be thought as a generalization of the ``Old`` and
-``Loop_Entry`` attributes.
+``Loop_Entry`` attributes. Its name mirrors ``Loop_Entry``: it takes the
+referenced point as an argument and makes explicit that the attribute belongs
+to the same family.
 
 Motivation
 ==========
@@ -28,9 +30,9 @@ need to be saved.
 Guide-level explanation
 =======================
 
-The ``'At`` attribute takes a label as argument, and can be used on
+The ``'At_Label`` attribute takes a label as argument, and can be used on
 arbitrary expressions to denote a constant declared at that label,
-and initialized with that expression. A program using the ``'At``
+and initialized with that expression. A program using the ``'At_Label``
 attribute is equivalent to a program declaring the constant explicitly
 at that label. As an example, the following code:
 
@@ -38,7 +40,7 @@ at that label. As an example, the following code:
 X := 1;
 <<My_Label>>
 X := 2;
-pragma Assert ((X-1)'At (My_Label) = 0);
+pragma Assert ((X-1)'At_Label (My_Label) = 0);
 ```
 
 is equivalent to
@@ -64,43 +66,52 @@ reference.
 Reference-level explanation
 ===========================
 
-The attribute ``'At`` can be applied to any subexpression, and takes
+The attribute ``'At_Label`` can be applied to any subexpression, and takes
 a ``statement_identifier`` as parameter. That ``statement_identifier``
 shall refer to a visible ``statement_identifier``. The innermost sequence
 of statements enclosing the ``statement_identifier`` shall also enclose
-the ``'At`` attribute. Furthermore, if the ``'At`` attribute is enclosed by
+the ``'At_Label`` attribute. Furthermore, if the ``'At_Label`` attribute is enclosed by
 an accept_statement or a body, then the ``statement_identifier`` shall not
 be outside this enclosing construct. The preceding are the same rules as for
 ``goto`` statements; in addition, within the innermost sequence of statement
-enclosing both, the ``'At`` attribute shall occur in a statement occurring
+enclosing both, the ``'At_Label`` attribute shall occur in a statement occurring
 after the ``statement_identifier`` it references.
 
 For any given sequence of statements immediately enclosing two ``statement_identifier``s
 ``L1`` and ``L2``, such that ``L1`` precedes ``L2``, if there is a ``goto`` statement
-targeting ``L2`` within a statement preceding ``L1`` in the sequence, then no ``'At``
+targeting ``L2`` within a statement preceding ``L1`` in the sequence, then no ``'At_Label``
 attribute shall reference ``L1``.
 
-The attribute ``'At`` denotes a constant that is implicitly declared at
+The attribute ``'At_Label`` denotes a constant that is implicitly declared at
 the label, following the same rules as local declarations without blocks.
 The declaration of the constant is the same as what would be declared for
 an unconditionally evaluated ``'Old`` attribute (ARM 26.*/4). In particular,
 for tagged types, the constant renames a class-wide temporary in order to
 preserve the tag.
 
-The prefix of an ``'At`` attribute reference shall only reference entities
+The prefix of an ``'At_Label`` attribute reference shall only reference entities
 visible at the location of the referenced ``statement_identifier``, or declared
 within the prefix itself. It shall not contain a ``'Loop_Entry`` reference
-without an explicit loop name. If the prefix of an ``'At`` attribute reference contains
-another ``'At`` attribute reference, or a ``'Loop_Entry`` reference (with an explicit
+without an explicit loop name. If the prefix of an ``'At_Label`` attribute reference contains
+another ``'At_Label`` attribute reference, or a ``'Loop_Entry`` reference (with an explicit
 loop name) the inner reference shall be legal at the location of the
 ``statement_identifier`` referenced by the outer attribute. Similarly, if the
-prefix of an ``'Loop_Entry`` attribute reference contains a ``'At`` attribute reference,
-the ``'At`` reference shall be legal at the location immediately before the referenced
+prefix of an ``'Loop_Entry`` attribute reference contains a ``'At_Label`` attribute reference,
+the ``'At_Label`` reference shall be legal at the location immediately before the referenced
 loop.
 (Explanation: the reference should be legal and keep the same meaning when the expression
   of the surrounding reference is moved to the implicit declaration point).
 
-The prefix of an ``'At`` attribute reference which is potentially unevaluated
+The prefix of an ``'At_Label`` attribute reference which is potentially unevaluated
 within the outermost enclosing expression shall statically name an entity,
 unless the pragma Unevaluated_Use_Of_Old is set to a value that would relax
 the matching restriction for attributes ``'Old``/``'Loop_Entry``.
+
+
+Rationale and alternatives
+==========================
+
+The attribute is named ``At_Label`` rather than a bare ``At`` to avoid a
+collision with the reserved word ``at``, which keeps the syntax unambiguous
+and eases support and adoption in tools. It also mirrors ``Loop_Entry``,
+making clear it belongs to the same family.
