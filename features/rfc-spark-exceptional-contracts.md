@@ -33,7 +33,7 @@ those that can be used in a regular exception block:
 procedure P (...) with
   Exceptional_Cases =>
     (Exp_1 => True,
-     E : Exp_2 => Post_4);
+     Exp_2 => Post_4);
 ```
 
 When the body of subprogram annotated with this aspect returns by raising
@@ -55,7 +55,7 @@ exception
    when Exp1 =>
       pragma Assert (True);
       raise;
-   when E : Exp2 =>
+   when Exp2 =>
       pragma Assert (Post_4);
       raise;
    when others =>
@@ -87,7 +87,7 @@ The pragma ``Exceptional_Contracts`` expects as an argument an
 
 ```
  exceptional_contract_list ::= ( exceptional_contract   {,  exceptional_contract  })
- exceptional_contract      ::= [choice_parameter_specification:] exception_choice {'|' exception_choice} => consequence
+ exceptional_contract      ::= exception_choice {'|' exception_choice} => consequence
 ```
 
 where
