@@ -136,8 +136,8 @@ example:
 
 .. code:: ada
 
-  function Get_F (X : T) return Integer with
-     with Relaxed_Initialization => X
+  function Get_F (X : T) return Integer
+     with Relaxed_Initialization => X,
           Pre => ...; -- only require X.F to be initialized, see below
 
   V : T := (others => 0);
@@ -232,8 +232,8 @@ after the call:
 
 .. code:: ada
 
-  function Get_F (X : T) return Integer with
-     with Relaxed_Initialization => X
+  function Get_F (X : T) return Integer
+     with Relaxed_Initialization => X,
           Pre => X.F'Initialized;
 
 or inside subtype predicates to describe the type's initialization policy:
@@ -337,7 +337,7 @@ An expression has `relaxed initialization` if either:
 
 Rules:
 
-* Wen assigning an expression which has relaxed initialization into an object
+* When assigning an expression which has relaxed initialization into an object
   which does not have it, a check is emitted (by proof) to make sure that this
   object is fully initialized (this also includes parameters before and after
   call statements).
@@ -424,7 +424,7 @@ Output when they are specified (nothing is needed when they are inferred by
 flow analysis, as, in this case, we are sure that the whole variable has been
 written).
 
-Mentioning an object with Relaxed_Initialization in an Initialize contract
+Mentioning an object with Relaxed_Initialization in an Initializes contract
 is allowed for the sake of highlighting the dependency relations. It does not
 imply however that the object is initialized after the package elaboration. To
 express such a requirement, we should use Initial_Condition instead:
@@ -432,7 +432,7 @@ express such a requirement, we should use Initial_Condition instead:
 .. code:: ada
 
    package My_Pack with
-     Initialize => (X => V),
+     Initializes => (X => V),
      Initial_Condition => X.F'Initialized
    is
      X : T with Relaxed_Initialization;
