@@ -10,6 +10,8 @@ consisting of aspects that do not affect execution with assertsions
 disbled (such as `Pre`, `Post`, `Global`, and `Test_Case`), to subprograms
 without modifying the package's original source.
 
+The RFC only addresses aspects attached to sub-programs.
+
 The envisaged workflow is as follows:
 
 * The developer creates a sidecar unit containing the selected model
@@ -250,7 +252,8 @@ model decorator tool reports an error indicating the conflicting line in each fi
 
 If a sidecar unit exists for a package without a corresponding main source
 file, the tool may create the missing unit during decoration so that the sidecar
-can still participate in the analysis.
+can still participate in the analysis. An example of such a scenario would be 
+a contract that uses ghost code and this ghost code requires a body.
 
 ### (3) Toolchain integration
 
@@ -329,7 +332,7 @@ decoration_aspect ::=
  pre_aspect | post_aspect | contract_cases_aspect
  | global_aspect | depends_aspect | test_case_aspect
  | subprogram_variant_aspect | ghost_aspect | annotate_aspect
- | <any other SPARK aspect with no effect on execution>
+ | <any other aspect with no effect on execution>
 ```
 
 Every `decorated_subprogram_declaration` must begin with `model` and must
