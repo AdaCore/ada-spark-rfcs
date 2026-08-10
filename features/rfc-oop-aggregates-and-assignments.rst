@@ -127,13 +127,15 @@ needs to be maintained equal to the parents.
    procedure Child'Assign (Self : in out Child; From : Root'Class)
    is
    begin
-      Self'Super'ASsign (From);
+      Self'Super'Assign (From);
       Free (Self.B);
-      Self.B := new Integer'(From.B.all);
 
       if From not in Child'Class then
          --  This was a partial assignment, fix the A / B consistency
-         Self.B.all := Self.A.all;
+         Self.B.all := new Integer'(Self.A.all);
+      else
+         --  We have a from value, re-use it
+         Self.B := new Integer'(Child (From).B.all);
       end if;
    end Child'Assign;
 
