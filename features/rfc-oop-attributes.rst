@@ -118,7 +118,11 @@ package:
    function B'Constant_Indexing (X : B; I : Natural) return Natural;
 
 The rules of overloading resolution and inheritance that apply to subprograms
-apply similarly here as expected.
+apply similarly here as expected. Note, however, that multiple subprogram-valued
+aspect declarations for the same aspect of a type are only legal for aspects
+that may denote an overloaded set (such as ``Constant_Indexing`` and
+``Variable_Indexing``); single-valued aspects such as ``Write`` or
+``Default_Iterator`` admit at most one declaration per type.
 
 Primitive or Nonprimitive?
 --------------------------
@@ -132,18 +136,15 @@ For instance, we could define a container type as:
    type Container is tagged record
       ...
    end record;
-   type Cursor is new Positive;
 
-   function Container'First (C : Container) return Cursor;
-   function Container'Next (C : Container; Pos : Cursor) return Cursor;
-   function Container'Has_Element (C : Container; Pos : Cursor) return Boolean;
-   function Container'Element (C : Container; Pos : Cursor) return Integer;
+   function Container'Constant_Indexing
+     (C : Container; Pos : Positive) return Integer;
 
-In the example above, all the subprogram-valued aspect
-declarations of ``Container`` are primitive operations.
+In the example above, the subprogram-valued aspect declaration of
+``Container`` is a primitive operation.
 The usual rules of primitive operations apply, except that subprograms declared
 via this shorthand notation cannot be called via prefix notation: e.g.,
-``... := Obj.Container'First;`` is forbidden.
+``... := Obj.Container'Constant_Indexing (Pos);`` is forbidden.
 
 Scoped Records
 --------------
@@ -304,9 +305,11 @@ Reference-level explanation
 This proposal introduces syntactic sugar for the declaration and specification
 of subprogram-valued aspects. It is fully backward compatible with existing Ada
 code.
-As long as they don't share the same aspect name, a mix of the regular aspect
-specifications and subprogram-valued aspect
-declarations is permitted.
+A mix of regular aspect specifications and subprogram-valued aspect
+declarations is permitted, provided the two mechanisms are not both used for
+the same aspect of a given type or of types in the same derivation hierarchy.
+For instance, specifying ``Put_Image`` through a regular aspect on a parent
+type and through the shorthand on a derived type is illegal.
 
 Some changes are required:
 
@@ -330,7 +333,7 @@ Some changes are required:
           type My_Tagged_Type is tagged null record;
        begin
           Put_Line (Ada.Tags.Wide_Wide_Expanded_Name (My_Tagged_Type'Tag));
-          --  "PKG.T'SOME_ATTRIBUTE.MY_TAGGED_TYPE"
+          --  "PKG.T'SOME_ASPECT.MY_TAGGED_TYPE"
        end T'Some_Aspect;
 
 - RM 4.1.3 (4); the prefix of expanded names allows such names to scope
