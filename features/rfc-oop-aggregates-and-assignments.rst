@@ -1,7 +1,6 @@
-- Feature Name:
+- Feature Name: OOP Aggregates and Assignments
 - Start Date:
-- RFC PR:
-- RFC Issue:
+- Status: Ready for prototyping
 
 Summary
 =======
