@@ -1,6 +1,6 @@
 - Feature Name: Standard OOP model
 - Start Date: May 5th 2020
-- Status: Ready for prototyping
+- Status: Implementation
 
 Summary
 =======
