@@ -1,6 +1,6 @@
 - Feature Name: SPARK_Mode with static Boolean expressions
 - Start Date: 2026-07-31
-- Status: Design
+- Status: Ready for prototyping
 
 Summary
 =======
