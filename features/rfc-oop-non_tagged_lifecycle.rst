@@ -83,6 +83,56 @@ by binary copies when possible. E.g.:
 
    W := Child (V); -- calls Assign on Child, statically resolved.
 
+Assign and Mutable Discriminants
+--------------------------------
+
+There is one case where an assignment does not lead to a call to 'Assign:
+mutable objects, i.e. objects whose discriminants have default values and
+may change through assignment. When the source and the target of an
+assignment have different discriminant values, the target cannot be
+modified in place by 'Assign: it first needs to be destroyed, then
+re-created with the new constraints. The compiler inserts a check on the
+discriminants and expands the assignment into a call to 'Destructor
+followed by a call to the by-copy constructor when they differ. E.g.:
+
+.. code-block:: ada
+
+   type Rec (V : Boolean := False) is record
+
+      case V is
+         when True =>
+            A : Integer;
+
+         when False =>
+            B : Float;
+      end case;
+
+      procedure Rec'Constructor (Self : in out Rec; From : Rec);
+      procedure Rec'Destructor (Self : in out Rec);
+      procedure Rec'Assign (Self : in out Rec; From : Rec);
+
+   end Rec;
+
+   R1 : Rec := Rec'(V => True, A => 1);
+   R2 : Rec := Rec'(V => False, B => 1.0);
+
+begin
+
+   R1 := R2;
+   --  if R1.V /= R2.V then
+   --     R1'Destructor;
+   --     Rec'Constructor (R1, R2);
+   --  else
+   --     R1'Assign (R2);
+   --  end if;
+
+As a consequence, a mutable type that does not provide a by-copy
+constructor cannot be assigned.
+
+Note that this issue is specific to non-tagged types: class records with
+defaulted discriminants do not exist, so the discriminants of a class
+object can never change through an assignment.
+
 Destructors
 -----------
 
@@ -116,9 +166,11 @@ Simple Derivation
 -----------------
 
 When performing simple derivation, derived types "inherit" all constructors
-of the parent type. They may add or remove constructors. However, unlike tagged
-derivation, there's no concept of calling the Super constructor in the derived
-type. For example:
+of the parent type. They may add or remove constructors. However, unlike
+tagged derivation, 'Super is not available: there is no concept of "calling
+the parent constructor" (or the parent destructor or assign). An operation
+declared on the derived type fully replaces the parent's one, and is alone
+responsible for the whole operation. For example:
 
 .. code-block:: ada
 
