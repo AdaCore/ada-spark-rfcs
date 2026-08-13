@@ -39,11 +39,11 @@ function Reduce (Init : Accum; Arr : Array_Type) return Accum;
 
 type Float_Array is array (Positive range <>) of Float;
 
-function Sum (X: Float_Array) return Float
+function Sum (X : Float_Array) return Float
 is
     --  Implicit instantiation of Reduce. All formals except `Fn` can be
     --  deduced from the type of `X`, and from the expected return type.
-  (Reduce [Fn => "+"] (0.0, X))
+  (Reduce (Fn => "+") (0.0, X));
 
 type Float_Access is access all Float;
 
@@ -51,7 +51,7 @@ F : Float_Access := new Float'(Sum ([1.0, 2.0, 3.0, 4.0]));
 
 --  Implicit instantiation of unchecked deallocation. Both type formals can be
 --  deduced from the type of the access type passed as the actual.
-Ada.Unchecked_Deallocation [] (F);
+Ada.Unchecked_Deallocation () (F);
 ```
 
 Guide-level explanation
@@ -64,14 +64,14 @@ of the subprogram call:
 ```ada
 generic
    type Object (<>) is limited private;
-   type Name is access  Object;
+   type Name is access Object;
 procedure Ada.Unchecked_Deallocation (X : in out Name);
 
 type Integer_Access is access all Integer;
 
 A : Integer_Access := new Integer'(12);
 
-Ada.Unchecked_Deallocation [Integer, Integer_Access] (A);
+Ada.Unchecked_Deallocation (Integer, Integer_Access) (A);
 --                                                    ^ Type of `A` is `Name`
 --
 --  Type `Object` can be deduced from type `Name` as per RFC about inference of
@@ -89,7 +89,7 @@ The rules are:
 
 * In terms of name & type resolution, it means that they're taken into account
   as type parameters in type resolution. If there is an ambiguity in the final
-  result, eg. there are several interpretations possible for the names & types
+  result, e.g. there are several interpretations possible for the names & types
   of entities in the complete context, then the code will be rejected.
 
 * If a `structural_generic_instantiation_reference` is used as a call name for
@@ -146,6 +146,6 @@ Prior art
 =========
 
 This is very specific to Ada's generic formals system, but we could consider
-that they way generic formal packages' own params can be deduced when
+that the way generic formal packages' own params can be deduced when
 instantiating the generic, is pretty similar to what we propose here, so that
 this is the extension of an already existing mechanism.
