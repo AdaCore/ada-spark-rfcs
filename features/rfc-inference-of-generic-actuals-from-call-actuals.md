@@ -9,7 +9,7 @@ This RFC builds up on top of [the structural generic instantiation
 RFC](./rfc-structural-generic-instantiation.md), and proposes to be able to
 infer generic actuals for structural generic instantiations, from the actuals
 of the subprogram call, in cases where the structural generic instantiation
-refers to a subprogram.
+refers to a subprogram, or to a package declaring the called subprogram.
 
 Motivation
 ==========
@@ -126,6 +126,84 @@ Here:
 
 * The `"<"` is deduced as per pre-existing instantiation rules.
 
+
+Inference through generic packages
+----------------------------------
+
+Nothing in the above restricts the mechanism to generic subprograms. The base
+[structural generic instantiation
+RFC](./rfc-structural-generic-instantiation.md) allows all three kinds of
+generics to be instantiated structurally, so a
+`structural_generic_instantiation_reference` denoting a generic *package* can
+appear as the prefix of a call, and the actuals of that call can then be used to
+infer the actuals of the package instantiation:
+
+```ada
+generic
+   type Element_Type is private;
+package Signatures
+   with Allow_Structural_Instantiation
+is
+   function Hash (E : Element_Type) return Hash_Type;
+   procedure Swap (Left, Right : in out Element_Type);
+end Signatures;
+
+X, Y : Integer;
+
+H : Hash_Type := Signatures ().Hash (X);
+--                          ^^        ^ Type of `X` is `Element_Type`, so
+--                                      `Element_Type => Integer`
+
+Signatures ().Swap (X, Y);
+```
+
+The rule is the same one as for subprograms, only stated one level up: the
+call's actuals (and, for a function call, the expected return type) participate
+in the resolution of the enclosing `structural_generic_instantiation_reference`,
+whether that reference denotes the called subprogram itself or the package that
+declares it. As before, if the complete context admits several interpretations,
+the code is rejected.
+
+Two things are worth spelling out:
+
+* Only the formals that actually show up in the profile of the called
+  subprogram (directly, or indirectly through the [inference of dependent
+  formal types RFC](../meta/rfc-improved-generic-instantiations.md)) can be
+  inferred this way. A package formal that the called subprogram's profile
+  never mentions has to be given explicitly, or defaulted:
+
+```ada
+generic
+   type Element_Type is private;
+   type Extra is private;
+package P with Allow_Structural_Instantiation is
+   function F (E : Element_Type) return Boolean;
+end P;
+
+B : Boolean := P (Extra => Integer).F (X);
+--  `Element_Type` inferred from `X`, `Extra` cannot be and is given explicitly.
+```
+
+* Inference stops at the call: it doesn't work backwards from a use of a *type*
+  declared in the instance, since a type name carries no actuals to infer from.
+  `Vectors ().Vector` remains illegal, `Vectors (Positive, Positive).Vector` is
+  the way to write it.
+
+There is no new restriction on the packages themselves: they simply have to
+satisfy the constraints the base RFC already imposes on anything carrying
+`Allow_Structural_Instantiation` — in particular no mutable global state and no
+non-`in` object formals, which is what makes it acceptable for the compiler to
+share (or duplicate) the implicit instance freely. This matters more for
+packages than for subprograms, because a package instance is the thing that
+would own state if it were allowed any; a generic package holding a variable
+cannot be structurally instantiated at all, and therefore cannot be reached
+through inference either.
+
+Note also that the accessibility and hoisting rules of the base RFC apply
+unchanged: the implicit package instance is deemed declared in the topmost scope
+where the equivalent explicit instantiation would be legal, which for an
+inferred instantiation is bounded by the entities whose types were used for the
+inference.
 
 Reference-level explanation
 ===========================
