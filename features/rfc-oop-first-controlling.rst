@@ -103,19 +103,29 @@ For example:
     function F2 (V : Child) return Child;
     -- Primitive, controlling on the first parameter and on the result
 
-    function F3 (V : Child) return Child'Fixed;
-    -- Primitive, controlling on the first parameter only; the result is fixed
+    function F3 (V : Child) return Child with Pinned => (F3'Result);
+    -- Primitive, controlling on the first parameter only; the result is pinned
 
 As long as the first parameter is controlling, a primitive may also have
 additional controlling parameters and a controlling result. These all dispatch
 and are rewritten to the derived type when the primitive is overridden. When a
-parameter or result should refer to the type without dispatching, it is marked
-with the ``'Fixed`` attribute, as shown above with ``F3``.
+parameter or result should refer to the type without dispatching, it is listed
+in the ``Pinned`` aspect of the subprogram, as shown above with ``F3``.
 
-Note that ``function F3 (V : Child) return Child'Fixed;`` differs from
-``function F3 (V : Child) return Child'Class;`` in that the returned type is a
-definite type. It is also different from a controlling (dispatching) result
-such as ``F2``'s, which forces further derivations to override the function.
+The ``Pinned`` aspect takes a list of parameter names, and/or the ``'Result``
+attribute of the subprogram, denoting the parameters and result which are not
+controlling:
+
+.. code-block:: ada
+
+    procedure P (Self : T; O : T) with Pinned => (O);
+    function F (Self : T) return T with Pinned => (F'Result);
+
+Note that ``function F3 (V : Child) return Child with Pinned => (F3'Result);``
+differs from ``function F3 (V : Child) return Child'Class;`` in that the
+returned type is a definite type. It is also different from a controlling
+(dispatching) result such as ``F2``'s, which forces further derivations to
+override the function.
 
 For generic formals tagged types, you can specify whether the type has the
 ``First_Controlling_Parameter`` aspect on or not.
@@ -141,25 +151,29 @@ between the partial and the full view:
    type T is tagged null record with First_Controlling_Parameter; -- ILLEGAL
 
 
-'Fixed and renamings
+Pinned and renamings
 --------------------
 
-'Fixed participate to subprogram conformance, and need to match when creating
-renamings. Notably, in the following example:
+``Pinned`` participates to subprogram conformance, and needs to match when
+creating renamings. Notably, in the following example:
 
 .. code-block:: ada
 
    package Pkg is
       type T is ....;
 
-      procedure Prim  (X : T);
+      procedure Prim  (X : T; Y : T);
 
       package Nested is
-         procedure Not_Prim (X : T);
+         procedure Not_Prim (X : T'Class; Y : T);
       end Nested;
 
-      procedure Ren1 (X : T'Fixed) renames Prim; -- Illegal, ‘Fixed is different
-      procedure Ren2 (X : T'Fixed) renames Nested.Not_Prim; -- Illegal ‘Fixed is different
+      procedure Ren1 (X : T; Y : T) with Pinned => (Y) renames Prim;
+      --  Illegal, Pinned is different
+
+      procedure Ren2 (X : T'Class; Y : T) with Pinned => (Y)
+        renames Nested.Not_Prim;
+      --  Illegal, Pinned is different
    end Pkg;
 
 
@@ -214,33 +228,39 @@ with regards to which subprograms will be considered primitives of the type:
    and are rewritten to the derived type when the primitive is overridden, as
    for regular tagged types.
 
-The ``'Fixed`` attribute
-------------------------
+The ``Pinned`` aspect
+---------------------
 
-A parameter or result that refers to the type but should **not** dispatch can
-be marked with the ``'Fixed`` attribute, applied to a subtype mark of the type.
-``T'Fixed`` denotes a non-dispatching, definite reference to the subtype ``T``.
+Parameters and results that refer to the type but should **not** dispatch are
+listed in the ``Pinned`` aspect of the subprogram. The aspect value is a list
+of names, each of which is either the name of a formal parameter of the
+subprogram, or the ``'Result`` attribute of the subprogram (for a function
+result). A single name may be given without the enclosing parentheses.
 
-The following rules apply to ``'Fixed``:
+The following rules apply to ``Pinned``:
 
-* ``'Fixed`` may only be used in a position where the type may be controlling,
-  i.e. on a parameter or result of a primitive of the type. It is illegal
-  anywhere else.
+* ``Pinned`` may only be specified on a subprogram that is a primitive of the
+  type, and each name it lists must denote a parameter or result which would
+  otherwise be controlling. It is illegal anywhere else.
 
-* A ``'Fixed`` parameter or result keeps its subtype unchanged in overridings -
-  it is not rewritten to the derived type - and does not participate in
+* A pinned parameter or result keeps its subtype unchanged in overridings - it
+  is not rewritten to the derived type - and does not participate in
   dispatching.
 
-* ``'Fixed`` participates in subprogram conformance: two profiles conform only
-  if their ``'Fixed`` markings match.
+* ``Pinned`` participates in subprogram conformance: two profiles conform only
+  if their ``Pinned`` lists denote the same parameters and result.
 
-* ``'Fixed`` cannot be applied to the first parameter of a primitive, since the
-  first parameter must always be controlling.
+* ``Pinned`` cannot list the first parameter of a primitive, since the first
+  parameter must always be controlling.
 
-* ``'Fixed`` cannot be used on a generic formal parameter.
+* ``Pinned`` cannot be specified on a generic formal subprogram, and cannot
+  list a parameter whose type is a generic formal type.
 
-* ``'Fixed`` may be applied not only to the first subtype of the type but to any
-  subtype of it.
+* The subtype of a pinned parameter or result may be any subtype of the type,
+  not only its first subtype.
+
+* ``Pinned`` is inherited by overridings and cannot be changed by them: an
+  overriding either repeats the same ``Pinned`` list or omits the aspect.
 
 For example:
 
@@ -248,14 +268,16 @@ For example:
 
    type Root is tagged null record with First_Controlling_Parameter;
 
-   function F (Self : Root; Param : Root'Fixed) return Root'Fixed;
+   function F (Self : Root; Param : Root) return Root
+     with Pinned => (Param, F'Result);
 
    type Child is new Root with null record;
 
    overriding
-   function F (Self : Child; Param : Root'Fixed) return Root'Fixed;
-   --  Only the first parameter changes to Child when overriding; the 'Fixed
-   --  parameter and result keep the Root'Fixed subtype.
+   function F (Self : Child; Param : Root) return Root
+     with Pinned => (Param, F'Result);
+   --  Only the first parameter changes to Child when overriding; the pinned
+   --  parameter and result keep the Root subtype.
 
 .. code-block:: ada
 
@@ -267,15 +289,15 @@ For example:
    --  first one is controlling; Other dispatches and becomes the derived type
    --  when overridden.
 
-   procedure Prim_2b (Self : T; Other : T'Fixed);
-   --  Primitive. Other refers to T but is fixed: it does not dispatch and keeps
-   --  the T'Fixed subtype when overridden.
+   procedure Prim_2b (Self : T; Other : T) with Pinned => (Other);
+   --  Primitive. Other refers to T but is pinned: it does not dispatch and
+   --  keeps the T subtype when overridden.
 
    function Prim_3 (Self : T) return T;
    --  Primitive, controlling on the result (return type dispatching).
 
-   function Prim_3b (Self : T) return T'Fixed;
-   --  Primitive. The result refers to T but is fixed: no return type
+   function Prim_3b (Self : T) return T with Pinned => (Prim_3b'Result);
+   --  Primitive. The result refers to T but is pinned: no return type
    --  dispatching.
 
    function "=" (Self, Other : T) return Boolean; -- Primitive (same as Prim_2)
