@@ -1,4 +1,4 @@
-- Feature Name: model_of
+- Feature Name: model
 - Start Date: 2026-04-02
 - Status: Design
 
