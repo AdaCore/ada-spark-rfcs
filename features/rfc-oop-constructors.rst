@@ -241,15 +241,10 @@ explicitly or implicitly called:
    V2 : T := V1; -- implicit copy constructor call
    V3 : T := T'Make (V1); -- explicit copy constructor call
 
-Note that by-copy constructors are also called in assignments situations
-(following the call to a destructor). e.g.:
-
-.. code-block:: ada
-
-      V1 : T;
-      V2 : T;
-   begin
-      V1 := V2; -- calls destructor on V1, then copy from V2.
+Note that the copy constructor is only involved in initialization, not in
+assignment. This RFC does not instrument assignment at all - assignment of
+tagged types is described by the ``rfc-oop-aggregates-and-assignments`` RFC,
+in terms of ``'Clone`` and ``'Adjust``.
 
 A non-limited type always has a by-copy constructor available, overloaded or
 not.
@@ -394,6 +389,25 @@ initialization as efficient as possible and to avoid unnecessary processing.
 Conceptually, a developer would expect to have a specific initialization
 procedure generated for each constructor (or maybe, have the initialization
 directly expanded in the constructor).
+
+Note that a default value provided at component declaration is not made
+redundant by the presence of a constructor. It is the value the component
+starts from, which the constructor body may then refine. No warning is to be
+issued on a component that has both a default value and a constructor that
+modifies it. For example:
+
+.. code-block:: ada
+
+   type Root is tagged record
+      V : Integer := 0;
+   end record;
+
+   procedure Root'Constructor (Self : in out Root; Value : Integer);
+
+   procedure Root'Constructor (Self : in out Root; Value : Integer) is
+   begin
+      Self.V := Self.V + Value; -- Self.V is 0 here
+   end Root'Constructor;
 
 Within an initialization list, the semantic is the same as the one for component
 initialization as opposed to component assignment. As a consequence amongst
@@ -699,6 +713,56 @@ constructors are provided. For example:
    V3  : T3 := T3'Make(5);    -- Compilation error, no more constructor with 1 parameter for T3
    V4  : T3 := T3'Make(5, 6); -- OK
 
+Every constructor of a derived type calls a constructor of its parent type -
+by default the parameterless one, or the one designated by the ``Super`` aspect.
+As constructors are neither inherited nor generated with parameters, if a type
+provides no constructor that can be called, then its children cannot have any
+constructor either, and declaring one is illegal. For example:
+
+.. code-block:: ada
+
+   type Root is tagged record
+      F : Integer := 10;
+   end record;
+
+   procedure Root'Constructor (Self : in out Root; X : Integer);
+   --  Root has no parameterless constructor
+
+   type Child is new Root with null record;
+   --  Child has no constructor at all: no parameterless constructor can be
+   --  generated for it, as there is no parameterless Root constructor to call
+
+   type Grand_Child is new Child with record
+      G : Integer;
+   end record;
+
+   procedure Grand_Child'Constructor (Self : in out Grand_Child; Y : Integer);
+   --  Illegal, there is no Child constructor for this constructor to call
+
+Note that in the above, the fact that all the components inherited from ``Root``
+have a default value does not make ``Grand_Child``'s constructor legal - the
+parent part of an object is always initialized by a parent constructor. An
+error is to be reported at the latest on the declaration of the ``Grand_Child``
+constructor (it may also be reported on the derivation of ``Child``).
+
+Constructors and Subtypes
+-------------------------
+
+A constructor is a property of a type, shared by all of its subtypes, in the
+same way as a primitive operation. It is consequently illegal to declare a
+constructor for a subtype:
+
+.. code-block:: ada
+
+   type R is tagged null record;
+
+   subtype S is R;
+   procedure S'Constructor (Self : in out S; V : Integer); -- Illegal
+
+``S'Make`` remains available, denoting the constructors declared on ``R``. The
+constraint of ``S``, if any, applies to the result as it does for any other
+subtype.
+
 Constructors and Generics
 -------------------------
 
@@ -786,6 +850,106 @@ Accept both by-constructors and non-by constructor types. However,
 by-constructor types would need to provide a parameterless constructor and a
 copy constructor to be accepted as formal parameters.
 
+Profile Conformance
+^^^^^^^^^^^^^^^^^^^
+
+Matching a formal constructor with an actual one requires mode conformance
+(Ada RM 6.3.1(16/3)). Subtype conformance is not required - it could not be,
+as the profile of a generic formal subprogram is never subtype conformant with
+any other profile (Ada RM 6.3.1(17/3)). For example:
+
+.. code-block:: ada
+
+   generic
+      type T1 is tagged private;
+      with procedure T1'Constructor (Self : in out T1; V : Integer);
+   package G is
+   end G;
+
+   type R is tagged null record;
+   procedure R'Constructor (Self : in out R; V : in out Integer);
+
+   package I is new G (T1 => R);
+   --  Error, the mode of V doesn't match, R doesn't provide a matching
+   --  constructor
+
+Order of Generic Formals
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A formal constructor has to be declared after the formal type it constructs, as
+well as after the formal types used in its profile. Beyond that, there is no
+constraint on the relative order of the formal types themselves. Both of the
+following are legal:
+
+.. code-block:: ada
+
+   generic
+      type U is private;
+      type T is tagged private;
+      with procedure T'Constructor (Self : in out T; Q : U);
+   package G_U_First is
+   end G_U_First;
+
+   generic
+      type T is tagged private;
+      type U is private;
+      with procedure T'Constructor (Self : in out T; Q : U);
+   package G_U_Last is
+   end G_U_Last;
+
+Formal Derived Types
+^^^^^^^^^^^^^^^^^^^^
+
+Formal derived types follow the same rules as other formal types: when no
+constructor is specified, a parameterless and a copy constructor are expected,
+and a generated parameterless constructor satisfies that requirement. For
+example:
+
+.. code-block:: ada
+
+   type BT is tagged null record;
+   procedure BT'Constructor (Self : in out BT);
+
+   type Deriv is new BT with null record;
+   --  Deriv has a generated parameterless constructor, as its parent type has
+   --  an explicit one
+
+   generic
+      type NT is new BT with private;
+      with procedure NT'Constructor (Self : in out NT);
+      --  A parameterless constructor is explicitly required
+   package G1 is
+      Obj1 : NT;
+      Obj2 : NT := NT'Make;
+   end G1;
+
+   generic
+      type NT is new BT with private;
+      --  A parameterless and a copy constructor are implicitly required
+   package G2 is
+      Obj1 : NT;
+      Obj2 : NT := NT'Make;
+   end G2;
+
+   package I1 is new G1 (NT => Deriv); -- OK
+   package I2 is new G2 (NT => Deriv); -- OK
+
+Constructors and Instantiations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A constructor cannot be declared by a generic instantiation. For example:
+
+.. code-block:: ada
+
+   generic
+   procedure Gen_Ctor (Self : in out Integer);
+
+   type R is tagged null record;
+   procedure R'Constructor is new Gen_Ctor; -- Illegal
+
+This is consistent with the other attribute subprograms - ``R'Write``,
+``R'Constant_Indexing``, etc. cannot be declared by instantiation either.
+
 Removing Constructors from Public View
 --------------------------------------
 
@@ -807,6 +971,83 @@ private section of the package:
    private
       procedure T1'Constructor (Self : in out T1);
       procedure T1'Constructor (Self : in out T1; From : T1);
+   end P;
+
+Constructors and Private Extensions
+-----------------------------------
+
+The constructors available to a client of a private extension are the ones
+described by its partial view. In particular, if the partial view declares no
+constructor and does not remove the parameterless one, and if the parent type
+provides a parameterless constructor, then a parameterless constructor is
+available on the private extension - the client has the right to expect one:
+
+.. code-block:: ada
+
+   package P is
+      type BT is tagged record
+         C : Integer := -1;
+      end record;
+
+      procedure BT'Constructor (Self : in out BT);
+
+      type Ext is new BT with private;
+      --  No constructor declared, a parameterless one is generated
+
+      function Value_Of (X : Ext) return Integer;
+   private
+      type Ext is new BT with null record;
+
+      Obj : Ext := Ext'Make; -- Legal
+   end P;
+
+Adding a constructor in the private part does not retract the parameterless
+constructor that the partial view promises:
+
+.. code-block:: ada
+
+   package P is
+      type BT is tagged record
+         C : Integer := -1;
+      end record;
+
+      procedure BT'Constructor (Self : in out BT);
+
+      type Ext is new BT with private;
+      --  No constructor declared, a parameterless one is generated
+
+      function Value_Of (X : Ext) return Integer;
+   private
+      type Ext is new BT with null record;
+
+      procedure Ext'Constructor (Self : in out Ext; V : Integer);
+      --  Adds a constructor, does not remove the generated parameterless one
+
+      Obj1 : Ext := Ext'Make;     -- Legal
+      Obj2 : Ext := Ext'Make (2); -- Legal
+   end P;
+
+Conversely, declaring a constructor on the partial view removes the
+parameterless constructor, as it does for any other type:
+
+.. code-block:: ada
+
+   package P is
+      type BT is tagged record
+         C : Integer := -1;
+      end record;
+
+      procedure BT'Constructor (Self : in out BT);
+
+      type Ext is new BT with private;
+      procedure Ext'Constructor (Self : in out Ext; V : Integer);
+      --  Removes the parameterless constructor
+
+      function Value_Of (X : Ext) return Integer;
+   private
+      type Ext is new BT with null record;
+
+      Obj : Ext := Ext'Make; -- Illegal, no parameterless constructor for Ext
    end P;
 
 Tagged Hierarchy Consistency
