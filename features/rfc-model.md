@@ -1,6 +1,6 @@
 - Feature Name: model
 - Start Date: 2026-04-02
-- Status: Design
+- Status: Ready for prototyping
 
 Summary
 =======
