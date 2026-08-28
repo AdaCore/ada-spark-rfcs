@@ -332,6 +332,12 @@ introduce backward-incompatible changes in the pedantic Flare version.
 
 [Deep Delta Aggregates](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-deep-delta-aggregates.md)
 
+[Modifies Aspect](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-spark-modifies-aspect.md)
+
+[Values at Labels ('At)](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-spark-values-at-labels.md)
+
+[No_Raise Aspect](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-noraise.md)
+
 ### Other
 
 [External Initialization](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-external-initialization.rst)
@@ -339,6 +345,8 @@ introduce backward-incompatible changes in the pedantic Flare version.
 [Range Integer Types](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-range-integer-types.rst)
 
 [String Interpolation](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-string-interpolation.md)
+
+[To_String](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-to_string.md)
 
 [Aggregate Record Notation]()
 
