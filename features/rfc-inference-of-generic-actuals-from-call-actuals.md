@@ -113,7 +113,7 @@ procedure Ada.Containers.Generic_Array_Sort (Container : in out Array_Type);
 type Int_Array is array (Positive range <>) of Integer;
 A : Int_Array := (12, 15, 28, 1, 2, 8, 6, 1000);
 
-Generic_Array_Sort (A);
+Generic_Array_Sort () (A);
 ```
 
 Here:
@@ -208,7 +208,138 @@ inference.
 Reference-level explanation
 ===========================
 
-TBD
+These rules extend the overload resolution of RM 8.6. Inference is not a
+separate resolution step: an interpretation of a complete context (see RM
+8.6(4), 8.6(10)) also determines how generic actuals left unspecified are
+resolved for each `structural_generic_instantiation_reference` occurring in the
+name of a call.
+
+Name resolution
+---------------
+
+Given a subprogram call whose name is, or has as its prefix, a
+`structural_generic_instantiation_reference` denoting a generic unit, the
+*inferable formals* of the reference are the generic formal types that have no
+explicit actual and no default, and the *candidate profile* is the profile of
+the called subprogram of the denoted instance. A formal that has a default is
+never inferred: its default applies.
+
+An interpretation of the reference associates a generic actual with each
+inferable formal, the explicit actuals being interpreted as for a generic
+instantiation (RM 12.3).
+
+The actuals for the inferable formals are determined as follows:
+
+* An inferable formal type takes as its generic actual the first subtype
+  (RM 3.2.1) of the type of the call's actual parameter that corresponds to a
+  formal parameter declared of that generic formal type.
+
+* For a function call, the result type participates likewise: an inferable
+  formal type declared as the result type takes as its generic actual the
+  first subtype of the type expected for the call.
+
+If the same generic formal type is inferred more than once, all inferences
+shall yield the same generic actual.
+
+An actual parameter with no single specific type (a literal of a universal
+type, `null`, an aggregate without an applicable expected type, or an operand
+that remains overloaded) infers nothing. Every inferable formal shall have its
+actual determined.
+
+A `structural_generic_instantiation_reference` may itself occur in the prefix
+of another, as in `Outer ().Inner ().Op (X, Y)`. The rules above then apply to
+every such reference in the name of the call, each contributing its own
+inferable formals.
+
+Legality rules
+--------------
+
+* The chosen interpretation is subject to the legality rules of the equivalent
+  explicit instantiation and call (RM 12.3 through 12.7, RM 6.4). These bear on
+  all the generic's formals, not only those the called subprogram uses: a
+  defaulted `is <>` formal subprogram, for example, must resolve for the
+  inferred types even if the called subprogram never uses it.
+
+* A generic formal not mentioned by the candidate profile, directly or through
+  the [inference of dependent formal types
+  RFC](rfc-inference-of-dependent-types.md), cannot be inferred: it
+  shall be given explicitly or have a default (see the `P (Extra => Integer).F
+  (X)` example above).
+
+* In any context other than such a call (in particular a `subtype_mark` denoting
+  a type of the instance), the reference shall specify all actuals not covered
+  by defaults: `Vectors ().Vector` is illegal, `Vectors (Positive,
+  Positive).Vector` is required.
+
+Static and dynamic semantics
+----------------------------
+
+Once resolution has determined the inferable actuals, the construct is
+equivalent to the same call with those actuals given explicitly; in particular,
+the accessibility and hoisting rules of the base RFC apply to that explicit
+form. No new dynamic semantics are introduced.
+
+Examples
+--------
+
+*Legal: a formal type inferred from a parameter.* Using `Generic_Array_Sort`
+from the Guide-level explanation:
+
+```ada
+type Int_Array is array (Positive range <>) of Integer;
+A : Int_Array := (1, 2, 3);
+
+Generic_Array_Sort () (A);
+```
+
+The actual parameter `A`, of type `Int_Array`, corresponds to `Container :
+Array_Type`, so `Array_Type => Int_Array`; `Index_Type` and `Element_Type`
+follow by dependent-type inference, and `"<"` from its `is <>` default.
+
+*Illegal: the surrounding context is overloaded.*
+
+```ada
+generic
+   type R is private;
+function Make return R with Allow_Structural_Instantiation;
+
+procedure P (X : Integer);
+procedure P (X : Float);
+
+P (Make ());   --  illegal
+```
+
+`R` can only be inferred from the type expected for the call, and each `P`
+provides one: `R => Integer` and `R => Float` are both acceptable
+interpretations, so the complete context is rejected. `P (Make (Integer))`
+resolves it.
+
+*Illegal: an actual with no single specific type.*
+
+```ada
+generic
+   type T is private;
+   with function F (X : T) return T is <>;
+function Apply (X : T) return T with Allow_Structural_Instantiation;
+
+Put_Line (Apply () (1)'Image);   --  illegal
+```
+
+The literal `1` is of a universal type, and the prefix of `'Image` imposes no
+expected type on the call, since an attribute's prefix is resolved without
+context (RM 4.1.4), so `T` is undetermined. `Apply (Integer) (1)`, or a context
+that determines the result type, such as `X : Integer := Apply () (1);`, makes
+it legal.
+
+*Legal: inference through a chained prefix.* With a generic package `Inner`
+declared inside a generic package `Outer`, where `Inner` declares `procedure Op
+(A : Outer_T; B : Inner_T)`, and `X : Integer; Y : Float`:
+
+```ada
+Outer ().Inner ().Op (X, Y);   --  Outer_T => Integer, Inner_T => Float
+```
+
+One call infers a formal of each generic in the prefix chain.
 
 Rationale and alternatives
 ==========================
