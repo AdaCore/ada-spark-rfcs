@@ -194,8 +194,8 @@ Operators can be declared as primitives:
 
 Note that here both parameters (and, for ``"+"``, the result) are controlling,
 so they all change to the current class type when overriding. A parameter or
-result that should instead keep its subtype across overridings would be marked
-with ``'Fixed``.
+result that should instead keep its subtype across overridings would be listed
+in the ``Pinned`` aspect of the subprogram.
 
 Inheritance from regular tagged types
 -------------------------------------
@@ -207,7 +207,7 @@ should:
 
 - Only have primitives that follow the ``First_Controlling_Parameter`` rules,
   i.e. whose first parameter is controlling (additional controlling parameters,
-  a controlling result, and ``'Fixed`` parameters or results are all allowed)
+  a controlling result, and ``Pinned`` parameters or results are all allowed)
 - Have no access discriminants
 
 Class-wide types and the ``'Class`` attribute
