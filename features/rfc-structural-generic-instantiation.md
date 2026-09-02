@@ -35,12 +35,12 @@ You can structurally refer to an implicit instantiation of a generic by naming
 it. The (tentative) syntax for naming it is the following:
 
 ```ada
-Ada.Unchecked_Deallocation [Integer, Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Integer, Integer_Access) (My_Int_Access);
 ```
 
 By naming the generic, it will be implicitly instantiated, a key point being
 that there is only one generic corresponding to `Ada.Unchecked_Deallocation
-[Integer, Integer_Access]` at a high level, and every reference to it
+(Integer, Integer_Access)` at a high level, and every reference to it
 references the same entity.
 
 > *Note*
@@ -53,9 +53,9 @@ references the same entity.
 This syntax does also allow naming parameters:
 
 ```ada
-Ada.Unchecked_Deallocation [Object => Integer, Name => Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Object => Integer, Name => Integer_Access) (My_Int_Access);
 
-Ada.Unchecked_Deallocation [Name => Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Name => Integer_Access) (My_Int_Access);
 --  NOTE: This relies on parameter inference
 ```
 
@@ -64,9 +64,9 @@ and empty parameter lists:
 ```ada
 generic procedure Foo (A : Integer) is null;
 
-Foo [] (12);
+Foo () (12);
 
-Ada.Unchecked_Deallocation [] (My_Int_Access);
+Ada.Unchecked_Deallocation () (My_Int_Access);
 --  NOTE: This relies on inference from name & type resolution context
 ```
 
@@ -79,7 +79,7 @@ Ada.Unchecked_Deallocation [] (My_Int_Access);
 Any generic can be instantiated, be it a package, procedure or function:
 
 ```ada
-A : Ada.Containers.Vectors [Positive, Positive].Vector;
+A : Ada.Containers.Vectors (Positive, Positive).Vector;
 ```
 
 This allows generalized structural typing in Ada, and fixes a long standing
@@ -141,15 +141,15 @@ Consider the solution with structural instantiations:
 ```ada
 generic
     type Element_Type is private;
-procedure Consume_Elements (Elements : Ada.Containers.Vectors [Positive, Element_Type].Vector);
+procedure Consume_Elements (Elements : Ada.Containers.Vectors (Positive, Element_Type).Vector);
 
 --  In another package/library
 
 generic
     type Element_Type is private;
-function Produce_Elements return Ada.Containers.Vectors [Positive, Element_Type].Vector;
+function Produce_Elements return Ada.Containers.Vectors (Positive, Element_Type).Vector;
 
-Consume_Elements [Positive] (Produce_Elements [Positive]);
+Consume_Elements (Positive) (Produce_Elements (Positive));
 ```
 
 Reference-level explanation
@@ -253,14 +253,14 @@ We distinguish two cases:
 
 ```ada
 package P is
-    T : Vectors [Positive, Positive].Vector; -- Library-level
+    T : Vectors (Positive, Positive).Vector; -- Library-level
 
     function Foo return Positive;
 end P;
 
 package body P is
     function Foo return Positive is
-        T : Vectors [Positive, Positive].Vector -- Local, but only depends on library-level entities
+        T : Vectors (Positive, Positive).Vector -- Local, but only depends on library-level entities
     begin
         ...
     end Foo;
@@ -272,7 +272,7 @@ end P;
 ```ada
     function Foo return Positive is
         type P is new Positive;
-        T : Vectors [P, P].Vector -- Local
+        T : Vectors (P, P).Vector -- Local
     begin
         ...
     end Foo;
@@ -295,7 +295,7 @@ For top-level generics, this is luckily quite easy to guarantee: At a high
 level, we want the name of the instantiated generic to be a combination of the
 fully qualified name of every formal, + the qualified name of the generic.
 
-In the case of the toplevel `Vectors [Positive, Positive].Vector` above, the
+In the case of the toplevel `Vectors (Positive, Positive).Vector` above, the
 name could be something like:
 
 `Ada_Containers_Vectors_Positive_Positive` (We don't include `Standard` because
@@ -545,11 +545,11 @@ implicitly declared in version #3:
    package body Pkg is
       procedure Foo is
       begin
-         G[].Do_Stuff;
+         G().Do_Stuff;
       end;
       procedure Bar is
       begin
-         G[].Do_Other_Stuff;
+         G().Do_Other_Stuff;
       end;
    end G;
 ```
