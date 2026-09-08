@@ -204,8 +204,12 @@ end F;
 * Generics annotated with the `Allow_Structural_Instantiation` aspect are
   forbidden to have:
 
-  - Mutable global state - TODO refine
-  - Non in object formals
+  - State of their own. The specification and the body of the generic, and any
+    package nested within them, shall not declare a variable, a task object, or
+    a protected object, and both the specification and the body shall be
+    preelaborable (RM 10.2.1).
+
+  - Non-`in` object formals
 
 * Additionally, instantiations of those generics can only pass static expressions
   for object formals.
