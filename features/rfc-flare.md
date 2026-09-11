@@ -120,8 +120,9 @@ Flare_0_1;`. Version numbers are written in canonical form, without leading
 zeros: `Flare_01` and `Flare_1_00` are illegal spellings of `Flare_1` and
 `Flare_1_0`.
 
-At most one Flare or Flare_Extensions pragma may apply to a given compilation
-unit.
+Where more than one Flare or Flare_Extensions pragma applies to a compilation
+unit, the last one found decides the mode of that unit, the way the pragmas
+selecting a version of the base language do.
 
 These pragmas define not only the subset of the language that is allowed, but
 also interpretation of semantics in case of changes.
@@ -397,13 +398,16 @@ pragma Flare_Extensions_0_1; --  Flare extensions, version 0.1
 These are configuration pragmas. Each applies to the single compilation unit it
 immediately precedes, following the usual placement rules for configuration
 pragmas given before a library unit. Placing one of these pragmas anywhere a
-configuration pragma is not permitted is illegal.
+configuration pragma is not permitted is illegal. More than one of them may
+apply to a compilation unit, in which case the last one found decides the
+mode of that unit, the way the pragmas selecting a version of the base language
+do; a pragma the tool applies from elsewhere, such as one in a configuration
+pragma file, applies before a pragma placed on the unit itself.
 
-At most one pragma from either family may apply to a given compilation unit. A
-compilation unit to which no such pragma applies is *regular Ada*; a unit to
-which a `Flare` pragma applies is in *pedantic Flare* mode; a unit to which a
-`Flare_Extensions` pragma applies is in *extensions* mode. The pedantic and
-extensions modes are together referred to as *Flare mode*.
+A compilation unit to which no such pragma applies is *regular Ada*; a unit
+whose deciding pragma is a `Flare` pragma is in *pedantic Flare* mode; a unit
+whose deciding pragma is a `Flare_Extensions` pragma is in *extensions* mode.
+The pedantic and extensions modes are together referred to as *Flare mode*.
 
 ### Legality Rules — the version
 
