@@ -691,7 +691,9 @@ may not exist for its child.
 
 By default, a class provides a parameterless constructor, on top of the copy
 constructor. This parameterless constructor is removed as soon as explicit
-constructors are provided. For example:
+constructors are provided (see the Constructors and the Private Part section
+for the specific case of a constructor declared in the private part of a
+package). For example:
 
 .. code-block:: ada
 
@@ -950,37 +952,257 @@ A constructor cannot be declared by a generic instantiation. For example:
 This is consistent with the other attribute subprograms - ``R'Write``,
 ``R'Constant_Indexing``, etc. cannot be declared by instantiation either.
 
-Removing Constructors from Public View
---------------------------------------
+Constructors and the Private Part
+---------------------------------
 
-A special syntax is provided to remove the default parameterless constructor
-and/or the copy constructor
-from the public view, without providing any other constructor. The full view of
-a type is then responsible to provide constructor (with or without parameters).
-Such object can only be created by code that has visibility over the
-private section of the package:
+The constructors available to a client of a package are entirely described by
+the visible part of that package. This is true of a private type, of a private
+extension, and of a type whose full view is itself in the visible part: what
+can be seen by a client is enough to know how to create an object of the type.
+
+Three rules follow from this principle:
+
+1. The private part can only add constructors, never remove any. A constructor
+   declared in the private part is available from its declaration onwards - the
+   rest of the private part, the package body, and the children of the package -
+   and is never visible to a client.
+2. A declaration in the private part that would otherwise remove a constructor
+   provided by the visible part is illegal. Rather than silently ignoring the
+   removal, the language requires the visible part to state what is intended -
+   either the constructor is available to clients, and it is declared on the
+   visible part, or it is not, and it is removed on the visible part with an
+   abstract declaration.
+3. A constructor declared in the private part may not have the profile of a
+   constructor that clients have. Being declared in the private part, it would
+   only be available from there on, which would be ambiguous with the one
+   clients already have. A profile that the visible part removed with an
+   abstract declaration is not concerned - clients have no such constructor,
+   and declaring it in the private part is precisely how it is provided to the
+   package and its children only.
+
+Adding Constructors in the Private Part
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Constructors declared in the private part are added to the ones described by
+the visible part. In the following example, clients of ``P`` can only create an
+object of ``T`` with a value, while the private part and the body can also
+create one from a string:
 
 .. code-block:: ada
 
    package P is
-      type T1 is null record;
+      type T is tagged private;
+
+      procedure T'Constructor (Self : in out T; V : Integer);
+      --  Clients have this constructor, and the copy constructor
+
+   private
+      type T is tagged record
+         F : Integer;
+      end record;
+
+      procedure T'Constructor (Self : in out T; V : String);
+      --  Only available from here on
+
+      Obj1 : T := T'Make (0);     -- Legal
+      Obj2 : T := T'Make ("0");   -- Legal
+   end P;
+
+Note that in the above, adding a parameterless constructor in the private part
+would be legal as well: clients have none, as the explicit constructor on the
+visible part removes it, so there is nothing to contradict. It would not remove
+the parametric one either - an explicit constructor is never removed by another
+declaration.
+
+As a constructor declared in the private part is only available to code that
+has visibility over the private part, such a declaration may never have the
+profile of a constructor that clients have - it would be ambiguous whether that
+constructor is meant to be available to everybody or only from the private part
+on. The profile of a constructor that the visible part removed with an abstract
+declaration remains available, as described in the Removing Constructors from
+the Visible Part section below:
+
+.. code-block:: ada
+
+   package P is
+      type T is tagged private;
+      --  No constructor declared, clients have a parameterless constructor
+      --  and a copy constructor
+
+   private
+      type T is tagged record
+         F : Integer;
+      end record;
+
+      procedure T'Constructor (Self : in out T);
+      --  Illegal, clients already have this constructor
+   end P;
+
+A constructor that would otherwise be generated is declared explicitly on the
+visible part, where clients can see it:
+
+.. code-block:: ada
+
+   package P is
+      type T is tagged private;
+
+      procedure T'Constructor (Self : in out T);
+      --  The parameterless constructor, now explicit - clients see exactly the
+      --  same constructors as before
+
+   private
+      type T is tagged record
+         F : Integer;
+      end record;
+
+      Obj : T; -- Legal
+   end P;
+
+Contradicting the Visible Part is Illegal
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As described in the Constructors Presence Guarantees section above, declaring
+an explicit constructor removes the generated parameterless one. When such a
+declaration appears in the private part of a package while the visible part
+provides that parameterless constructor, the two contradict each other, and the
+declaration is illegal:
+
+.. code-block:: ada
+
+   package P is
+      type BT is tagged record
+         C : Integer := -1;
+      end record;
+
+      procedure BT'Constructor (Self : in out BT);
+
+      type Ext is new BT with private;
+      --  No constructor declared, clients have a parameterless constructor
+
+      function Value_Of (X : Ext) return Integer;
+   private
+      type Ext is new BT with null record;
+
+      procedure Ext'Constructor (Self : in out Ext; V : Integer);
+      --  Illegal, this declaration would remove the parameterless constructor
+      --  that the partial view of Ext provides to clients
+   end P;
+
+The error is resolved by making the visible part say what is intended. If the
+parameterless constructor is meant to be available to clients, it is declared
+explicitly:
+
+.. code-block:: ada
+
+   package P is
+      --  ... BT as above
+
+      type Ext is new BT with private;
+      procedure Ext'Constructor (Self : in out Ext);
+      --  Clients keep a parameterless constructor, now explicit
+
+   private
+      type Ext is new BT with null record;
+
+      procedure Ext'Constructor (Self : in out Ext; V : Integer);
+      --  Legal, only adds a constructor
+
+      Obj1 : Ext := Ext'Make;     -- Legal
+      Obj2 : Ext := Ext'Make (2); -- Legal
+   end P;
+
+If it is meant to be removed, it is removed explicitly, with an abstract
+declaration, as described in the next section:
+
+.. code-block:: ada
+
+   package P is
+      --  ... BT as above
+
+      type Ext is new BT with private;
+      procedure Ext'Constructor (Self : in out Ext) is abstract;
+      --  Clients have no parameterless constructor
+
+   private
+      type Ext is new BT with null record;
+
+      procedure Ext'Constructor (Self : in out Ext; V : Integer);
+
+      Obj1 : Ext := Ext'Make;     -- Illegal, no parameterless constructor
+      Obj2 : Ext := Ext'Make (2); -- Legal
+   end P;
+
+In both cases, the resolution is in the visible part. Declaring the
+parameterless constructor in the private part, next to the parametric one, does
+not resolve anything: as it is declared in the private part, that constructor is
+only available from there on, so the constructor promised to clients is still
+missing.
+
+More generally, the legality rule is expressed on the constructors available
+from the visible part rather than on individual declarations. Let the visible
+set be the constructors available at the end of the visible part, computed with
+the usual rules. Every constructor of the visible set must still be available at
+the end of the private part, and be the one declared or generated for the
+visible part. Marking a constructor abstract in the private part is the most
+direct way to break that rule, and is consequently illegal as well:
+
+.. code-block:: ada
+
+   package P is
+      type T is tagged private;
+      --  Clients have a parameterless and a copy constructor
+
+   private
+      type T is tagged null record;
+
+      procedure T'Constructor (Self : in out T) is abstract;
+      --  Illegal, the private part cannot remove a constructor
+   end P;
+
+Removing Constructors from the Visible Part
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Conversely, removing a constructor in the visible part and providing it in the
+private part is always legal - the private part only adds to what clients see.
+This is how a type is made constructible only by code that has visibility over
+the private part. An abstract constructor declaration removes the generated
+parameterless constructor and/or the copy constructor from the visible part,
+without providing any other constructor:
+
+.. code-block:: ada
+
+   package P is
+      type T1 is tagged private;
 
       procedure T1'Constructor (Self : in out T1) is abstract;
       procedure T1'Constructor (Self : in out T1; From : T1) is abstract;
+      --  Clients can neither create nor copy an object of T1
 
    private
+      type T1 is tagged null record;
+
       procedure T1'Constructor (Self : in out T1);
       procedure T1'Constructor (Self : in out T1; From : T1);
+      --  Both are available from here on
+
+      Obj1 : T1;
+      Obj2 : T1 := Obj1;
    end P;
 
-Constructors and Private Extensions
------------------------------------
+The private part is not required to provide these constructors back. If it does
+not, no object of the type can be created at all, which is a legitimate design
+for a type that is only ever manipulated through access values built elsewhere.
 
-The constructors available to a client of a private extension are the ones
-described by its partial view. In particular, if the partial view declares no
-constructor and does not remove the parameterless one, and if the parent type
-provides a parameterless constructor, then a parameterless constructor is
-available on the private extension - the client has the right to expect one:
+Constructors and Private Extensions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The rules above apply to private extensions, with the constructors of the
+partial view being determined as for any other type - in particular, a
+parameterless constructor is generated only if the parent type has one. If the
+partial view declares no constructor, does not remove the parameterless one,
+and the parent type provides a parameterless constructor, then a parameterless
+constructor is available on the private extension - the client has the right to
+expect one:
 
 .. code-block:: ada
 
@@ -1001,8 +1223,9 @@ available on the private extension - the client has the right to expect one:
       Obj : Ext := Ext'Make; -- Legal
    end P;
 
-Adding a constructor in the private part does not retract the parameterless
-constructor that the partial view promises:
+If on the other hand the parent type has no parameterless constructor, the
+partial view provides none either, and the private part is free to declare
+parametric constructors - there is nothing to contradict:
 
 .. code-block:: ada
 
@@ -1011,24 +1234,27 @@ constructor that the partial view promises:
          C : Integer := -1;
       end record;
 
-      procedure BT'Constructor (Self : in out BT);
+      procedure BT'Constructor (Self : in out BT; V : Integer);
+      --  BT has no parameterless constructor
 
       type Ext is new BT with private;
-      --  No constructor declared, a parameterless one is generated
+      --  No parameterless constructor is generated for Ext either
 
-      function Value_Of (X : Ext) return Integer;
    private
       type Ext is new BT with null record;
 
       procedure Ext'Constructor (Self : in out Ext; V : Integer);
-      --  Adds a constructor, does not remove the generated parameterless one
+      --  Legal, the partial view of Ext promises no parameterless constructor.
+      --  Its body needs a Super aspect, as BT has no parameterless constructor
+      --  to call.
 
-      Obj1 : Ext := Ext'Make;     -- Legal
+      Obj1 : Ext;                 -- Illegal, there never was a parameterless
+                                  --  constructor for Ext
       Obj2 : Ext := Ext'Make (2); -- Legal
    end P;
 
-Conversely, declaring a constructor on the partial view removes the
-parameterless constructor, as it does for any other type:
+Finally, declaring a constructor on the partial view removes the parameterless
+constructor, as it does for any other type:
 
 .. code-block:: ada
 
