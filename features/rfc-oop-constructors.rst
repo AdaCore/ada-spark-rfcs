@@ -335,15 +335,19 @@ Here's an example of using ``Initialize`` for such a case:
    end C'Constructor;
 
 
-Note that if there is no initialization for components with no default
-constructors, the compiler will report an error:
+Note that if a by-constructor type does not initialize a component that has no
+default constructor, the compiler will report an error. Here, ``C`` is a
+by-constructor type because it derives from ``Root``:
 
 .. code-block:: ada
 
    type Some_Type is tagged null record;
    procedure Some_Type'Constructor (Self : in out Some_Type; Some_Value : Integer);
 
-   type C is tagged record
+   type Root is tagged null record;
+   procedure Root'Constructor (Self : in out Root);
+
+   type C is new Root with record
       F : Some_Type; -- Compilation error, F needs explicit constructor call
    end record;
 
