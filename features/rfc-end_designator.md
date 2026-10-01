@@ -1,4 +1,4 @@
-- Feature ID: mandatory_end_designator
+- Feature ID: end_designator
 - Start Date: 2025-11-06
 - Status: Ready for Prototyping
 
