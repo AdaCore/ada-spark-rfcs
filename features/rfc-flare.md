@@ -351,7 +351,7 @@ introduce backward-incompatible changes in the pedantic Flare version.
 
 [Aggregate Record Notation]()
 
-[End name; instead of end record](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-mandatory_end_designator.md)
+[End name; instead of end record](https://github.com/AdaCore/ada-spark-rfcs/blob/master/features/rfc-end_designator.md)
 
 [Parenthesis for Non-Parameter Calls]()
 
