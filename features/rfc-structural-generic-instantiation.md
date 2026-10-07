@@ -32,15 +32,15 @@ Guide-level explanation
 =======================
 
 You can structurally refer to an implicit instantiation of a generic by naming
-it. The (tentative) syntax for naming it is the following:
+it. The syntax for naming it is the following:
 
 ```ada
-Ada.Unchecked_Deallocation [Integer, Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Integer, Integer_Access) (My_Int_Access);
 ```
 
 By naming the generic, it will be implicitly instantiated, a key point being
 that there is only one generic corresponding to `Ada.Unchecked_Deallocation
-[Integer, Integer_Access]` at a high level, and every reference to it
+(Integer, Integer_Access)` at a high level, and every reference to it
 references the same entity.
 
 > *Note*
@@ -53,33 +53,23 @@ references the same entity.
 This syntax does also allow naming parameters:
 
 ```ada
-Ada.Unchecked_Deallocation [Object => Integer, Name => Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Object => Integer, Name => Integer_Access) (My_Int_Access);
 
-Ada.Unchecked_Deallocation [Name => Integer_Access] (My_Int_Access);
+Ada.Unchecked_Deallocation (Name => Integer_Access) (My_Int_Access);
 --  NOTE: This relies on parameter inference
 ```
 
-and empty parameter lists:
-
-```ada
-generic procedure Foo (A : Integer) is null;
-
-Foo [] (12);
-
-Ada.Unchecked_Deallocation [] (My_Int_Access);
---  NOTE: This relies on inference from name & type resolution context
-```
-
-> [!NOTE]
->
-> Do we want to allow `Ada.Unchecked_Deallocation (My_Int_Access)` - so,
-> without any explicit syntactic instantiation indication ? Seems nifty and
-> possible, but maybe too implicit.
+The actual part is mandatory and contains at least one association: there is
+no empty parameter list, and a generic with no formals cannot be instantiated
+structurally. Leaving all actuals to be inferred from the call, or dropping
+the actual part altogether (`Ada.Unchecked_Deallocation (My_Int_Access)`), is
+not supported; inference from call actuals is the subject of the [inference of
+generic actuals RFC](./rfc-inference-of-generic-actuals-from-call-actuals.md).
 
 Any generic can be instantiated, be it a package, procedure or function:
 
 ```ada
-A : Ada.Containers.Vectors [Positive, Positive].Vector;
+A : Ada.Containers.Vectors (Positive, Positive).Vector;
 ```
 
 This allows generalized structural typing in Ada, and fixes a long standing
@@ -141,103 +131,92 @@ Consider the solution with structural instantiations:
 ```ada
 generic
     type Element_Type is private;
-procedure Consume_Elements (Elements : Ada.Containers.Vectors [Positive, Element_Type].Vector);
+procedure Consume_Elements (Elements : Ada.Containers.Vectors (Positive, Element_Type).Vector);
 
 --  In another package/library
 
 generic
     type Element_Type is private;
-function Produce_Elements return Ada.Containers.Vectors [Positive, Element_Type].Vector;
+function Produce_Elements return Ada.Containers.Vectors (Positive, Element_Type).Vector;
 
-Consume_Elements [Positive] (Produce_Elements [Positive]);
+Consume_Elements (Positive) (Produce_Elements (Positive));
 ```
 
 Reference-level explanation
 ===========================
 
-This is clearly not complete, we expect this draft to be completed during
-prototyping.
+The feature is implemented in GNAT as an experimental extension, gated behind
+`-gnatX0` or `pragma Extensions_Allowed (All_Extensions)`; see the "Structural
+Generic Instantiation" section of the GNAT RM. The rules below reflect that
+implementation.
 
 ### Syntax changes
 
 Add the following syntax rule:
 
 ```
-structural_generic_instantiation_reference ::=
-    name [generic_actual_part]
+structural_generic_instance_name ::= name generic_actual_part
 ```
 
-And alter the `name` rule to include `structural_generic_instantiation_reference`
+And alter the `name` rule to include `structural_generic_instance_name`. Note
+that, unlike in a traditional instantiation, the `generic_actual_part` is not
+optional: the parenthesized actual part is what syntactically distinguishes a
+structural instance name from a direct reference to the generic unit.
 
 ### Semantic changes
 
-* Each `structural_generic_instantiation_reference` references a structural
+* Each `structural_generic_instance_name` references a structural
   generic instantiation.
 
-* This structural generic instantiation is semantically unique, and refers to a
-  unique code entity. All references refer to the same instantiation.
+* This structural generic instantiation is semantically unique: at most one
+  per generic unit and actual parameters in a partition, and all references
+  refer to it. Exception: a subprogram instantiation demoted to a local one
+  (see below) may exist in several copies, unless LTO merges them.
 
 * As soon as there exists one reference to a given structural instantiation,
   then it will be instantiated.
 
 * All three kinds of generics can be instantiated, be it a package, procedure
-  or function. A `structural_generic_instantiation_reference` will be
+  or function. A `structural_generic_instance_name` will be
   syntactically valid in any context where a name is valid, and semantically
   valid in any context where a reference to the instantiated entity (subprogram
   or package) is valid.
 
-* For the moment, in order to be able to impose restrictions on the generic
-  code that can be compilable this way, generics that are instantiable
-  structurally need to be explicitly marked with the
-  `Allow_Structural_Instantiation` aspect:
+* In order to impose restrictions on the generic code that can be compiled
+  this way, the name in a `structural_generic_instance_name` shall denote a
+  generic unit that is preelaborated (RM 10.2.1). No opt-in aspect is
+  involved: preelaboration is what rules out mutable global state and
+  elaboration-time side effects in the generic.
 
-```ada
-generic
-   type T is private;
-package F
-    with Allow_Structural_Instantiation
-is
-   ...
-end F;
-```
+* The generic unit shall not have a generic formal object of mode `in out`.
 
-* Generics annotated with the `Allow_Structural_Instantiation` aspect are
-  forbidden to have:
+* The generic actual for a generic formal object of mode `in` shall be a
+  static expression.
 
-  - Mutable global state - TODO refine
-  - Non in object formals
+* The generic unit shall have at least one generic formal parameter; this
+  follows from the `generic_actual_part` being mandatory in the syntax.
 
-* Additionally, instantiations of those generics can only pass static expressions
-  for object formals.
+* A `structural_generic_instance_name` for a generic *package* shall not be
+  present in a library unit on which the structural instance, itself a library
+  unit, would semantically depend (use a traditional instantiation there).
 
-* Generics annotated with the `Allow_Structural_Instantiation` are forbidden to
-  have no generic formals.
+* For a generic *subprogram* in that situation, the structural instantiation
+  is instead automatically demoted to a local instantiation.
 
-* Generics annotated with the `Allow_Structural_Instantiation` cannot be
-  library-level descendants of library level generic packages.
-
-> [!NOTE]
-> This restriction solely exists because GNAT already handle library level
-> generic packages badly according to Steve, and we can't see compelling use
-> cases.
-
-* The instantiation denoted by a `structural_generic_instantiation_reference`
+* The instantiation denoted by a `structural_generic_instance_name`
   is considered to be expansed in the topmost scope where it is legal to hoist
   it. Its accessibility level is deduced from this.
 
-* For the moment, if there is no legal syntactic declarative region in which
-  the equivalent explicit instantiation could live, then the instantiation is
-  forbidden:
+* No specific rule is needed for contexts that lack a declarative region, such
+  as expression functions: the instance is declared in the outermost scope
+  where the equivalent explicit instantiation would be legal, which always
+  exists given the previous rules. In the classic problematic example below,
+  the reference is already illegal because `N` is not static:
 
 ```ada
 function Expr_Func (N : Natural) is
-    (Some_Generic(N).Some_Function); -- ILLEGAL
+    (Some_Generic(N).Some_Function); -- ILLEGAL: N is not static
 ```
-
-> [!NOTE]
-> This does not appear necessary, and is more dependent on implementation
-> details than anything else in my opinion. But it might facilitate
-> implementation in a first step.
 
 Implementation guidance
 =======================
@@ -253,14 +232,14 @@ We distinguish two cases:
 
 ```ada
 package P is
-    T : Vectors [Positive, Positive].Vector; -- Library-level
+    T : Vectors (Positive, Positive).Vector; -- Library-level
 
     function Foo return Positive;
 end P;
 
 package body P is
     function Foo return Positive is
-        T : Vectors [Positive, Positive].Vector -- Local, but only depends on library-level entities
+        T : Vectors (Positive, Positive).Vector -- Local, but only depends on library-level entities
     begin
         ...
     end Foo;
@@ -272,7 +251,7 @@ end P;
 ```ada
     function Foo return Positive is
         type P is new Positive;
-        T : Vectors [P, P].Vector -- Local
+        T : Vectors (P, P).Vector -- Local
     begin
         ...
     end Foo;
@@ -295,7 +274,7 @@ For top-level generics, this is luckily quite easy to guarantee: At a high
 level, we want the name of the instantiated generic to be a combination of the
 fully qualified name of every formal, + the qualified name of the generic.
 
-In the case of the toplevel `Vectors [Positive, Positive].Vector` above, the
+In the case of the toplevel `Vectors (Positive, Positive).Vector` above, the
 name could be something like:
 
 `Ada_Containers_Vectors_Positive_Positive` (We don't include `Standard` because
