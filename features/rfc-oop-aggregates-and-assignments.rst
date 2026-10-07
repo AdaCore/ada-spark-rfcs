@@ -138,15 +138,21 @@ needs to be maintained equal to the parents.
       end if;
    end Child'Assign;
 
-When reasoning about this interface, it's useful to keep in mind that it has
-a fundamental design flaw - it allows the user to modify the values of A and
-B while possibly leaking the values. A more realistic example would make these
-values private, or maybe not automatically allocate objects (but that would
-prevent to showcase some aspects of the proposal later).
+When reasoning about this interface, note that the aggregate expansion calls
+the parameterless constructor on ``Tmp`` before overwriting individual fields.
+If the constructor pre-allocates a resource for a field that the aggregate
+then replaces, the constructor's allocation is leaked.  For types intended to
+be used with aggregates, the recommended pattern is for the constructor to
+leave fields that will always be supplied by the aggregate in a trivially
+destructible initial state (typically null), and to pre-allocate only those
+resources that the aggregate cannot supply.  The ``Child'Destructor (Tmp)``
+call at the end of the expansion releases whatever state ``Tmp`` holds after
+field assignment, so the final result is leak-free provided the constructor
+follows this pattern.
 
-Generally speaking, this proposal is providing to the user the tools to develop
-a type which will remain safe and consistent, to the contrary of the previous
-model that offers shortcuts breaking this ability.
+Generally speaking, this proposal provides the tools to develop types that
+remain safe and consistent, in contrast to the previous model which offered
+shortcuts that undermined that goal.
 
 Simple Copy Assignments
 -----------------------
@@ -213,7 +219,7 @@ class wide types:
       --  if V'Tag = W'Tag then
       --    V'Assign (W); -- dispatches
       --  else
-      --    raise <the appropriate exception>;
+      --    raise Constraint_Error;
       --  end if;
 
 Aggregate Assignments
@@ -280,6 +286,19 @@ A few notes on the above sequences:
   aggregate notation for types that do not require these constructs, and
   the compiler should optimize the sequencing in these cases.
 
+In the expansion pseudocode throughout this section, a bare declaration
+``Tmp : Child;`` denotes a compiler-introduced raw object: no implicit
+constructor call is made for the declaration itself, and the object's storage
+is indeterminate until the expansion's explicit constructor call initialises
+it.  This exemption is necessary to avoid infinite regress: if the declaration
+of a compiler temporary for an aggregate triggered the aggregate expansion
+recursively, the expansion would not terminate.  The expansion always
+provides an explicit constructor call immediately following such a declaration.
+Similarly, in the delta aggregate expansion, the notation
+``Child'Constructor (Tmp, C1)`` is the explicit copy-constructor call that
+initialises ``Tmp`` from ``C1``; it does not trigger a further assignment
+expansion.
+
 Aggregate Assignments with Extension Copies
 -------------------------------------------
 
@@ -340,10 +359,12 @@ constructor, e.g.:
       -- C'Assign (Tmp);
       -- Tmp'Destructor;
 
-A new syntax in Flare allows types to have both public and private components,
-if a user does not have visibility over all the components of a type, he
-needs to specify in the aggregate that these non visible values are not
-specified with a "private" part at the end of the aggregate, e.g.:
+The ``with private`` record syntax (see the OOP Fields RFC) allows a type to
+declare some components in its public view and additional components visible
+only in its private view.  When writing an aggregate for such a type without
+full visibility of all components, the caller must include the keyword
+``private`` as the final item in the aggregate to indicate that the hidden
+components are not being given explicit values, e.g.:
 
 .. code-block:: ada
 
@@ -359,11 +380,18 @@ specified with a "private" part at the end of the aggregate, e.g.:
       end record;
    end P;
 
-The behavior of a private part is the same as the one of default values. The
-presence of this private word is mandatory if the user doesn't have full
-visibility of the components of a type, forbidden otherwise. This is different
-from the "others => <>" notation which expresses the desire to not value other
-otherwise visible components.
+For constructor types, the private components are left in whatever state the
+parameterless constructor has established.  For non-constructor types, every
+private component must have a default expression; an aggregate with ``private``
+is otherwise illegal.
+
+The keyword ``private`` in aggregate position is contextual: it is treated as a
+keyword only when it is the final element of an aggregate expression.  Its
+presence is mandatory when the aggregate type has components not visible at the
+point of the aggregate; it is a compile-time error when full visibility is
+available.  This is distinct from ``others => <>``, which requests default
+values for otherwise-visible components; ``private`` stands for components that
+are entirely outside the caller's view.
 
 Self Assignment
 ---------------
@@ -410,7 +438,11 @@ its value to the final object:
    --  Tmp'Destructor;
 
 Note that we're using a copy constructor here instead of the Assign
-operation as there's no initial object to modify here.
+operation as there's no initial object to modify here.  The copy constructor's
+profile (its two-parameter form) is specified in the Constructors RFC.  Unlike
+Assign, whose ``From`` parameter is typed as the root of the hierarchy, the
+copy constructor's ``From`` parameter is typed as the specific type being
+constructed, since no partial copy is involved.
 
 Partial Copy and Initialization
 -------------------------------
@@ -620,6 +652,29 @@ can consider the following hierarchy:
 Note that the above structure doesn't need to do any shallow copy of Start_Node
 and End_Node, only needs to compute number of elements in the partial assign
 case, and always requires to re-compute middle element for consistency.
+
+The Assign mechanism's central efficiency advantage over Ada's existing
+Finalize / Adjust is that Assign receives both the source object and the
+pre-existing target simultaneously.  This allows an Assign implementation to
+inspect the target's current state and reuse resources rather than discarding
+them: for example, if the target already holds an allocated buffer of the right
+size, Assign can overwrite it in place rather than freeing and reallocating.  The
+Ada Finalize / Adjust model makes this impossible, because Finalize discards the
+target's state before the source is consulted.
+
+Note that the Assign implementations in this document use unconditional
+Free / allocate for conciseness.  A production Assign would typically branch on
+whether existing allocations can be reused, which is the intended use of the
+pattern.
+
+The current Ada Finalize / Adjust sequence could be an alternative. However, it
+doesn't provide sufficient ability to control consistency of the objects. It
+forces the target object to be finalized, it never allows to look at both the
+source and target value in the same sequence of statement (finalize on the
+previous value, adjust on the new value) and it doesn't allow to control
+what is copied. On top of that, when doing assignment on partial objects,
+Finalize and Adjust are never dispatched to the real value, leaving potential
+inconsistencies.
 
 
 Drawbacks
