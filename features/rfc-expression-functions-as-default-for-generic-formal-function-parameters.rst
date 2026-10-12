@@ -11,16 +11,17 @@ Allow specifying a default for a generic formal function parameter by using an
 expression function. For example, it could be used to provide a Copy function
 to a container package in the following way:
 
+.. code-block:: ada
 
-generic
-   type Element_Type is private;
+    generic
+       type Element_Type is private;
 
-   with function "=" (Left, Right : Element_Type)
-      return Boolean is <>;
+       with function "=" (Left, Right : Element_Type)
+          return Boolean is <>;
 
-   with function Copy (Item : Element_Type) return Element_Type is (Item);
+       with function Copy (Item : Element_Type) return Element_Type is (Item);
 
-package Ada.Containers.Formal_Doubly_Linked_Lists is 
+    package Ada.Containers.Formal_Doubly_Linked_Lists is
 
 Motivation
 ==========
@@ -42,52 +43,60 @@ definition is used instead. It is a bit similar to the null default for formal
 procedure parameters.
 As an example, we all know the usual example of a generic stack:
 
-generic
-   type T is private;
-package Stacks is
-   type Stack is private;
-   procedure Push (S : Stack; X : T);
-   ...
+.. code-block:: ada
+
+    generic
+       type T is private;
+    package Stacks is
+       type Stack is private;
+       procedure Push (S : Stack; X : T);
+       ...
 
 However, if we use this generic to store access based structure, it may not do
 what we expect. For example, in the code below, the aliasing between X and the
 pointer stored in the stack means that the top of the stack is modified by
 assigning to X.all, and so "21" is printed instead of "12":
 
-with Stacks;
-with Ada.Text_IO;
-procedure Use_Stacks is
-   type Int_Acc is access Integer;
+.. code-block:: ada
 
-   package Int_Acc_Stacks is new Stacks (T => Int_Acc);
-   use Int_Acc_Stacks;
+    with Stacks;
+    with Ada.Text_IO;
+    procedure Use_Stacks is
+       type Int_Acc is access Integer;
 
-   S : Stack;
-   X : Int_Acc := new Integer'(12);
-begin
-   Push (S, X);
-   X.all := 21;
-   Ada.Text_IO.Put_Line (Peek (S).all'Image);
-end Use_Stacks;
+       package Int_Acc_Stacks is new Stacks (T => Int_Acc);
+       use Int_Acc_Stacks;
+
+       S : Stack;
+       X : Int_Acc := new Integer'(12);
+    begin
+       Push (S, X);
+       X.all := 21;
+       Ada.Text_IO.Put_Line (Peek (S).all'Image);
+    end Use_Stacks;
 
 Depending on the use case, we may want the object in the stack to be copied
 using either a deep copy, or a shallow copy. To handle the first case, we need
 to supply an additional formal function parameter to the generic, to provide
 the Copy function that we want to use:
 
-generic
-   type T is private;
-   with function Copy (Item : T) return T;
-package Stacks is
-   type Stack is private;
-   procedure Push (S : Stack; X : T);
-   ...
+.. code-block:: ada
+
+    generic
+       type T is private;
+       with function Copy (Item : T) return T;
+    package Stacks is
+       type Stack is private;
+       procedure Push (S : Stack; X : T);
+       ...
 
 But in general, we still want to instantiate stacks in the usual way, that is
 so that usual copy is used on assignment. This can be achieved by supplying a
 default for the Copy function using an expression function:
 
-   with function Copy (Item : T) return T is (Item);
+.. code-block:: ada
+
+    with function Copy (Item : T) return T is (Item);
 
 Reference-level explanation
 ===========================
@@ -101,18 +110,22 @@ is then used inside the generic in place of the missing actual parameter.
 
 For example, let us look at the example in the previous section:
 
-package Int_Acc_Stacks is new Stacks (T => Int_Acc);
+.. code-block:: ada
+
+    package Int_Acc_Stacks is new Stacks (T => Int_Acc);
 
 Since no value is supplied for the Copy parameter, this should produce the
 instance:
 
-package Int_Acc_Stacks is
-   subtype T is Int_Acc;
-   function Copy (Item : T) return T is (Item);
+.. code-block:: ada
 
-   type Stack is private;
-   procedure Push (S : Stack; X : T);
-   ...
+    package Int_Acc_Stacks is
+       subtype T is Int_Acc;
+       function Copy (Item : T) return T is (Item);
+
+       type Stack is private;
+       procedure Push (S : Stack; X : T);
+       ...
 
 Rationale and alternatives
 ==========================
@@ -123,22 +136,24 @@ If we don't introduce this feature, in use cases like the example before, either
 each instances should provide a value for Copy, or a new generic package should
 be made, providing a simplified instanciation pattern for the usual use-case:
 
-generic
-   type T is private;
-   with function Copy (Item : T) return T;
-package Stacks is
-   type Stack is private;
-   procedure Push (S : Stack; X : T);
-   ...
-end Stacks
+.. code-block:: ada
 
-generic
-   type T is private;
-package Usual_Stacks is
-   function Copy (Item : T) return T is (Item);
-   
-   package Inst is new Stacks (T => T, Copy => Copy);
-end Usual_Stacks;
+    generic
+       type T is private;
+       with function Copy (Item : T) return T;
+    package Stacks is
+       type Stack is private;
+       procedure Push (S : Stack; X : T);
+       ...
+    end Stacks;
+
+    generic
+       type T is private;
+    package Usual_Stacks is
+       function Copy (Item : T) return T is (Item);
+
+       package Inst is new Stacks (T => T, Copy => Copy);
+    end Usual_Stacks;
 
 The draw-backs of this work-around are:
  - the different name of the generic package (we have to know is exists and what
