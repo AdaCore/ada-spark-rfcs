@@ -101,8 +101,8 @@ generic
    with procedure Free (E : in out Element_Type) is null;
 package Conts.Maps.Indef_Def_Unbounded is
   Conts.Maps.Generics
-    (Keys                => Conts.Elements.Indefinite [Key_Type, Conts.Global_Pool, Free].Traits,
-     Elements            => Conts.Elements.Definite [Element_Type, Free => Free].Traits,
+    (Keys                => Conts.Elements.Indefinite (Key_Type, Conts.Global_Pool, Free).Traits,
+     Elements            => Conts.Elements.Definite (Element_Type, Free => Free).Traits,
      Hash                => Hash,
      "="                 =>
        function (Left : Key_Type; Right : Keys.Traits.Stored) return Boolean
