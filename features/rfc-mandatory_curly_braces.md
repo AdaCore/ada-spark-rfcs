@@ -55,10 +55,11 @@ C#, and JavaScript, where `{...}` constructs a struct, record, or object value.
 ## Completing the Flare delimiter policy
 
 After RFC `parentheses_for_parameterless_calls` and RFC
-`mandatory_square_brackets`, record aggregates are the last remaining non-call,
-non-grouping use of `()` in pedantic Flare. Covering them closes the policy:
-`Name (...)` is a call, `[...]` builds or indexes an array or indexable
-container (RM 4.1.6), and `{...}` builds a record value.
+`mandatory_square_brackets`, record aggregates are the last aggregate form that
+still uses `()` in pedantic Flare. Covering them completes the aggregate policy:
+`[...]` builds or indexes an array or indexable container (RM 4.1.6), and
+`{...}` builds a record value. `Name (...)` remains a call, a type conversion,
+or a discriminant constraint (see What still uses parentheses).
 
 ## Removing the parenthesised-expression collision
 
@@ -204,7 +205,9 @@ Ada 2022 already allows `T'[...]`: Ada's `Point'(X => 1, Y => 2)` becomes
 
 This RFC does not change:
 
-- Discriminant constraints: `Rec (D => 5)` (see Rationale and alternatives)
+- Type conversions: `Integer (X)`
+- Discriminant constraints: `Rec (D => 5)`, including in allocators such as
+  `new Rec (D => 5)` (see Rationale and alternatives)
 - Discriminant parts in type declarations: `type Rec (D : Positive) is record`
 
 # Reference-level explanation
@@ -348,8 +351,8 @@ Curly braces are the natural choice for record construction:
   from: struct and object construction in C, C++, Rust, Go, C#, JavaScript, and
   Zig.
 - They complete a three-way visual split — call `()`, array or container `[]`,
-  record `{...}` — that lets a reader classify any construct without consulting
-  declarations.
+  record `{...}` — that lets a reader tell a record aggregate from an array or
+  container aggregate, and from a call, without consulting declarations.
 
 ## The empty record aggregate is `{null record}`
 
