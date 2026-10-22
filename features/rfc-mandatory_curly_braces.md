@@ -7,14 +7,14 @@
 This RFC makes a curly-brace syntax `{...}` mandatory for record aggregate
 construction in pedantic Ada Flare:
 
-1. Record aggregates: `{X => 1, Y => 2}`, `{1, 2}`, `{others => <>}`, and `{}`
-   for the empty (null) record aggregate
-2. Extension aggregates: `{Base with {X => 1}}`, `{Base with {}}`
-3. Record delta aggregates: `{Base with delta {X => 1}}`
+1. Record aggregates: `{X => 1, Y => 2}`, `{1, 2}`, `{others => <>}`, and
+   `{null record}` for the empty (null) record aggregate
+2. Extension aggregates: `{Base with X => 1}`, `{Base with null record}`
+3. Record delta aggregates: `{Base with delta X => 1}`
 
-In extension and delta aggregates, the components that follow `with` are
-themselves wrapped in braces, so what follows `with` always has the shape of a
-record aggregate; a null extension is written `{Base with {}}`.
+Extension and delta aggregates retain Ada's flat component lists after `with`;
+only the enclosing delimiters change. The explicit `null record` spelling is
+retained for empty records and null extensions.
 
 Because braces remove the collision between a record aggregate and a
 parenthesised expression, this RFC also lifts the Ada rule that a record
@@ -36,18 +36,18 @@ Draw (Point => (X => 1, Y => 2));   --  aggregate or inner call?
 Draw (Point => {X => 1, Y => 2});   --  unambiguously an aggregate
 ```
 
-| Operation                  | Ada syntax                   | Flare syntax                 |
-| -------------------------- | ---------------------------- | ---------------------------- |
-| Subprogram call            | `F (X => 1)`                 | `F (X => 1)`                 |
-| Array aggregate            | `(1, 2, 3)`                  | `[1, 2, 3]`                  |
-| Container aggregate        | `["one" => 1]`               | `["one" => 1]`               |
-| Record aggregate           | `(X => 1, Y => 2)`           | `{X => 1, Y => 2}`           |
-| Extension aggregate        | `(Base with X => 1)`         | `{Base with {X => 1}}`       |
-| Record delta aggregate     | `(Base with delta X => 1)`   | `{Base with delta {X => 1}}` |
-| Null record aggregate      | `(null record)`              | `{}`                         |
-| Null extension aggregate   | `(Base with null record)`    | `{Base with {}}`             |
-| Single-component aggregate | `(F => X)` (named mandatory) | `{X}` or `{F => X}`          |
-| Parenthesised expression   | `(A + B)`                    | `(A + B)`                    |
+| Operation                  | Ada syntax                   | Flare syntax               |
+| -------------------------- | ---------------------------- | -------------------------- |
+| Subprogram call            | `F (X => 1)`                 | `F (X => 1)`               |
+| Array aggregate            | `(1, 2, 3)`                  | `[1, 2, 3]`                |
+| Container aggregate        | `["one" => 1]`               | `["one" => 1]`             |
+| Record aggregate           | `(X => 1, Y => 2)`           | `{X => 1, Y => 2}`         |
+| Extension aggregate        | `(Base with X => 1)`         | `{Base with X => 1}`       |
+| Record delta aggregate     | `(Base with delta X => 1)`   | `{Base with delta X => 1}` |
+| Null record aggregate      | `(null record)`              | `{null record}`            |
+| Null extension aggregate   | `(Base with null record)`    | `{Base with null record}`  |
+| Single-component aggregate | `(F => X)` (named mandatory) | `{X}` or `{F => X}`        |
+| Parenthesised expression   | `(A + B)`                    | `(A + B)`                  |
 
 This matches the convention most programmers already know from C, C++, Rust, Go,
 C#, and JavaScript, where `{...}` constructs a struct, record, or object value.
@@ -106,13 +106,12 @@ N : Nothing := (null record);
 P : Point   := {X => 1, Y => 2};
 Q : Point   := {1, 2};
 R : Point   := {X => 1, others => <>};
-N : Nothing := {};
+N : Nothing := {null record};
 ```
 
-Positional and named associations, choices with `|`, `others`, and the `<>` box
-work exactly as in Ada. The one change inside the braces is the empty record:
-braces make it directly expressible, so it is written `{}` (mirroring the null
-array aggregate `[]`) and the `null record` spelling is not carried over.
+Positional and named associations, choices with `|`, `others`, the `<>` box, and
+the `null record` spelling work exactly as in Ada. An empty record aggregate is
+written `{null record}`; empty braces `{}` are not an aggregate syntax.
 
 ## Single-component record aggregates
 
@@ -151,10 +150,8 @@ only removes the requirement.
 
 ## Extension aggregates
 
-Extension aggregates use curly braces around the whole aggregate, and the
-components added by the extension are wrapped in braces of their own: what
-follows `with` has exactly the shape of a record aggregate, with the null
-extension using the empty inner aggregate.
+Extension aggregates use curly braces around the whole aggregate. The component
+list after `with` remains flat, and a null extension retains `null record`.
 
 **Ada:**
 
@@ -167,38 +164,34 @@ F : Derived := (Base_Value with null record);
 **Flare:**
 
 ```ada
-D : Derived := {Base_Value with {Extra => 5}};
-E : Derived := {Base_Type with {Extra => 5}};
-F : Derived := {Base_Value with {}};
+D : Derived := {Base_Value with Extra => 5};
+E : Derived := {Base_Type with Extra => 5};
+F : Derived := {Base_Value with null record};
 ```
 
-The inner braces keep the empty forms apart. `{}` is itself a legal record
-aggregate and single-component positional aggregates are legal, so a flat
-`{Base with {}}` could mean "extend `Base` with nothing" or "extend `Base` with
-one component whose value is the empty record". Nesting gives the two cases
-different spellings:
+The explicit `null record` spelling distinguishes a null extension from an
+extension with one positional component whose value is an empty record:
 
 ```ada
-A : T1 := {Base with {}};     --  null extension: nothing added
-B : T2 := {Base with {{}}};   --  one positional component, an empty record
+A : T1 := {Base with null record};     --  null extension: nothing added
+B : T2 := {Base with {null record}};   --  one positional component, an empty record
 ```
 
 ## Record delta aggregates
 
-Record delta aggregates follow the same shape: the updated components after
-`with delta` are wrapped in braces of their own.
+Record delta aggregates use curly braces around the whole aggregate, with a flat
+list of named component updates after `with delta`.
 
 ```ada
 --  Ada: (P with delta X => P.X + 1)
-Moved : Point := {P with delta {X => P.X + 1}};
+Moved : Point := {P with delta X => P.X + 1};
 
 --  Array deltas stay flat and bracketed (mandatory_square_brackets):
 Updated : Integer_Array := [A with delta 2 => 99];
 ```
 
 The outer delimiter matches the shape of the base value — brackets for arrays,
-braces for records — and after `with delta`, a record's updated components form
-a braced, record-shaped list.
+braces for records. Both delta forms keep their association lists flat.
 
 ## Qualified expressions
 
@@ -225,9 +218,10 @@ occur in legal Ada source only inside string literals, character literals, and
 comments, where they remain uninterpreted.
 
 RFC `string_interpolation` gives braces meaning inside interpolated string
-literals (`f"..."`). There is no grammar-level conflict but since an
-interpolated expression contains a full `expression`, brace aggregates can
-appear inside it, as in `f"origin is {Point'{X => 0, Y => 0}}"`.
+literals (`f"..."`). The proposed grammar allows brace aggregates inside an
+interpolated expression, as in `f"origin is {Point'{X => 0, Y => 0}}"`.
+Supporting this nesting requires changes to interpolation handling in both GNAT
+and Libadalang.
 
 ## Grammar notation
 
@@ -239,30 +233,27 @@ while unquoted `{` `}` retain their RM meaning of a repeated part.
 RM 4.3.1 `record_aggregate` becomes:
 
 ```
-record_aggregate ::= '{' [record_component_association_list] '}'
+record_aggregate ::= '{' record_component_association_list '}'
 
 record_component_association_list ::=
   record_component_association {, record_component_association}
+  | null record
 ```
 
-Two changes are made beyond the delimiters:
+The `null record` alternative is retained, so the empty record aggregate is
+written `{null record}`. Exactly as `(null record)` in Ada, it is legal only
+where there are no components to give values to.
 
-- The `null record` alternative of `record_component_association_list` is
-  removed. Emptiness is expressed by omitting the list: the empty record
-  aggregate is written `{}`, mirroring the null array aggregate `[]`. Exactly as
-  `(null record)` in Ada, `{}` is legal only where there are no components to
-  give values to.
-- The named-notation requirement for single-component aggregates is removed.
-  That rule exists only to keep `(X)` unambiguous as a parenthesised expression;
-  inside braces there is nothing to disambiguate. Ada 2022 sets the precedent:
-  the bracketed `positional_array_aggregate` accepts a single expression
-  (`[X]`), while the parenthesised form requires two (RM 4.3.3).
+The named-notation requirement for single-component aggregates is removed. That
+rule exists only to keep `(X)` unambiguous as a parenthesised expression; inside
+braces there is nothing to disambiguate. Ada 2022 sets the precedent: the
+bracketed `positional_array_aggregate` accepts a single expression (`[X]`),
+while the parenthesised form requires two (RM 4.3.3).
 
 All other name resolution, legality, and dynamic semantics of RM 4.3.1 are
-unchanged. The single-component relaxation extends to the inner list of an
-extension aggregate: `{Base with {42}}` is legal (the flat Ada form
-`(Base with 42)` already was). Record delta aggregates continue to require named
-associations, as in Ada.
+unchanged. Extension aggregates retain their existing permission for a single
+positional component: `{Base with 42}` is legal, just as `(Base with 42)` was in
+Ada. Record delta aggregates continue to require named associations, as in Ada.
 
 ## Extension aggregates
 
@@ -270,21 +261,14 @@ RM 4.3.2 `extension_aggregate` becomes:
 
 ```
 extension_aggregate ::=
-  '{' ancestor_part with '{' [record_component_association_list] '}' '}'
+  '{' ancestor_part with record_component_association_list '}'
 ```
 
 The `ancestor_part` syntax (an expression or a subtype mark) and all static and
-dynamic semantics of RM 4.3.2 are unchanged. As in the record aggregate, the
-`null record` alternative is removed; the null extension is written with an
-empty inner list, `{Base with {}}`.
-
-The inner braces are what keeps the aggregate family unambiguous: with a flat
-list, the natural empty form `{Base with {}}` could equally parse as an
-extension with a single positional component whose value is the empty record
-aggregate. Nested, the two spellings differ — `{Base with {}}` adds nothing,
-`{Base with {{}}}` adds one component whose value is `{}`. Nesting also gives
-`with` a uniform right-hand side: whatever follows it (after `delta`, if any) is
-a braced, record-shaped component list.
+dynamic semantics of RM 4.3.2 are unchanged. The component list remains flat,
+including the `null record` alternative: `{Base with null record}` adds nothing,
+while `{Base with {null record}}` adds one positional component whose value is
+an empty record aggregate.
 
 ## Record delta aggregates
 
@@ -292,21 +276,22 @@ RM 4.3.4 `record_delta_aggregate` becomes:
 
 ```
 record_delta_aggregate ::=
-  '{' base_expression with delta '{' record_component_association_list '}' '}'
+  '{' base_expression with delta record_component_association_list '}'
 ```
 
-The inner list is mandatory and named-only, exactly as in Ada: a delta that
-changes nothing has no use, so no empty form is provided.
+The component list is mandatory, nonempty, and named-only, exactly as in Ada;
+the `null record` alternative is not permitted in a record delta aggregate.
+These restrictions remove any need for additional braces around the list.
 
 The `array_delta_aggregate` grammar is that of RFC `mandatory_square_brackets`
-and remains bracketed and flat (`[A with delta 2 => 99]`): its associations are
-index choices rather than a record-shaped component list, and arrays have no
-empty-extension form to disambiguate. The delimiter alone now tells the reader
-whether a delta aggregate is record-shaped or array-shaped.
+and remains bracketed and flat (`[A with delta 2 => 99]`). Record and array
+delta aggregates therefore share the same flat structure, with the delimiter
+alone telling the reader whether the base value is record-shaped or
+array-shaped.
 
 If RFC `deep_delta_aggregates` is adopted, its extended association forms
-(`A.B => ...`, `C [I].D => ...`) nest inside the inner braces without further
-change: that RFC modifies the association list, this one the enclosing
+(`A.B => ...`, `C [I].D => ...`) appear in the flat association list without
+further change: that RFC modifies the association list, this one the enclosing
 delimiters.
 
 ## Qualified expressions and other contexts
@@ -323,12 +308,12 @@ inherit the brace form without individual changes.
 
 Ada 2022 aligned the default image of composite types with aggregate notation
 (RM 4.10, AI12-0020-1): arrays render with brackets, records with parentheses
-(`(X =>  1, Y =>  2)`, `(NULL RECORD)`). Flare keeps that alignment: the
-default `Put_Image` of a record type emits braces — `{X =>  1, Y =>  2}`, and
-`{}` for a null record — so runtime images stay consistent with Flare source.
-Note the seam: the default `Put_Image` is determined by the unit declaring the
-type, so a type declared in a regular Ada unit keeps the parenthesised image
-even when used from Flare code.
+(`(X =>  1, Y =>  2)`, `(NULL RECORD)`). Flare keeps that alignment: the default
+`Put_Image` of a record type emits braces — `{X =>  1, Y =>  2}`, and
+`{NULL RECORD}` for a null record — so runtime images stay consistent with Flare
+source. Note the seam: the default `Put_Image` is determined by the unit
+declaring the type, so a type declared in a regular Ada unit keeps the
+parenthesised image even when used from Flare code.
 
 ## Disambiguation summary
 
@@ -345,10 +330,10 @@ With all three delimiter RFCs applied:
 | `[V with delta 2 => 99]`  | Array delta aggregate                         |
 | `{X => 1, Y => 2}`        | Record aggregate                              |
 | `{42}`                    | Single-component positional record aggregate  |
-| `{}`                      | Empty (null) record aggregate                 |
-| `{Base with {X => 1}}`    | Extension aggregate                           |
-| `{Base with {}}`          | Null extension aggregate                      |
-| `{P with delta {X => 1}}` | Record delta aggregate                        |
+| `{null record}`           | Empty (null) record aggregate                 |
+| `{Base with X => 1}`      | Extension aggregate                           |
+| `{Base with null record}` | Null extension aggregate                      |
+| `{P with delta X => 1}`   | Record delta aggregate                        |
 | `Point'{X => 1, Y => 2}`  | Qualified record aggregate                    |
 
 Braced forms still require normal Ada resolution to distinguish a record
@@ -360,54 +345,49 @@ construct family is determined by the delimiter alone.
 Curly braces are the natural choice for record construction:
 
 - They carry exactly the intended meaning in the languages most programmers come
-  from: struct and object construction in C, C++, Rust, Go, C#, Java,
-  JavaScript, and Zig.
+  from: struct and object construction in C, C++, Rust, Go, C#, JavaScript, and
+  Zig.
 - They complete a three-way visual split — call `()`, array or container `[]`,
-  record `{}` — that lets a reader classify any construct without consulting
+  record `{...}` — that lets a reader classify any construct without consulting
   declarations.
 
-## The empty record aggregate is `{}`
+## The empty record aggregate is `{null record}`
 
-Ada spells the empty aggregate `(null record)` because a parenthesised empty
-form `()` was not available. Braces have no such constraint: `{}` is directly
-expressible and mirrors the null array aggregate `[]`. Keeping `{null record}`
-as a second spelling was considered and dropped since it reads as a leftover of
-the parenthesised syntax.
+Retaining Ada's explicit `null record` spelling makes empty record values easier
+to read, especially when nested. It also distinguishes a null extension
+`{Base with null record}` from an extension with one empty-record component
+`{Base with {null record}}`, without additional braces around the component
+list.
 
-## Nested component lists after `with`
+The shorter `{}` spelling would mirror the null array aggregate `[]`, but using
+`{Base with {}}` for a null extension would collide with an extension whose
+single positional component is an empty record. Avoiding that ambiguity by
+nesting all extension component lists adds visual complexity. The explicit
+spelling is preferred, and `{}` is not provided as an alternative.
 
-The flat transliteration `{Base with A => 1, B => 2}` of Ada's extension
-aggregate was this RFC's starting point. Two problems pushed toward the nested
-form:
+## Flat component lists after `with`
 
-- Consistency of the empty forms. With `{}` adopted, the flat null extension
-  would either keep `null record` (`{Base with null record}`), reintroducing the
-  spelling plain aggregates just dropped, or be written `{Base with {}}`. This
-  last case would be ambiguous in a flat grammar, because `{}` is also a legal
-  positional component value (an empty record).
-- Uniformity. In the nested form, `with` is always followed by a braced,
-  record-shaped component list, and the empty and non-empty cases look alike:
-  `{Base with {}}`, `{Base with {A => 1, B => 2}}`.
+Extension aggregates retain Ada's flat component list because `null record`
+already distinguishes the empty case from an empty-record component value.
+Additional braces would make a flat extension look like a nested record value.
 
-The known cost is visual: two levels of braces can make a flat value look
-nested. `{Base with {A => 1, B => 2}}` builds one flat record, not a record
-containing a record. Also allowing the flat list when it is non-empty
-(`{Base with A => 1, B => 2}`), reserving the nested form for the empty case
-that needs it, was considered and rejected: it would give the same aggregate two
-spellings and make the empty and non-empty cases look different for no gain.
-There is one syntax for every extension aggregate.
+Record delta aggregates also retain flat lists. Their associations are named and
+nonempty, so there is no empty-form ambiguity to resolve. This keeps their
+structure consistent with array delta aggregates and the shared association
+forms proposed by RFC `deep_delta_aggregates`. Consistency between the two delta
+forms is a stronger reason than giving extension and delta lists extra braces.
 
 ## Alternative: `{Base}` for the null extension
 
 Rejected: it collides with the single-component positional record aggregate. For
 a null extension `T` of a parent with a single component `C`, `{X}` could read
-as the extension aggregate `{X with {}}` or as the record aggregate `{C => X}`
-(record aggregates may list inherited components). Expected-type resolution
-settles most cases, but an overloaded `X` becomes genuinely ambiguous. The
-reserved word `with` also tells the reader the value is an extension of an
-ancestor, not a wrapping of a component; Rust, the closest precedent, likewise
-requires an explicit marker for functional update (`T { ..base }`, never
-`T { base }`).
+as the extension aggregate `{X with null record}` or as the record aggregate
+`{C => X}` (record aggregates may list inherited components). Expected-type
+resolution settles most cases, but an overloaded `X` becomes genuinely
+ambiguous. The reserved word `with` also tells the reader the value is an
+extension of an ancestor, not a wrapping of a component; Rust, the closest
+precedent, likewise requires an explicit marker for functional update
+(`T { ..base }`, never `T { base }`).
 
 ## Alternative: brace-delimited discriminant parts and constraints
 
@@ -453,11 +433,10 @@ using `(...)` for them must be updated to compile in pedantic Flare; in
 non-pedantic Flare, both forms are accepted for backward compatibility.
 
 Every legal Ada record-shaped aggregate maps to the brace form mechanically: the
-delimiters change, `(null record)` becomes `{}`, `(Base with null record)`
-becomes `{Base with {}}`, and the component lists of extension and delta
-aggregates gain their inner braces. In the other direction, a single-component
-positional aggregate such as `{42}` has no direct Ada equivalent and must be
-rewritten in named notation, `(Value => 42)`.
+enclosing delimiters change, while component lists and `null record` retain
+their Ada spelling. In the other direction, a single-component positional
+aggregate such as `{42}` has no direct Ada equivalent and must be rewritten in
+named notation, `(Value => 42)`.
 
 # Prior art
 
